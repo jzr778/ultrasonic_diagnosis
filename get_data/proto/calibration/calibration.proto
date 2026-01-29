@@ -1,0 +1,325 @@
+syntax = "proto2";
+
+package deeproute.calibration;
+
+import "common/geometry.proto";
+import "drivers/camera/config.proto";
+import "drivers/lidar/config.proto";
+
+enum CalibrationCMD {
+  CALIBRATION_CMD_UNKNOWN = 0x00;
+  CALIBRATION_CMD_START = 0x01;
+  CALIBRATION_CMD_STOP = 0x02;
+}
+
+enum CalibrationState {
+  CALIBRATION_STATE_UNKNOWN = 0x00;
+  CALIBRATION_STATE_SUCCESS = 0x01;
+  CALIBRATION_STATE_FAIL = 0x02;
+  CALIBRATION_STATE_RUNNING = 0x03;
+}
+
+// https://rqk9rsooi4.feishu.cn/sheets/NNzpsukt1hiJfitLdY2cO1tjn3f
+enum CalibrationMode {
+  CALIBRATION_MODE_ONLINE_UNKNOWN = 0x00;
+  CALIBRATION_MODE_ONLINE_RASMAP = 0x01;
+  CALIBRATION_MODE_ONLINE_CAMERA = 0x02;
+  CALIBRATION_MODE_ONLINE_LIDAR = 0x03;
+  CALIBRATION_MODE_ONLINE_RADAR = 0x04;
+  CALIBRATION_MODE_ONLINE_AVM = 0x05;
+  CALIBRATION_MODE_ONLINE_INERTIAL_NAVIGATION = 0x06;
+
+  CALIBRATION_MODE_STATIC_CAMERA = 0x07;        //所有相机静态标定
+  CALIBRATION_MODE_STATIC_LIDAR = 0x08;         //雷达静态标定
+  CALIBRATION_MODE_STATIC_RADAR = 0x09;         //毫米波雷达静态标定
+  CALIBRATION_MODE_STATIC_IMU = 0x0A;           // imu静态标定
+  CALIBRATION_MODE_STATIC_AVM = 0x0B;           //环视静态标定
+  CALIBRATION_MODE_STATIC_SVM = 0x0C;           //周视静态标定
+  CALIBRATION_MODE_ONLINE_MULTI_LIDAR = 0x0D;   //动态多雷达外参标定
+  CALIBRATION_MODE_DYNAMIC_CAMERA = 0x0E;       //所有相机动态标定
+  CALIBRATION_MODE_DYNAMIC_SVM = 0x0F;          //周视相机动态标定
+  CALIBRATION_MODE_DYNAMIC_AVM = 0x10;          //环视相机动态标定
+  CALIBRATION_MODE_STATIC_AVM_4S_STORE = 0x11;  // 4S店环视静态标定
+  CALIBRATION_MODE_RESTORE_AVM_EOL_RESULT = 0x12;  // 环视标定结果恢复出厂设置
+  CALIBRATION_MODE_CHECK_AVM_EOL_RESULT = 0x13;  // 查询AVM是否为EOL标定结果
+}
+
+// TODO substep of calibration, for debug
+enum CalibrationStep {
+  CALIBRATION_STEP_ONLINE_UNKNOWN = 0x00;
+  CALIBRATION_STEP_ONLINE_RASMAP_INIT = 0x01;
+  CALIBRATION_STEP_ONLINE_RASMAP_COLLECTING_DATA = 0x02;
+  CALIBRATION_STEP_ONLINE_RASMAP_CALCULATING = 0x03;
+
+  CALIBRATION_STEP_ONLINE_CAMERA = 0x10;
+  CALIBRATION_STEP_ONLINE_LIDAR = 0x20;
+  CALIBRATION_STEP_ONLINE_RADAR = 0x30;
+
+  CALIBRATION_STEP_ONLINE_AVM = 0x40;
+  CALIBRATION_STEP_ONLINE_INERTIAL_NAVIGATION = 0x50;
+}
+
+// https://rqk9rsooi4.feishu.cn/sheets/NNzpsukt1hiJfitLdY2cO1tjn3f
+enum CalibrationErrorCode {
+  CALIB_ERR_CODE_STATIC_CAMERA_ROLL_CALIB_RUNNING = 0X06;
+  CALIB_ERR_CODE_INS_CALIB_NOT_COMPLETED = 0XA7;
+  CALIB_ERR_CODE_INSUFFICIENT_VALID_MILEAGE = 0XA8;
+  CALIB_ERR_CODE_STEERING_WHEEL_NOT_RETURN_CENTER = 0XA9;
+  CALIB_ERR_CODE_DOOR_OR_TRUNK_NOT_CLOSED = 0XAA;
+  CALIB_ERR_CODE_REARVIEW_MIRROR_NOT_UNFOLDED = 0XAB;
+  CALIB_ERR_CODE_WIPERS_NOT_TURNED_OFF = 0XAC;
+  CALIB_ERR_CODE_NUMBER_OF_PEOPLE_IN_VEHICLE_ABNORMAL = 0XAD;
+  CALIB_ERR_CODE_AIR_SUSPENSION_NOT_IN_STANDARD_GEAR = 0XAE;
+  CALIB_ERR_CODE_NOT_IN_N_GEAR = 0XAF;
+  CALIB_ERR_CODE_NOT_SATISFACTORY = 0XB8;
+  CALIB_ERR_CODE_MMWAVE_NO_CALIB_TARGET = 0XB9;
+  CALIB_ERR_CODE_MMWAVE_NOT_DETECT_TARGET = 0XBA;
+  CALIB_ERR_CODE_MMWAVE_SELF_VEHICLE_MOTION = 0XBB;
+  CALIB_ERR_CODE_MMWAVE_PITCH_ANGLE_FLUCTUATES_GREATLY = 0XBC;
+  CALIB_ERR_CODE_MMWAVE_YAW_ANGLE_FLUCTUATES_GREATLY = 0XBD;
+  CALIB_ERR_CODE_MMWAVE_TARGET_RCS_ABNORMAL = 0XBE;
+  CALIB_ERR_CODE_MMWAVE_TARGET_DISTANCE_ABNORMAL = 0XBF;
+  CALIB_ERR_CODE_VEHICLE_NOT_STATIONARY = 0XC8;
+  CALIB_ERR_CODE_TWO_TARGETS_TOO_CLOSE = 0XC9;
+  CALIB_ERR_CODE_TARGET_IN_LOWER_PART_OF_IMAGE = 0XCA;
+  CALIB_ERR_CODE_TARGET_IN_UPPER_PART_OF_IMAGE = 0XCB;
+  CALIB_ERR_CODE_TARGET_IN_RIGHT_PART_OF_IMAGE = 0XCC;
+  CALIB_ERR_CODE_TARGET_IN_LEFT_PART_OF_IMAGE = 0XCD;
+  CALIB_ERR_CODE_ONLY_ONE_QR_CODE_IN_TARGET = 0XCE;
+  CALIB_ERR_CODE_NO_TARGET = 0XCF;
+  CALIB_ERR_CODE_RECEIVED_SYSTEM_FAULT = 0XD8;
+  CALIB_ERR_CODE_SIDE_VIEW_CAMERA_INSTALLED_BACKWARDS = 0XD9;
+  CALIB_ERR_CODE_CAMERA_TRANSLATION_ABNORMAL = 0XDA;
+  CALIB_ERR_CODE_CAMERA_ID_ABNORMAL = 0XDB;
+  CALIB_ERR_CODE_CAMERA_NUMBER_ABNORMAL = 0XDC;
+  CALIB_ERR_CODE_FISHEYE_CAMERA_VEHICLE_MOVE = 0XDD;
+  CALIB_ERR_CODE_NUMBER_OF_DETECTED_TARGETS_TOO_SMALL = 0XDE;
+  CALIB_ERR_CODE_CAMERA_LENS_OR_TARGET_BLOCKED = 0XDF;
+  CALIB_ERR_CODE_LIDAR_CALIB_NO_TARGET_DETECTED = 0XE7;
+  CALIB_ERR_CODE_NO_STATIC_CALIB_RESULT = 0XE9;
+  CALIB_ERR_CODE_INS_CALIB_RUNNING = 0XF4;
+  CALIB_ERR_CODE_LIDAR_DATA_ABNORMAL = 0XF7;
+  CALIB_ERR_CODE_NO_SENSOR_DATA = 0XF8;
+  CALIB_ERR_CODE_TIMEOUT = 0XF9;
+  CALIB_ERR_CODE_MILEAGE_EXCEEDED = 0XFA;
+  CALIB_ERR_CODE_TARGET_DETECTION_OFFSET_ABNORMAL = 0XFC;
+  CALIB_ERR_CODE_NO_INITIAL_CONFIG_FILE = 0XFD;
+  CALIB_ERR_CODE_NO_INITIAL_PARAMETER = 0XFE;
+
+  // self defined error code, 0x1000~0x10FF
+  CALIB_ERR_CODE_DATA_NOT_ENOUGH = 0X1000;
+  CALIB_ERR_CODE_LIDAR_CALIB_NOT_CONVERGENT = 0X1001;
+  CALIB_ERR_CODE_CAMERA_CALIB_NOT_CONVERGENT = 0X1002;
+  CALIB_ERR_CODE_RADAR_CALIB_NOT_CONVERGENT = 0X1003;
+  CALIB_ERR_CODE_INS_CALIB_NOT_CONVERGENT = 0X1004;
+}
+
+message CalibrationUploadParameter {
+  optional bytes car_id = 1;
+  optional bytes relative_path = 2;
+  optional bytes content = 3;
+  optional bytes publisher = 4;
+  optional bytes description = 5;
+  optional bool publish_parameter = 6;
+  optional bool distribute_parameter = 7;
+  optional bool is_compressed = 8;
+}
+
+message CalibrationSetting {
+  optional bytes config_version = 1;
+}
+
+enum CalibrationGwmErrCode {
+  CALIB_GWM_ERR_CODE_UNKNOWN = 0X00;
+  CALIB_GWM_SUCCESS = 0X01;
+  CALIB_GWM_ERR_CODE_CORNER_DETECTION_ERROR = 0X02;
+  CALIB_GWM_ERR_CODE_INTRINSIC_ERROR = 0X03;
+  CALIB_GWM_ERR_CODE_CONFIG_FILE_ERROR = 0X04;
+  CALIB_GWM_ERR_CODE_IMAGE_SIZE_MATCH_ERROR = 0X05;
+  CALIB_GWM_ERR_CODE_VEHICLE_TYPE_ERROR = 0X06;
+  CALIB_GWM_ERR_CODE_VEHICLE_STATUS_ERROR = 0X07;
+  CALIB_GWM_ERR_CODE_FILE_OPEN_ERROR = 0X08;
+  CALIB_GWM_ERR_CODE_TIMEOUT = 0X09;
+  CALIB_GWM_ERR_CODE_TARGET_NOT_FOUND = 0X0A;
+  CALIB_GWM_ERR_CODE_TARGET_NUM_WRONG = 0X0B;
+  CALIB_GWM_ERR_CODE_REPROJECTION_ERR_OUT_OF_RANGE = 0X0C;
+  CALIB_GWM_ERR_CODE_IMU_DATA_ERROR = 0X0D;
+  CALIB_GWM_ERR_CODE_LIDAR_DATA_ERROR = 0X0E;
+}
+
+enum CalibrationGwmSingleErrCode {
+  CALIB_GWM_SINGLE_ERR_CODE_SUCCESS = 0X00;
+  CALIB_GWM_SINGLE_ERR_CODE_CORNER_DETECTION_ERROR = 0X01;
+  CALIB_GWM_SINGLE_ERR_CODE_INTRINSIC_ERROR = 0X02;
+  CALIB_GWM_SINGLE_ERR_CODE_IMAGE_SIZE_MATCH_ERROR = 0X03;
+  CALIB_GWM_SINGLE_ERR_CODE_TARGET_NOT_FOUND = 0X04;
+  CALIB_GWM_SINGLE_ERR_CODE_TARGET_NUM_WRONG = 0X05;
+  CALIB_GWM_SINGLE_ERR_CODE_REPROJECTION_ERR_OUT_OF_RANGE = 0X06;
+  CALIB_GWM_SINGLE_ERR_CODE_X_OUT_OF_RANGE = 0X07;
+  CALIB_GWM_SINGLE_ERR_CODE_Y_OUT_OF_RANGE = 0X08;
+  CALIB_GWM_SINGLE_ERR_CODE_Z_OUT_OF_RANGE = 0X09;
+  CALIB_GWM_SINGLE_ERR_CODE_ROLL_OUT_OF_RANGE = 0X0A;
+  CALIB_GWM_SINGLE_ERR_CODE_YAW_OUT_OF_RANGE = 0X0B;
+  CALIB_GWM_SINGLE_ERR_CODE_PITCH_OUT_OF_RANGE = 0X0C;
+  CALIB_GWM_SINGLE_ERR_CODE_IMU_DATA_ERROR = 0X0D;
+  CALIB_GWM_SINGLE_ERR_CODE_LIDAR_DATA_ERROR = 0X0E;
+  CALIB_GWM_SINGLE_ERR_CODE_FOV_OUT_OF_RANGE = 0X0F;
+  CALIB_GWM_SINGLE_ERR_CODE_GET_INTRINSIC_PARAM_ERROR = 0X10;
+  CALIB_GWM_SINGLE_ERR_CODE_EXTRINSIC_OUT_OF_RANGE = 0X11;
+  CALIB_GWM_SINGLE_ERR_CODE_IMAGE_LOAD_ERROR = 0X12;
+}
+
+message CalibrationBoardInfo {
+  optional int32 board_id = 1;
+  optional deeproute.common.Point3D position = 2;
+  optional deeproute.common.Point3D roll_pitch_yaw = 3;
+  optional double board_horizontal_size = 4;
+  optional double board_vertical_size = 5;
+}
+
+// topic: /calibration/command
+message CalibrationCommand {
+  optional int32 id = 1;
+  optional CalibrationCMD calib_cmd = 2;
+  optional CalibrationMode calib_mode = 3;
+  optional CalibrationSetting calib_setting = 4;
+  repeated CalibrationBoardInfo board_list = 5;
+  optional bool is_rear_axle_positioning = 6 [default = false];
+}
+
+message CalibrationSingleSensorState {
+  optional string frame_id = 1;
+  repeated CalibrationGwmSingleErrCode error_code = 2;
+}
+
+message CalibrationGwmErrState {
+  optional CalibrationGwmErrCode gwm_error_code = 1;
+  repeated CalibrationSingleSensorState single_sensor_state = 2;
+}
+
+message CalibrationSeresErrState {
+  optional CalibrationErrorCode error_code = 1;
+}
+
+enum CalibrationCommonErrorCode {
+  CALIB_COMM_ERR_CODE_UNKNOWN = 0x00;           //未定义
+  CALIB_COMM_ERR_CODE_SUCCESS = 0x01;           //成功
+  CALIB_COMM_ERR_CODE_TIMEOUT = 0x02;           //超时
+  CALIB_COMM_ERR_CODE_MILEAGE_EXCEEDED = 0x03;  ///已达最大里程未收敛
+  CALIB_COMM_ERR_CODE_INSUFFICIENT_VALID_MILEAGE = 0x04;  ///有效里程不足
+
+  // vehicle status
+  CALIB_COMM_ERR_CODE_WIPERS_OPEN = 0x100;          //雨刮器未关
+  CALIB_COMM_ERR_CODE_NOT_IN_N_GEAR = 0x101;        // 车辆不在N档
+  CALIB_COMM_ERR_CODE_NOT_SATISFACTORY = 0x102;     // 车辆未静止
+  CALIB_COMM_ERR_CODE_TRAILER_CONNECTED = 0x103;    //挂车已连接
+  CALIB_COMM_ERR_CODE_LIGHT_OPEN = 0x104;           //车灯未关闭
+  CALIB_COMM_ERR_CODE_TIRE_PRESSURE_ERROR = 0x105;  //胎压异常
+  CALIB_COMM_ERR_CODE_WHEEL_SPEED_ERROR = 0x106;    //轮速异常
+  CALIB_COMM_ERR_CODE_DRIVER_DOOR_OPEN = 0x107;     //驾驶车门打开
+  CALIB_COMM_ERR_CODE_DRIVER_REAR_DOOR_OPEN = 0x108;  //驾驶员后部/推拉车门未关
+  CALIB_COMM_ERR_CODE_PASSENGER_DOOR_OPEN = 0x109;  //乘客座车门开启
+  CALIB_COMM_ERR_CODE_REAR_PASSENGER_DOOR_OPEN = 0x10A;  //乘客后部/推拉车门未关
+  CALIB_COMM_ERR_CODE_FRONT_TRUNK_OPEN = 0x010B;           //前备箱未关
+  CALIB_COMM_ERR_CODE_REAR_TRUNK_OPEN = 0x010C;            //后备箱未关
+  CALIB_COMM_ERR_CODE_DRIVER_MIRROR_FOLDED_UP = 0x10D;     //驾驶员镜折起
+  CALIB_COMM_ERR_CODE_PASSENGER_MIRROR_FOLDED_UP = 0x10E;  //乘客镜折起
+  CALIB_COMM_ERR_CODE_AIR_SUSPEN_NOT_NORMAL_GEAR = 0x10F;  // 空气悬挂非标准档
+  CALIB_COMM_ERR_CODE_AIR_SUSPEN_NOT_INIT_POS = 0x110;  // 空气悬挂不在初始位置
+  CALIB_COMM_ERR_CODE_NUMBER_OF_PASSENGER_ABNORMAL = 0x111;  // 车内人数不合要求
+
+  // calibration target
+  CALIB_COMM_ERR_CODE_INIT_TARGET_FAIL = 0x200;  //初始化靶标失败
+  CALIB_COMM_ERR_CODE_TARGET_NOT_FOUND = 0x201;  //未检测到靶标
+  CALIB_COMM_ERR_CODE_TARGET_NOT_ENOUGH = 0x202;  //检测到靶标但数量不足
+  CALIB_COMM_ERR_CODE_POINT_CLOUD_ON_TAGET_NOT_ENOUGH = 0x203;  //靶标点云数量少
+
+  // config file
+  CALIB_COMM_ERR_CODE_READ_CONFIG_FILE_ERROR = 0x300;  //读取cfg文件失败
+  CALIB_COMM_ERR_CODE_INTRINSIC_ERROR = 0x301;         //相机内参错误
+  CALIB_COMM_ERR_CODE_EXTRINSIC_ERROR = 0x302;         //外参错误
+
+  // save result
+  CALIB_COMM_ERR_CODE_SAVE_RESULT_ERROR = 0x400;
+
+  // calibration result
+  CALIB_COMM_ERR_CODE_INIT_REPROJECTION_ERR_TOO_LARGE = 0x500;  //初始误差过大
+  CALIB_COMM_ERR_CODE_REPROJECTION_ERR_TOO_LARGE = 0x501;  //重投影误差过大
+  CALIB_COMM_ERR_CODE_INIT_STITCHING_ERR_TOO_LARGE = 0x502;  //初始拼接误差过大
+  CALIB_COMM_ERR_CODE_STITCHING_ERR_TOO_LARGE = 0x503;  //拼接误差过大
+
+  // install error
+  CALIB_COMM_ERR_CODE_INSTALL_ERR_OUT_OF_RANGE = 0x600;  //安装误差过大
+  CALIB_COMM_ERR_CODE_INSTALL_ROLL_ERR_OUT_OF_RANGE = 0x601;  //安装误差过大
+  CALIB_COMM_ERR_CODE_INSTALL_PITCH_ERR_OUT_OF_RANGE = 0x602;  //安装误差过大
+  CALIB_COMM_ERR_CODE_INSTALL_YAW_ERR_OUT_OF_RANGE = 0x603;  //安装误差过大
+  CALIB_COMM_ERR_CODE_INSTALL_X_ERR_OUT_OF_RANGE = 0x604;  //安装角误差过大
+  CALIB_COMM_ERR_CODE_INSTALL_Y_ERR_OUT_OF_RANGE = 0x605;  //安装角误差过大
+  CALIB_COMM_ERR_CODE_INSTALL_Z_ERR_OUT_OF_RANGE = 0x606;  //安装角误差过大
+
+  // sensor data
+  // lidar 700~70F
+  CALIB_COMM_ERR_CODE_LIDAR_DATA_FRAME_LOSS = 0x700;   //雷达点云丢帧
+  CALIB_COMM_ERR_CODE_CAMERA_DATA_FRAME_LOSS = 0x701;  //相机出图丢帧
+
+  // imu 710~71F
+  CALIB_COMM_ERR_CODE_IMU_DATA_FRAME_LOSS = 0x710;    // IMU丢帧
+  CALIB_COMM_ERR_CODE_ACC_NOISE_TOO_LARGE = 0x711;    // ACC噪声过大
+  CALIB_COMM_ERR_CODE_ACC_OFFSET_TOO_LARGE = 0x712;   // ACC零偏过大
+  CALIB_COMM_ERR_CODE_GYRO_NOISE_TOO_LARGE = 0x713;   // GYRO噪声过大
+  CALIB_COMM_ERR_CODE_GYRO_OFFSET_TOO_LARGE = 0x714;  // GYRO零偏过大
+
+  // wheel speed 720~72F
+  CALIB_COMM_ERR_CODE_WHEEL_SPEED_DATA_ABNORMAL = 0x720;  // WHEEL_SPEED数值异常
+  CALIB_COMM_ERR_CODE_WHEEL_SPEED_DATA_FRAME_LOSS = 0x721;  // WHEEL_SPEED丢帧
+
+  // wheel  pulse, 730~73F
+  CALIB_COMM_ERR_CODE_WHEEL_PULSE_DATA_ABNORMAL = 0x730;  // 轮脉冲数值异常
+  CALIB_COMM_ERR_CODE_WHEEL_PULSE_DATA_FRAME_LOSS = 0x731;  //轮脉冲丢帧
+}
+
+message CalibrationCommonSingleSensorState {
+  optional string frame_id = 1;
+  repeated CalibrationCommonErrorCode error_code = 2;
+}
+
+message CalibrationCommonErrorState {
+  optional CalibrationCommonErrorCode error_code = 1;
+  repeated CalibrationCommonSingleSensorState single_sensor_state = 2;
+}
+
+// topic: /calibration/command_response
+message CalibrationCommandRP {
+  optional int32 id = 1;
+  optional bool succeeded = 2 [default = false];
+  optional bool is_avm_eol_result = 3;
+}
+
+// topic: /calibration/status, 10Hz
+message CalibrationStatus {
+  optional CalibrationMode calib_mode = 1;    // calib mode
+  optional CalibrationState calib_state = 2;  // sucess, fail or running
+  optional CalibrationStep calib_step = 3;    // sub step of calibration
+  optional int32 progress_bar = 4;            // 0->100
+  optional CalibrationUploadParameter calib_upload =
+      5;  // upload calib parameter
+  optional CalibrationErrorCode error_code = 6 [deprecated = true];
+  oneof CalibrationErrState {
+    CalibrationSeresErrState err_state_seres = 7;        // seres error code
+    CalibrationGwmErrState err_state_gwm = 8;            // gwm error code
+    CalibrationCommonErrorState error_state_common = 9;  //通用错误码
+  }
+  // reserved to 20
+}
+
+// topic: /calibration/event
+message CalibrationParam {
+  optional deeproute.drivers.camera.config.Configs camera_conifgs = 1;
+  optional deeproute.drivers.lidar.LidarConfig lidar_configs = 2;
+  optional deeproute.drivers.lidar.LidarConfig ground_config = 3;
+}
+
+message CalibrationEvent{
+  optional int32 id = 1;
+  optional CalibrationParam calib_param = 2;
+}

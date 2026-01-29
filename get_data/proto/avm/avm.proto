@@ -1,0 +1,217 @@
+syntax = "proto2";
+
+package deeproute.avm;
+
+import "common/geometry.proto";
+import "semantic_map/map_standby_area.proto";
+import "drivers/sensor_image.proto";
+
+message CarModel {
+  optional bool transparent_base = 1;
+}
+
+enum AroundViewMode {
+  AROUND_VIEW_2D_NARROW = 0;
+  AROUND_VIEW_2D_BROAD = 1;
+  AROUND_VIEW_3D = 2;
+  AROUND_VIEW_FRONT_WHEEL = 3;
+  AROUND_VIEW_MIDDLE_WHEEL = 4;
+  AROUND_VIEW_BACK_WHEEL = 5;
+  AROUND_VIEW_FRONT_LEFT_WHEEL = 6;
+  AROUND_VIEW_FRONT_RIGHT_WHEEL = 7;
+  AROUND_VIEW_BACK_LEFT_WHEEL = 8;
+  AROUND_VIEW_BACK_RIGHT_WHEEL = 9;
+  AROUND_VIEW_3D_CONQUEROR = 10;
+}
+
+enum BirdEyeViewMode {
+  BIRD_EYE_VIEW_NARROW_MODE = 0;
+  BIRD_EYE_VIEW_BROAD_MODE = 1;
+}
+
+message AroundView {
+  optional bool around_view_enable = 1;
+  optional bool around_view_3d_mode = 2 [deprecated = true];// 3D or 2D
+
+  optional float yaw_angle = 3;
+  optional AroundViewMode around_view_mode = 4;
+  optional float pitch_angle = 5;
+
+  optional bool is_screen_clicked = 6;
+  optional int32 x_lvl_in_screen = 7;
+  optional int32 y_lvl_in_screen = 8;
+
+  enum AroundViewCamera {
+    AROUND_VIEW_CAMERA_NONE = 0;
+    AROUND_VIEW_PANORAMIC_1 = 1;
+    AROUND_VIEW_PANORAMIC_2 = 2;
+    AROUND_VIEW_PANORAMIC_3 = 3;
+    AROUND_VIEW_PANORAMIC_4 = 4;
+  }
+
+  optional AroundViewCamera av_camera = 9; // for NARROW and BROAD
+}
+
+message BirdEyeView {
+  optional bool bird_eye_view_enable = 1;  // true or false
+  optional BirdEyeViewMode bird_eye_view_mode = 2 [default = BIRD_EYE_VIEW_NARROW_MODE];
+  optional bool bird_eye_view_raw_enable = 3;  // true or false
+  optional bool bird_eye_view_car_finder_enable = 4;  // true or false
+}
+
+message TrajectoryLine {
+  optional bool trajectory_line_enable = 1;  // true or false
+}
+
+message PDCSetting {
+  optional bool pdc_front_enable = 1 [default = true];
+  optional bool pdc_back_enable = 2 [default = true];
+  optional bool pdc_curve_data_enable = 3 [default = false];
+  optional bool pdc_bev_enable = 4 [default = false];
+}
+
+message APASetting {
+  optional bool parking_space_enable = 1;
+  optional bool planning_trajectory_enable = 2;
+}
+
+message DebugSetting {
+  optional bool debug_mode = 1; 
+  optional bool debug_ultrasonic_mode = 2;
+}
+
+message CalibSetting {
+  enum CalibrationState {
+    CALIBRATION_STATE_NONE = 0;
+    CALIBRATION_STATE_RUNNING = 1;
+    CALIBRATION_STATE_SUCCESS = 2;
+    CALIBRATION_STATE_FAILED = 3;
+  }
+  optional bool enable_calib_state_logo = 1 [default = false];
+  optional CalibrationState calib_state = 2;
+}
+
+message AvmSetter {
+  optional CarModel car_model = 1;
+  optional AroundView around_view = 2;
+  optional BirdEyeView bird_eye_view = 3;
+  optional TrajectoryLine trajectory_line = 4;
+  optional PDCSetting pdc_setting = 5;
+  optional DebugSetting debug_setting = 6;
+  optional APASetting apa_setting = 7;
+  optional CalibSetting calib_setting = 8;
+}
+
+message AvmParkingArea {
+  enum ParkingAreaStyle  {
+    STYLE_NONE = 0;
+    STYLE_TARGET_LEFT = 1;              // 目标车位（已选-左边车位）
+    STYLE_TARGET_RIGHT = 2;             // 目标车位（已选-右边车位）
+    STYLE_PARKINGIN_LEFT = 3;           // 泊入中（左边车位）
+    STYLE_PARKINGIN_RIGHT = 4;          // 泊入中（右边车位）
+    STYLE_SELF_CHOSEN_AVAILABLE = 5;    // 自选车位(可用)
+    STYLE_SELF_CHOSEN_UNAVAILABLE = 6;  // 自选车位(不可用)
+    STYLE_TARGET_VERTICAL = 7;          // 目标车位（已选-垂直车位）
+    STYLE_PARKINGIN_VERTICAL = 8;       // 泊入中（垂直车位）
+  };
+  optional deeproute.hdmap.StandbyArea target_parking_area = 1;
+  optional bool clean_target_parking_area = 2;
+  optional ParkingAreaStyle style = 3;
+}
+
+message AvmCoordConverter {
+  oneof Task {
+    deeproute.hdmap.StandbyArea parking_area_3d = 1;  // parking_area_2d <-> parking_area_2d
+    deeproute.common.RotatedRect parking_area_2d = 2;
+    deeproute.common.Polygon pts3d = 3;  // pts3d <-> pts2d
+    deeproute.common.Polygon2D pts2d = 4;
+  }
+}
+
+message RequestAvmStatus {
+  optional bool request_avm_status = 1;
+}
+
+message RequestAvmParams {
+  optional bool request_avm_param = 1;
+}
+
+message PDCCurve {
+  enum CurveType {
+    FRONT = 0;
+    BACK = 1;
+  }
+  optional deeproute.common.Polyline polyline = 1; // pdc polylone
+  optional double distance = 2; // distance to obstacles
+  optional CurveType pdc_type = 3;
+}
+
+message PDCData {
+  repeated PDCCurve curves = 1;
+}
+
+message AvmParams {
+  message BirdEyeViewRange {
+    optional deeproute.common.Point3D top_left = 1; // top left pos reference to Vehicle
+    optional deeproute.common.Point3D bottom_right = 2;  // bottom right pos reference to Vehicle
+  }
+  optional BirdEyeViewRange bird_eye_view_range = 1;
+}
+
+// topic: /avm/command
+message AvmCommand {
+  optional int32 id = 1;
+  oneof Task {
+    AvmSetter setter = 2;
+    AvmCoordConverter coord = 3;
+    AvmParkingArea parking_area = 4;
+    RequestAvmStatus request_avm_status = 5;
+    RequestAvmParams request_avm_params = 6;
+  }
+}
+
+// topic: /avm/command_response
+message AvmCommandRP {
+  optional int32 id = 1;
+  optional bool succeeded = 2 [default = false];
+  optional AvmCoordConverter corrd = 3;
+  optional AvmSetter setter = 4;  // avm status
+  optional AvmParams avm_params = 5;
+  optional float curr_yaw_angle = 6;
+  optional float curr_pitch_angle = 7;
+}
+
+enum AvmErrorCode {
+  AVM_ERROR_CODE_SUCCESS = 0;
+  AVM_ERROR_CODE_STEERING_WHEEL_INVALID = 1;
+  AVM_ERROR_CODE_GEAR_INVALID = 2;
+  AVM_ERROR_CODE_ULTRASONIC_INVALID = 3;
+  AVM_ERROR_CODE_ULTRASONIC_FRONT_FAILURE = 4;
+  AVM_ERROR_CODE_ULTRASONIC_REAR_FAILURE = 5;
+  AVM_ERROR_CODE_DYNAMIC_STITCHING_FAILED = 6;
+  AVM_ERROR_CODE_TRANSPARENT_BASE_INVALID = 7;
+}
+
+enum AvmWarningSignal {
+  AVM_WARNING_NONE = 0;
+  AVM_WARNING_FRONT_LEFT_WHEEL_SCRATCH = 1;
+  AVM_WARNING_FRONT_RIGHT_WHEEL_SCRATCH = 2;
+  AVM_WARNING_REAR_LEFT_WHEEL_SCRATCH = 3;
+  AVM_WARNING_REAR_RIGHT_WHEEL_SCRATCH = 4;
+}
+
+message CarFinderData {
+  optional drivers.CompressedImage image = 1;
+  repeated deeproute.common.Point3D trajectory_line_points = 2;
+}
+
+// topic: /avm/event
+message AvmEvent {
+  optional int32 id = 1;
+  oneof Type {
+    PDCData pdc_data = 2;
+    AvmErrorCode avm_error_code = 3;
+    CarFinderData car_finder_data = 5;
+  }
+  repeated AvmWarningSignal avm_warning_signals = 4;
+}

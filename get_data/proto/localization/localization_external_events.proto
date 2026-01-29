@@ -1,0 +1,93 @@
+syntax = "proto3";
+
+package deeproute.localization.event;
+
+import "semantic_map/map_standby_area.proto";
+import "common/geometry.proto";
+
+/***  Begin of VPA Testing ****/
+enum MatchingStatus {
+  SEARCHING = 0;
+  MATCHING = 1;
+  MATCHED = 2;
+  NO_MAP = 3;
+  ROUTING_NOT_READY = 4;
+  NEAR_DESTINATION = 5;
+}
+
+// report map localization module status event
+message MapMatchingStatusEvent {
+  string map_id = 1;
+  MatchingStatus status = 2;
+  deeproute.hdmap.StandbyArea parking_space = 3; // in odometry frame
+  deeproute.common.Transformation3 odometry_to_map_transformation = 4;
+}
+
+enum MappingStatus {
+  // Mapping Ongoing Status
+  ONGOING = 0;                 // Mapping is ongoing without any issues
+  FAIL = 1;                    // Mapping in abnormal state, should be turned off
+
+  // Standby Status
+  READY = 10;                 // Currently not in mapping or routing mode
+  PRE_MAPPING = 11;           // pre mapping is ongoing
+
+  // Not Ready Status
+  IN_ROUTING = 20;             // Currently in routing mode, mapping is not supported in this mode
+  GNSS_NOT_READY = 21;         // Currently gnss pose is not ready
+  ROAD_LEVEL_OUT_OF_ODD = 22;  // Current road level is out of odd, e.g freeway
+  GNSS_SIGNAL_LOST = 23;       // Currently no gnss signal
+}
+
+enum MappingErrorCode {
+  LOOP_DETECTED = 0;
+  REVERSING_BEFORE_PARKING = 1;
+  MULTI_LEVEL = 2;
+  BAD_QUALITY_TRAJECTORY = 3;
+}
+
+// report mapping module status event
+message MappingStatusEvent {
+  MappingStatus status = 1;
+  double mapping_distance = 2;
+  MappingErrorCode error_code = 3; // deprecated
+  int32 passed_speedbump_count = 4;
+  repeated common.Point3D vehicle_trajectory = 5;   // recent vehicle trajectory in fixed distance interval
+  double reverse_distance = 6;
+}
+
+// report current nearby environment status event
+message EnvironmentStatusEvent {
+  enum EnvironmentInfo {
+    
+    // Current Environment Status
+    VEHILCE_IN_FLAT = 0;
+    VEHICLE_IN_UPHILL = 1;
+    VEHILCE_IN_DOWNHILL = 2;
+
+    VEHICLE_PASSING_SPEEDBUMP = 3;
+    VEHICLE_REVERSING = 4; // deprecated
+
+    VEHICLE_INDOOR = 10;
+    VEHICLE_OUTDOOR = 11;
+
+    // Environment Status Ahead
+    FLAT_AHEAD = 50;
+    UPHILL_AHEAD = 51;
+    DOWNHILL_AHEAD = 52;
+  }
+  repeated EnvironmentInfo environment_info = 1;
+}
+
+/***  End of VPA Testing ****/
+
+message LocalizationEvent {  // localization modules send 'LocalizationEvent'
+                             // message to external users use
+                             // '/localization/event' topic
+  string event_id = 1;
+  double timestamp_ms = 2;
+
+  MapMatchingStatusEvent map_matching_status_event = 3;
+  MappingStatusEvent mapping_status_event = 4;
+  EnvironmentStatusEvent environment_status_event = 5;
+}

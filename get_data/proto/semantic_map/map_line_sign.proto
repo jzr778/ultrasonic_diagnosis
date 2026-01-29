@@ -1,0 +1,29 @@
+syntax = "proto2";
+
+package deeproute.hdmap;
+
+import "common/geometry.proto";
+import "semantic_map/map_overlap.proto";
+//减速让行线,常见于路口，与停止线位置相近，用于提示车辆减速
+message DecelerationAndYieldLine{
+  optional int32 id = 1;
+  optional common.Polyline polyline = 2;
+  optional int32 layer = 3;
+  repeated Overlap overlaps = 4;
+}
+
+//纵向减速标识线,用于提示车辆应当减速慢行。与行车方向平行，以单虚线方式呈现，通常在车道线内侧
+message TransverseDecelerationMarking{
+  optional int32 id = 1;
+  optional common.Polygon polygon = 2;
+  optional int32 layer = 3;
+  repeated Overlap overlaps = 4;
+}
+
+//车距确认线,用于车辆确认车距，通常在高速上出现，呈现形式与斑马线类似
+message VehicleGapConfirmationLine{
+  optional int32 id = 1;
+  optional common.Polygon polygon = 2;
+  optional int32 layer = 3;
+  repeated Overlap overlaps = 4;
+}

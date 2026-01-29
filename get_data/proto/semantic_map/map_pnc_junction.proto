@@ -1,0 +1,15 @@
+syntax = "proto2";
+
+package deeproute.hdmap;
+
+import "common/geometry.proto";
+
+message PNCJunction {
+  optional int32 id = 1;
+
+  optional common.Polygon polygon = 2;
+
+  repeated int32 overlap_id = 3;
+
+  repeated int32 layers = 4;
+}

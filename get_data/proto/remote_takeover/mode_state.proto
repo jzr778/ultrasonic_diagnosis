@@ -1,0 +1,13 @@
+syntax = "proto2";
+
+package deeproute.remote_takeover;
+
+message ModeState {
+  enum ModeType {
+    MODE_NONE = 0;
+    MODE_MONITOR = 1;
+    MODE_SUPERVISE = 2;
+    MODE_TAKEOVER = 3;
+  }
+  optional ModeType mode = 1;
+}

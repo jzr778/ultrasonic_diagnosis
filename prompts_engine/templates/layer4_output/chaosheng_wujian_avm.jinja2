@@ -1,0 +1,12 @@
+#### 📤 输出格式说明：
+1. **只输出确认误检（is_misdetected: True）的检测点**
+2. **注意事项**：如果输入坐标为空或无误检，positions 字段为空列表 []
+
+#### 请严格按照以下JSON格式输出：
+{
+    "positions": [
+        {
+            "pixel_coordinates": [x, y]
+        }
+    ]
+}

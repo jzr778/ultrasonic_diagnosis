@@ -1,0 +1,35 @@
+syntax = "proto2";
+
+package deeproute.perception;
+
+import "common/geometry.proto";
+
+message InvisibleSector {
+  // visible, invisible ...
+  optional int32 sector_id = 1;
+  repeated float dist = 2;
+}
+
+message InvisibleSectors {
+  optional int64 time_stamp = 1;
+  optional float angle_left = 2;
+  optional float angle_right = 3;
+  optional float angle_resolution = 4;
+  optional float distance = 5;
+  optional float dist_resolution = 6;
+
+  repeated InvisibleSector invisible_sector = 7;  // An array of obstacles
+}
+
+// processed invisible sectors below, convert above data into data format that
+// is convenient for planning module
+message ProcessedInvisibleSectors {
+  optional int32 lane_id = 1;
+  repeated common.Point2D sector_center_xy = 2;
+}
+
+message ProcessedInvisibleSectorsInfo {
+  optional float s_unit_size = 1;
+  optional float l_unit_size = 2;
+  repeated ProcessedInvisibleSectors processed_invisible_sectors = 3;
+}

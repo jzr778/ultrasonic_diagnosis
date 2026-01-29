@@ -1,0 +1,352 @@
+syntax = "proto2";
+package deeproute.routing;
+import "common/geometry.proto";
+import "map/common_type.proto";
+import "map/map_common.proto";
+import "odd/odd.proto";
+
+message LaneRoutingInfo {
+  repeated int32 lane_id = 1;
+  optional int32 priority = 2;
+  optional double crossing_remaining_s = 3;
+  optional double final_destination_remaining_s = 4;
+  optional double closest_possible_tl_s = 5;
+  enum LaneAction {
+    FORWARD = 0;
+    LEFT = 1;
+    RIGHT = 2;
+  }
+  optional LaneAction lane_action = 6;
+  repeated LaneSegmentInfo lane_segment_info = 7;
+  repeated deeproute.map.LaneTurn actual_turn = 8;
+  repeated deeproute.map.LaneType lane_type = 9;
+  enum PassableLaneType {
+    UNKNOWN = 0;
+    UNPASSABLE = 1;
+    PASSABLE = 2;
+  }
+  optional PassableLaneType passable_lane_type_before_junction = 10;
+}
+
+message NavigationInfoForVisualize {
+  optional deeproute.map.LaneTurn next_turn_type = 1;
+  optional double next_turn_remaining_s = 2;
+  // next next turn type
+  optional deeproute.map.LaneTurn next2_turn_type = 3;
+  // next next turn remaining s
+  optional double next2_turn_remaining_s = 4;
+
+  optional double map_speed_limit = 5;
+
+  optional double strategy_speed_limit = 6;
+
+  enum SpeedLimitType {
+    // no limit for map speed
+    INVALID = 0;
+    // fix abnormal speed limit for map 
+    GLOBAL_SPEED_LIMIT = 1;
+    // speed limit when on ramp
+    RAMP_SPEED_LIMIT = 2;
+    // speed limit before junction
+    JUNCTION_SPEED_LIMIT = 3;
+    // speed limit when merge in the highway
+    MERGE_SPEED_LIMIT = 4;
+    // speed limit when exit off the highway
+    EXIT_SPEED_LIMIT = 5;
+    // speed limit when exit the ramp
+    EXIT_RAMP_SPEED_LIMIT = 6;
+    // speed limit when merge in the express
+    MERGE_SPEED_LIMIT_EXPRESS = 7;
+    // speed limit in junction
+    IN_JUNCTION_SPEED_LIMIT = 8;
+    // speed limit when exit off the express
+    EXIT_SPEED_LIMIT_EXPRESS = 9;    
+    // speed limit when entering the tunnel
+    ENTER_TUNNEL_SPEED_LIMIT = 10;
+    // speed limit when leaving the tunnel
+    LEAVE_TUNNEL_SPEED_LIMIT = 11;
+    // speed limit when secondary to main road
+    SECONDARY_TO_MAIN_SPEED_LIMIT = 12;
+    // speed limit when secondary to main road
+    MAIN_TO_SECONDARY_SPEED_LIMIT = 13;
+    // speed limit on entrance(between main and secondary road)
+    ENTRANCE_SPEED_LIMIT = 14;
+    // speed limit before the toll
+    TOLL_SPEED_LIMIT = 15;
+    // speed limit before the rest area
+    REST_AREA_SPEED_LIMIT = 16;
+    // speed limit before roadside camera
+    CAMERA_SPEED_LIMIT = 17;
+    // speed limit in the tunnel
+    IN_TUNNEL_SPEED_LIMIT = 18;
+    // forced speed limit by manual setting
+    FORCED_SPEED_LIMIT = 19;
+  }
+  optional SpeedLimitType speed_limit_type = 7;
+
+  optional double next_strategy_speed_limit = 8;
+  optional double next_strategy_speed_limit_remaining_s = 9;
+  optional deeproute.map.RoadClass current_road_class = 10;
+  optional deeproute.map.RoadClass next_road_class = 11;
+  optional double next_road_class_remaining_s = 12;
+   
+  enum SpeedLimitStatus{
+    // abnormal state
+    NONE = 0;
+    // current\next spd limit and rs by the online data(amap or others)
+    ONLINE_CURRENT_ONLINE_NEXT_ONLINE_RS = 1;
+    // current spd limit by online; next spd and rs by the nav map
+    ONLINE_CURRENT_MAP_NEXT_MAP_RS = 2;
+    // current\next spd limit and rs by the nav map(tencent or others)
+    MAP_CURRENT_MAP_NEXT_MAP_RS = 3;
+  }
+  optional SpeedLimitStatus speed_limit_status = 13;
+  // real time speed limit, such as amap spd info
+  optional int32 real_time_speed_limit = 14;
+  // valid real time speed limit for recovering the scene
+  optional int32 valid_real_time_speed_limit = 15;
+  // invalid real time speed limit for recovering the scene
+  optional int32 invalid_real_time_speed_limit = 16;
+
+  message JunctionSplInfo{
+    // junction speed limit ratio
+    optional double spl_ratio = 1;
+    // junction min speed limit
+    optional double min_spl = 2;
+  }
+  // junction spd limit info for blc
+  optional JunctionSplInfo junction_spl_info = 17;
+}
+
+message LocalRouting {
+  // request id for blc distinguish different nca order
+  optional string request_id = 19;
+
+  repeated LaneRoutingInfo lane_routing_info = 1;
+  repeated LaneRoutingInfo next_lane_routing_info = 26;
+
+  optional int32 current_lane_id = 2;
+  optional deeproute.common.Point3D dest_point = 3;  // no good
+  optional double adc_to_destination_remaining_s = 4;
+  optional int64 timestamp = 5 [default = 0];  // micro sec = 1e-6s
+  optional deeproute.map.LaneTurn next_turn_type = 6;
+  optional double next_turn_remaining_s = 7;
+  // next next turn type
+  optional deeproute.map.LaneTurn next2_turn_type = 8;
+  // next next turn remaining s
+  optional double next2_turn_remaining_s = 9;
+
+  // m/s
+  optional double current_speed_limit = 10;
+
+  // m/s
+  optional double next_speed_limit = 11;
+  optional double next_speed_limit_remaining_s = 12;
+
+  optional NavigationInfoForVisualize navigation_info_for_visualize = 13;
+
+  // is current road on ramp
+  optional bool is_on_ramp = 14;
+
+  // road instance id to priority map
+  // priority 0: adc best to go
+  // priority 1: adc can go
+  // priority n: adc can go
+  // priority >=10000: adc forbids to go
+  map<int32, int32> road_instance_to_priorities = 15;
+
+  optional DebugInfo debug_info = 16;
+  optional deeproute.map.SdRoadInfo sd_road_info = 17;
+  repeated deeproute.map.AreaInfo area_info = 18;
+
+  // which link we choose to out lane turn
+  optional string junction_link_ni_id = 20;
+
+  optional RoutingMask routing_mask = 21;
+
+  optional odd.OddLimitInfo odd_limit_info = 22;
+
+  optional bool is_routing_mask_valid = 23[default=true];
+  repeated SdCrossingNaviInfo  sd_crossing_navi_infos = 24; // 前方路口导航信息，索引 0 为自车前方最近的路口  依次类推
+  /// 高快主路车道
+  repeated int32  freeway_main_road_lane_ids = 25;
+
+  // temp use for demo 20240404
+  optional bool is_big_right_turn = 27;
+}
+
+message SingleGroupLaneIDs {
+  repeated int32 lane_id = 1;
+}
+
+message DebugInfo {
+  // pose change from ins to matched pose in sd map
+  optional deeproute.common.Vector3 matched_bias_pose = 1;
+  repeated int32 choosed_lane_ids_by_match = 2;
+  optional SceneStrategyDebugInfo scene_strategy = 3; // 场景策略调试信息
+  repeated string pgp = 4; // 全局车道规划  2s发一次 发全局所有
+  repeated SingleGroupLaneIDs lane_groups = 5;
+}
+
+message LaneSegmentInfo {
+  optional int32 lane_id = 1;
+  optional double start_s = 2;
+  optional double end_s = 3;
+}
+
+
+message RoutingMask {
+    // sensing coordinate, generally equivalent to vehicle center [not vehicle
+    // coordinate!]
+    optional float min_x = 1;
+    optional float max_x = 2;
+    optional float min_y = 3;
+    optional float max_y = 4;
+    optional int32 width = 5;
+    optional int32 height = 6;
+  
+    // roadmask indices
+    repeated uint32 indices = 7;
+    // from sensing to global
+    // translation: x y z
+    optional uint64 time_measurement = 8;
+
+    optional common.Point3D adc_position = 9;
+    // Roll Pitch Yaw
+    optional common.Point3D adc_rotation = 10;
+}
+
+//分叉路汇出场景策略调试信息 高快或普通道路都适用
+message LaneSelectorForYCrossing {
+  optional bool classify_lane_ret = 1; // 车道分类校验结果
+  optional string classify_lane_type = 2; // 车道分类类型
+  optional bool keep_current_lane = 3; // 是否保持当前车道
+}
+
+message LaneSelectorForFreewayMergeOut {
+  optional string merge_in_link_id = 1;
+  optional string merge_out_link_id = 2;
+  optional double turn_right_most_threshold_dist = 3;
+  optional double dist_to_turn_type = 4;
+}
+
+message LaneSelectorForNormalWayMergeIn {
+  optional string merge_in_link_id = 1;
+  optional double dist_to_merge_in_link = 2;
+}
+
+message LaneSelectorForNormal {
+  repeated int32 left_add_lane_ids = 1; // 左侧增加的车道
+  repeated int32 right_reduce_lane_ids = 2; // 右侧较短的车道
+  optional string aligned_link_id = 3; // 感知车道和sd对齐的linkid
+}
+
+message LaneSelectorForLaneClose {
+  optional int32 ego_lane_id = 1;
+  optional string ego_lane_attr = 2;
+  optional int32 turn_type_attr = 3;
+}
+
+message LaneMarkStrategyForNormal {
+  optional string cross_link_id = 1;
+  optional int32 cross_link_arr = 2;
+  optional int32 corrected_arr = 3;
+  optional double cross_link_crs = 4;
+  optional int32 lane_id = 5 [deprecated = true];
+  optional int32 lane_mark_type = 6 [deprecated = true];
+  repeated int32 lane_ids = 7;
+  repeated int32 lane_mark_types = 8;
+}
+
+message LaneSelectorForFreewayEntrance {
+  optional string freeway_entrance_link_id = 1;
+  optional double dist_to_freeway_entrance_link = 2;
+  optional string align_topo_link_id = 3;
+}
+
+message LaneSelectorForToll {
+  optional string toll_link_id = 1;
+  optional double dist_to_toll_link = 2;
+}
+
+message Sd3yCrossingInfo {
+  optional string crossing_link_id = 1;
+  optional int32 crossing_link_dir = 2;
+  optional double dist_to_crossing_link = 3;
+  // 按照左中右排序
+  repeated string sorted_out_link_ids = 4;
+}
+
+message Special3yCrossingInfo {
+  optional string pre_y_link_id = 1;
+  optional int32 pre_y_link_dir = 2;
+  optional string post_y_link_id = 3;
+  optional int32 post_y_link_dir = 4;
+  optional double dist_to_crossing_link = 5;
+  // 按照左中右排序
+  repeated string sorted_out_link_ids = 6;
+}
+
+message LaneSelectorForFreewayThreeOutLinksCrossing {
+  optional Sd3yCrossingInfo sd_3y_crossing_info = 1;
+  optional Special3yCrossingInfo special_3y_crossing_info = 2;
+}
+
+message LaneSelectorForNormalThreeOutLinksCrossing {
+  optional Sd3yCrossingInfo sd_3y_crossing_info = 1;
+  optional Special3yCrossingInfo special_3y_crossing_info = 2;
+}
+
+message LaneSelectorForNormalMergeOut {
+  optional string merge_out_link_id = 1;
+  optional double dist_to_merge_out_link = 2;
+}
+
+message LaneSelectorForRightTurnLane {
+  optional string align_topo_link_id = 1;
+}
+
+message LaneSelectorForNormalMultiTurnRightCrossing {
+  optional string scene_link_id = 1;
+  optional string pre_turn_right_link_id = 2;
+  optional double dist_to_scene_link = 3;
+  optional double dist_between_links = 4;
+}
+
+message LaneSelectorForNormalTurnRightTwoOutlinks {
+  optional string scene_link_id = 1;
+  optional double dist_to_scene_link = 2;
+}
+
+message LaneSelectorForLongFreewayMergeInOut {
+  optional string lane_keep_selector = 1;
+  optional string scene_link_id = 2;
+  optional double dist_to_scene_link = 3;
+}
+
+//场景策略debug信息
+message SceneStrategyDebugInfo {
+  repeated string trigger_strategy_names = 1; // 触发的所有策略名字
+  optional int32 pre_p0_lane_id = 2; // 上一帧 p0 lane id
+  optional LaneSelectorForYCrossing y_crossing_for_freeway = 3; // 高快汇出
+  optional LaneSelectorForYCrossing y_crossing_for_normal = 4; // 普通汇出
+  optional LaneSelectorForFreewayMergeOut freeway_merge_out = 5; // 高快汇出之前有汇入
+  optional LaneSelectorForNormalWayMergeIn normalway_merge_in = 6; // 从左侧主路汇入到普通道路
+  optional LaneSelectorForNormal normal = 7; // 普通场景
+  optional LaneSelectorForLaneClose lane_close = 8; //
+  optional LaneMarkStrategyForNormal lane_mark_for_normal = 9;
+  optional LaneSelectorForFreewayEntrance freeway_entrance = 10;
+  optional LaneSelectorForToll toll = 11;
+  optional LaneSelectorForFreewayThreeOutLinksCrossing freeway_three_outlinks_crossing = 12;
+  optional LaneSelectorForNormalThreeOutLinksCrossing normal_three_outlinks_crossing = 13;
+  optional LaneSelectorForNormalMergeOut normal_merge_out = 14;
+  optional LaneSelectorForRightTurnLane right_turn_lane = 15;
+  optional LaneSelectorForNormalMultiTurnRightCrossing normal_multi_turn_right_crossing = 16;
+  optional LaneSelectorForNormalTurnRightTwoOutlinks normal_turn_right_two_outlinks = 17;
+  optional LaneSelectorForLongFreewayMergeInOut long_freeway_merge_in_out = 18;
+}
+
+message SdCrossingNaviInfo {
+  optional double crossing_distance = 1; // 当前到路口的距离
+  optional deeproute.map.LaneTurn crossing_turn = 2; // 路口通行方向
+}

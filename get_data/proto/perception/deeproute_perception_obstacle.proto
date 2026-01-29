@@ -1,0 +1,388 @@
+syntax = "proto2";
+
+package deeproute.perception;
+
+import "common/geometry.proto";
+import "prediction/trajectory.proto";
+import "prediction/intention.proto";
+import "perception/deeproute_perception_invisible.proto";
+import "perception/perception_dtu_interface.proto";
+
+message BBox2D {
+    optional double xmin = 1;  // in pixels.
+    optional double ymin = 2;  // in pixels.
+    optional double xmax = 3;  // in pixels.
+    optional double ymax = 4;  // in pixels.
+}
+
+message LightStatus {
+  optional double brake_switch_on = 1;            // 刹车灯
+  optional double left_turn_switch_on = 2;        // 左转灯
+  optional double right_turn_switch_on = 3;       // 右转灯
+  optional double left_right_turn_switch_on = 4;  // 双闪灯
+  optional double lighting_switch_on = 5;         // 大灯开
+  optional double sid_switch_on = 6;              // 示廓灯开
+  optional double unknown_status = 7;             // 非车类型或未知类型
+}
+
+message DetBbox {
+  // lidar object position in the world coordinate system.
+  optional common.Point3D position = 1;
+  // Size of lidar bounding box.
+  optional double length = 2;  // obstacle length.
+  optional double width = 3;   // obstacle width.
+  optional double height = 4;  // obstacle height.
+  optional double theta = 5;  // heading in the world coordinate system.
+  optional PerceptionObstacle.Type type = 6;
+}
+
+message UltrasonicInfo {
+  optional string sensor_name = 1;  // uss frame id if is_memory=false, else name is "uss_{id}"
+  optional float local_distance = 2 [default = -1.0];  // distance from orrespond uss sensor
+  optional bool is_memory = 3 [default = false];  // obstacles acquired through temporal memory
+}
+
+message PerceptionObstacle {
+    optional int32 id = 1;  // obstacle ID.
+
+    // obstacle position in the world coordinate system.
+    optional common.Point3D position = 2;
+
+    optional double theta = 3;  // heading in the world coordinate system.
+    optional double theta_uncertainty = 23; // heading uncertainty.
+    optional common.Point3D velocity = 4;  // obstacle velocity.
+    optional common.Point3D velocity_uncertainty = 22; // obstacle velocity uncertainty.
+
+    // Size of obstacle bounding box.
+    optional double length = 5;  // obstacle length.
+    optional double width = 6;   // obstacle width.
+    optional double wheel_width = 38;   // obstacle wheel width.
+    optional double height = 7;  // obstacle height.
+
+    optional common.Polygon polygon_area = 8;  // obstacle corner points.
+
+    // duration of an obstacle since detection in us.
+    optional int64 tracking_time = 9;
+
+    // detection score from deeplearning module
+    optional double confidence_score = 10;
+    optional double subtype_confidence_score = 35;
+
+    // 2d detection result if given
+    repeated BBox2D bbox2d = 11;
+
+    enum AlgoName {
+        DOLPHIN = 0; // Not use.
+        DETECTOR = 1; // Bev objects.
+        MOTION_SEG = 2; // Not use.
+        GRIDMAP = 3; // Occ polylines.
+        GRIDMAP_ALL = 4; // Occ Cells.
+        RADARFUSION = 5; // Radar objects after tracker.
+        CAMERAFUSION = 6; // Mono objects or 2d objects after tracker.
+        VISION = 7; // 2d objects before tracker.
+        INVISIBLE = 8; // Not use.
+        MONO3D = 9; // Mono objects before tracker.
+        RADAR3D = 10; // Radar objects before tracker.
+      };
+    optional AlgoName algo_name = 41 [default = DETECTOR];
+
+    enum Type {
+        UNKNOWN = 0;
+        UNKNOWN_MOVABLE = 1;
+        UNKNOWN_UNMOVABLE = 2;
+        PEDESTRIAN = 3;  // Pedestrian, usually determined by moving behavior.
+        BICYCLE = 4;     // bike, motor bike
+        VEHICLE = 5;     // Passenger car or truck.
+        TRUCK = 6;
+        TRAFFIC_CONE = 7;
+        OCCUPANCY_CELLS = 8; // occupancy map, cells is provided
+        INVISIBLE_SECTORS = 9; // invisible detection results
+        PARK_FREESPACE = 10;  // freespace for auto parking
+        FIRE_HYDRANT = 11;
+        CHARGING_STATION = 12;
+        BARRIER_GATE = 13;
+        LOCK = 14;
+        SPEEDBUMP = 15;
+        FAKED2D = 16;  // estimated fake 2d object for hma
+        OCCUPANCY_VIS_POLYGONS = 17; // occupancy polygons for vis
+        ANIMAL_ALL = 18;
+        STATIC_OBSTACLE = 19;  // static obstacle
+        PLANNING_STOP_OBSTACLE = 50;
+    };
+
+    // detection subtype, e.g., tri-cone, 
+    enum SubType {
+        // cone subtype, including tri-cone, bucket, etc.
+        UNKNOWN_SUBTYPE = 0;
+        NORMAL_CONE = 1;  // 锥桶
+        TRICONE = 2;      // 紧急三角
+        BUCKET = 3;       // 防撞桶
+        PILLAR_CONE = 4;  // 防撞柱
+        STONE_CONE = 5;   // 防撞石柱
+        // car subtype
+        MICROCAR = 6;  // 微型车
+        SEDAN = 7;     //轿车
+        HATCHBACK = 8;  // 掀背车
+        CONVERTIBLE = 9;  // 敞篷车
+        SUPERCAR = 10;    // 超跑
+        TAXI = 11;        // 出租车
+        SUV = 12;
+        MPV = 13;
+        OFFROAD_VEHICLE = 14;  // 越野车
+        MINIBUS = 15;          // 小巴
+        VAN = 16;              // 面包车
+        PICKUP = 17;           // 皮卡车
+        // big car subtype
+        MIDIBUS = 18;  // 中巴
+        BIGBUS = 19;   // 大巴
+        PUBLIC_TRANSIT = 20;  // 公交
+        BOX_TRUCK = 21;       // 箱式卡车
+        FLAT_TRUCK = 22;      // 平板卡车
+        SCHOOL_BUS = 23;      // 校车
+        POLICE_CAR = 24;      // 警车
+        AMBULANCE = 25;       // 救护车
+        FIRE_TRUCK = 26;      // 消防车
+        TANKER_TRUCK = 27;    // 油罐车
+        MIXER_TRUCK = 28;     // 搅拌车
+        EXCAVATOR = 29;       // 挖掘机
+        ROAD_ROLLER = 30;     // 压路机
+        BULLDOZER = 31;       // 推土机
+        FORKLIFT = 32;        // 叉车
+        CRANE = 33;           // 吊车
+        GARBAGE_TRUCK = 34;   // 垃圾车
+        SPRINKLER_TRUCK = 35;  // 洒水车
+        ROAD_SWEEPER = 36;     // 环卫扫地车
+        // pedestrain subtype
+        TRAFFIC_POLICE = 37;  // 交警
+        POLICE = 38;          // 警察
+        FIRE_FIGHTER = 39;    // 消防员
+        FOOD_DP = 40;         // 外卖员
+        COURIER = 41;         // 快递员
+        WORKER = 42;          // 工人
+        OTHER_ADULT = 43;     // 其他成年人
+        CHILD = 44;           // 未成年人
+        // cyclist subtype
+        NORMAL_BICYCLE = 45;  // 自行车
+        ELECTROMOBILE = 46;   // 电动车
+        MOTORCYCLE = 47;      // 摩托车
+        TRICYCLE = 48;        // 三轮车
+        // UNKNOWN_MOVABLE subtype
+        ANIMAL = 49;        // 动物
+        // UNKNOWN_UNMOVABLE subtype
+        WARNING_SIGN = 50;  // 警示牌 placed on the ground
+        DUSTBIN = 51;       // 垃圾箱
+        WATER_BARRIER = 52;  // 水马
+        RAILING = 53;        // 道路栅栏 deprecated, we will just output
+                             // CONSTRUCTION_RAILING
+        VEGETATION = 54;     // 路边植被
+        TREE = 55;           // 行道树  deprecated, combined to VEGETATION
+        BUILDING = 56;       // 路边建筑
+        BACKGROUND = 57;     // 背景
+        // barrier gate subtype，道闸杆 泊车输出
+        BARRIER_GATE_OPEN = 58;  // 关闭的收费杆  deprecated, use AttributeType
+        BARRIER_GATE_CLOSE = 59; // 打开的收费杆  deprecated, use AttributeType
+        // update 0227
+        TRAFFIC_SIGN = 60;  // 高处标识牌
+        CONSTRUCTION_RAILING = 61;  // 施工围栏
+        BARRIER_ARM = 62;           // 道闸杆  行车输出
+        // update 0522
+        PARK_WARNING_SIGN=63; // 禁停牌
+    };
+
+    optional Type type = 12;         // obstacle type
+    optional SubType sub_type = 34;  // obstacle sub-type, used with type to get a detailed classification
+    
+    optional double timestamp = 13;  // GPS time in seconds.
+
+    // Just for offline debugging, will not fill this field on board.
+    // Format: [x0, y0, z0, x1, y1, z1...]
+    // Deprecated: data is too large
+    repeated double point_cloud = 14 [packed = true, deprecated = true];
+
+    // For visualizer on Pad [replace double to meet smaller bandwidth requirements]
+    repeated float attach_pointcloud = 25 [packed = true];
+
+    // trajectory of object.
+    repeated deeproute.prediction.Trajectory predictions = 15;
+
+    // obstacle acceleration
+    optional common.Point3D acceleration = 16;
+
+    // at current time, the object's lane id
+    optional int32 cur_lane_id = 17;
+
+    enum ObjectPriority {
+        NORMAL = 0;
+        CAUTION = 1;
+        IGNORE = 2;
+    }
+
+    optional ObjectPriority priority = 18; // object priority
+    optional int32 pt_size = 19;
+
+    // for gridmap, when type is UNKNOW_UNMOVABLE, size, theta,
+    // and cells represent the static obj in global coordinates,
+    // cells represent the center position of each cell.
+    repeated common.Point3D cells = 20;
+
+    // invisible sectors
+    optional InvisibleSectors invisible_sectors = 21;
+    optional ProcessedInvisibleSectorsInfo processed_invisible_sectors_info = 24;
+
+    // lights of vehicles
+    optional LightStatus light_status = 26;
+
+    enum AttributeType {
+      NORMAL_TYPE = 0;
+      // vehicle
+      LEFT_DOOR_OPEN = 1;
+      RIGHT_DOOR_OPEN = 2;
+      TRUNK_OPEN = 3;
+      HOOD_OPEN = 4;
+      // pedestrian and cyclist
+      PUSH_PULL_APPENDAGE = 5;
+      HOLD_APPENDAGE = 6;
+      LEAD_APPENDAGE = 7;
+      // vehicle extra
+      LEFT_REAR_DOOR_OPEN = 8;
+      RIGHT_REAR_DOOR_OPEN = 9;
+      // pedestrian pose
+      STAND = 10;
+      CROUCH = 11;
+      SIT = 12;
+      LYING = 13;
+      // in out lane
+      INNER_EGOLANE = 14;
+      CROSS_EGOLANE = 15;
+      // barrier gate open or close
+      BARRIER_GATE_ON = 16;    // 关闭的收费杆
+      BARRIER_GATE_OFF = 17;   // 打开的收费杆
+      // lock on or off
+      LOCK_ON = 18;              // 打开的地锁
+      LOCK_OFF = 19;             // 关闭的地锁
+    }
+
+    // agent attribute (eg. open_doors)
+    repeated AttributeType attribute_type = 27;
+
+    enum SensorType {
+        LIDAR = 0;
+        CAMERA = 1;
+        RADAR = 2;
+        ULTRASONIC = 3;
+        FUSION = 4;
+    };
+    optional SensorType sensor_type = 28 [default = LIDAR];  // obstacle sensor type
+
+    // pass detection output to prediction (object without tracking)
+    optional DetBbox detection_bbox = 29;
+
+    // information for downstream
+    optional UltrasonicInfo ultrasonic_info = 30;
+
+    enum FreespaceType {
+        FS_OTHERS_STATIC = 0;
+        FS_OTHERS_MOTION = 1;
+        FS_WALL = 2;
+        FS_CHOCK = 3;
+        FS_LOCK_ON = 4;
+        FS_LOCK_OFF = 5;
+        FS_SPEEDBUMP = 6;
+        FS_FENCE = 7;
+        FS_BIGCAR = 8;
+        FS_CAR = 9;
+        FS_CONE = 10;
+        FS_HUMAN = 11;
+        FS_BICYCLE = 12;
+        FS_TRICYCLE = 13;
+        FS_CURB = 14;
+        FS_PILLAR = 15;
+        FS_BUSH = 16;
+    };
+    optional FreespaceType freespace_type = 31 [default = FS_OTHERS_STATIC];
+
+    // percep_aeb: is object on drivable roadmask or not
+    // you can use 0.5 as a threshold value
+    optional float on_roadmask_score = 32 [default = 1.0];
+    optional deeproute.prediction.Intention intention = 33;
+    //  distinguishing obstacle come from which model
+    enum ModelType {
+        MODEL_DRIVING = 0;
+        MODEL_PARKING = 1;
+        MODEL_AEB = 2;
+    };
+    optional ModelType model_type = 36 [default = MODEL_DRIVING];
+
+    optional int32 detection_id = 37 [default = -1];  // obstacle ID.
+
+    optional float max_angle_occlusion = 39 [default = 0.0];
+    optional int32 max_angle_occlusion_id = 40 [default = -1];
+}
+
+message PointSemantics {
+    enum SemanticType {
+        BACKGROUND = 0;
+        GROUND = 1;
+        OTHERS = 2;
+        PEDESTRIAN = 3;
+        BICYCLE = 4;
+        VEHICLE = 5;
+        TRUCK = 6;
+        TRAFFIC_CONE = 7;
+        TRAFFIC_SIGN = 8;
+        SIDEWALK = 9;
+        NOISE = 10;
+    }; // num_type max to 16 (4 bits)
+
+    // compressed: one point is stored to 4 bits
+    // one uint32 (4 bytes) can store 8 points' semantic info
+    repeated uint32 point_semantic = 1;
+}
+
+enum ObstaclesMode {
+    DRIVING = 0;
+    PARKING = 1;
+}
+
+message PerceptionObstacles {
+    optional int64 time_measurement = 1;
+    repeated PerceptionObstacle perception_obstacle = 2; // An array of obstacles
+    // ego car's lane id and position
+    optional int32 adc_lane_id = 3;
+    optional common.Point3D adc_position = 4;
+    optional common.Point3D adc_rotation = 5;
+    optional PointSemantics point_semantics = 6; // semantic for point cloud
+    optional ModelBasedDecision model_based_decision = 7;
+    repeated deeproute.prediction.Trajectory model_based_planning = 8;
+    optional ObstaclesMode obstacles_mode = 9;
+    optional int64 last_parking_time_measurement = 10;
+    optional int64 last_driving_time_measurement = 11;
+    optional DrivingMode.Mode curr_driving_mode = 12;
+    repeated deeproute.prediction.SpeedSeq model_based_speed = 13;
+
+}
+
+// For extending more model-based decision message;
+message ModelBasedDecision { 
+    optional LaneChangeEfficiency lane_change_efficiency = 1;
+    // Model-based Junction Reference Line for Planing TOPO.
+    // The length of polyline is around 70m, sampling at interval of 1m. Point3D means (x,y, probs)
+    repeated common.Polyline junction_reference_line = 2;
+    // Binary Classification Threshold for Abnormal Model
+    optional float abnormal_threshold = 3;
+    // Binary Classification Threshold for VRU Intention Model
+    optional float crossing_threshold = 4;
+    
+    // limit speed from model
+    optional float model_speed_limit = 11;
+}
+
+// Model-based lane change efficiency, independently making decision for 'left' lane and 'right' lane;
+// For example, (false, false) means keep current lane, (true, false) means change lane left, (true, true) means both left and right are feasible;
+message LaneChangeEfficiency { 
+    optional bool left = 1;
+    optional bool right = 2;
+    optional int32 adc_lane_id = 3;
+    optional int32 left_lane_id = 4;
+    optional int32 right_lane_id = 5;
+}

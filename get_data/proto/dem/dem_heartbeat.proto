@@ -1,0 +1,9 @@
+syntax = "proto2";
+
+package deeproute.dem;
+
+// topic: /em/heartbeat
+message DemHeartBeat {
+    optional string msg = 1; // "正常运行"
+    optional uint64 timestamp = 2; // ms, 发送heartbeat的时间戳
+}

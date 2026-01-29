@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package dr.payload;
+
+message Payload {
+  repeated PayloadData payloads = 1;
+}
+
+enum PayloadDataType {
+  UNKNOWN = 0;
+  COMMAND_REQUEST = 1;      // CDC -> BLC指令
+  COMMAND_RESPONSE = 2;     // BLC -> CDC 指令回复
+  NOTIFICATION = 3;         // BLC-> CDC 事件通知
+  OPERATION_STATUS = 4;     // BLC -> CDC 状态机信息
+  CONFIG_REQUEST = 5;       // BLC -> CDC 配置加载请求
+  CONFIG_RESPONSE = 6;      // CDC -> BLC 配置加载回复
+  PERCEPTION_INFO = 7;      // BLC -> CDC 感知信息
+  PLANNING_TRAJECTORY = 8;  // BLC -> CDC planning 轨迹信息
+  PLANNING_SEMANTIC = 9;    // BLC -> CDC planning 渲染信息
+  MAP_INFO = 10;            // BLC -> CDC map 信息
+  MAP_NAVIGATION = 11;      // CDC -> BLC 导航信息
+}
+
+message PayloadData {
+  PayloadDataType type = 1;
+  bytes data = 2;
+}

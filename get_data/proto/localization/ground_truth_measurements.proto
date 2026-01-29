@@ -1,0 +1,9 @@
+syntax = "proto2";
+
+package deeproute.benchmark.v2.proto_ads;
+
+import "drivers/gnss/ins.proto";
+
+message GroundTruthMeasurements {
+  repeated deeproute.drivers.gnss.Ins measurements = 1;
+}

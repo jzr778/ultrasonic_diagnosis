@@ -1,0 +1,189 @@
+syntax = "proto2";
+
+package deeproute.canbus;
+
+import "common/configs/vehicle_config.proto";
+
+// topic: blc/can_state_machine
+message CanStateMachine {
+  // in us
+  optional int64 time_meas = 1;
+  optional uint64 rolling_count = 2;
+
+  // Universal wire control interface
+  optional CanStateLong longitude = 6;
+  optional CanStateLat lat = 7;
+  optional ApaCanState apa_can_state = 8;
+
+  // Special wire control interface
+  optional SpecialCanState special_can_state = 100;
+}
+
+// topic: canbus/can_state_machine_report
+message CanStateMachineReport {
+  // in us
+  optional int64 time_meas = 1;
+  optional uint64 rolling_count = 2;
+
+  // Universal wire control interface report
+  optional CanStateLongReport long_report = 6;
+  optional CanStateLatReport lat_report = 7;
+  optional ApaCanStateReport apa_can_state_report = 8;
+
+  // Special wire control interface report
+  optional SpecialCanStateReport special_can_state_report = 100;
+}
+
+message CanStateLong {
+  enum StateType {
+    PASSIVE_OFF = 0;
+    PASSIVE_FAILURE = 1;
+    PASSIVE = 2;
+    STANDBY = 3;
+    ACTIVE = 4;
+    ACTIVE_OVERRIDE = 5;
+    ACTIVE_STANDSTILL = 6;
+    BRAKE_ONLY = 7;
+  }
+  optional StateType state = 1;
+}
+
+message CanStateLat {
+  enum StateType {
+    PASSIVE_OFF = 0;
+    PASSIVE_FAILURE = 1;
+    PASSIVE = 2;
+    STANDBY = 3;
+    ACTIVE = 4;
+  }
+  optional StateType state = 1;
+}
+
+message CanStateLongReport {
+  optional CanStateLong longitude = 1;
+  optional PassiveReason passive_reason = 2;
+}
+
+message CanStateLatReport {
+  optional CanStateLat lat = 1;
+  optional PassiveReason passive_reason = 2;
+}
+
+message SpecialCanStateReport {
+  optional SpecialCanState special_can_state = 1;
+  optional PassiveReason passive_reason = 2;
+}
+
+message ApaCanState {
+  enum ApaStateType {
+    PASSIVE_OFF = 0;
+    PASSIVE_FAILURE = 1;
+    PASSIVE = 2;
+    STANDBY = 3;
+    ACTIVE = 4;
+    FINISH = 5;
+  }
+  optional ApaStateType state = 1;
+}
+
+message ApaCanStateReport {
+  optional ApaCanState state = 1;
+  optional PassiveReason passive_reason = 2;
+}
+
+message PassiveReason {
+  optional bool passive_enable = 1;
+  optional deeproute.common.VehicleBrand brand = 2;
+  oneof passive_reason {
+    M5M7PassiveReason m5_m7 = 3;
+    BydIcvPassiveReason byd_icv = 4;
+  }
+}
+
+message M5M7PassiveReason {
+  // chassis passive reason 1 ~ 100
+  optional bool driver_belt_untied = 1;
+  optional bool epb_parked_or_parking = 2;
+  optional bool actual_gear_not_driver = 3;
+  optional bool door_fl_opened = 4;
+  optional bool brake_pedal_appkied = 5;
+  optional bool vcu_not_ready = 6;
+  optional bool vlc_error = 7;
+  optional bool cdd_error = 8;
+  optional bool abnormal_apa_request = 9;
+  optional bool apa_low_priority = 10;
+  optional bool steer_override = 11;
+  optional bool eps_failure = 12;
+  // cmd error passive reason 101 ~ 200
+  optional bool ctrl_no_auto = 101;
+  optional bool aeb_active = 102;
+}
+
+message BydIcvPassiveReason {
+  // chassis passive reason 1 ~ 100
+  optional bool vcu_not_ready = 1;
+  optional bool vlc_error = 2;
+  optional bool cdd_error = 3;
+  optional bool eps_failure = 4;
+  optional bool steer_override = 5;
+  optional bool brake_pedal_appkied = 6;
+  // cmd error passive reason 101 ~ 200
+  optional bool ctrl_no_auto = 101;
+  optional bool aeb_active = 102;
+}
+
+message SpecialCanState {
+  optional deeproute.common.VehicleBrand brand = 1;
+  oneof can_state {
+    BydIcvTjpCanState byd_icv_tjp = 2;
+    GwmStateMachine gwm = 3;
+  }
+}
+
+message BydIcvTjpCanState {
+  enum TjpLongType {
+    PASSIVE_OFF = 0x0;
+    PASSIVE = 0x1;
+    STANDBY = 0x2;
+    ACTIVE = 0x3;
+    PASSIVE_FAULT = 0x4;
+    MRC = 0x5;
+    FORBIDDEN = 0x6;
+  }
+
+  enum TjpLatType {
+    LAT_PASSIVE_OFF = 0x0;
+    LAT_PASSIVE = 0x1;
+    LAT_STANDBY = 0x2;
+    LAT_ACTIVE = 0x3;
+    LAT_PASSIVE_FAULT = 0x4;
+  }
+
+  optional TjpLongType longitude = 1;
+  optional TjpLatType lat = 2;
+}
+
+message GwmStateMachine {
+  enum StateMachineType {
+    PASSIVE = 0;
+    STANDBY = 1;
+    TIMEOUT = 2;
+    HANDSHAKE = 3;
+    ACTIVE = 4;
+    EXIT = 5;
+  }
+
+  optional StateMachineType parking_longitude = 1;
+  optional StateMachineType parking_lat = 2;
+  optional StateMachineType driving_longitude = 3;
+  optional StateMachineType driving_lat = 4;
+  optional StateMachineType aeb = 5;
+  optional StateMachineType abp = 6;
+  optional StateMachineType awb = 7;
+  optional StateMachineType aba = 8;
+  optional StateMachineType eba = 9;
+  optional StateMachineType esa = 10;
+  optional StateMachineType meb = 11;
+  optional StateMachineType rctb = 12;
+
+}

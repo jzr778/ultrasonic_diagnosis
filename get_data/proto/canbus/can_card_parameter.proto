@@ -1,0 +1,61 @@
+syntax = "proto2";
+
+package deeproute.canbus;
+
+message CANChannel {
+  optional int32 channel = 1;
+  optional int32 bit_rate_k = 2 [default = 500];         // in kbps
+  optional int32 read_timeout_us = 3 [default = 1000];   // in us
+  optional int32 write_timeout_us = 4 [default = 5000];  // in us
+  optional uint32 accept_code = 5 [default = 0x00000000];
+  optional uint32 accept_mask = 6
+      [default =
+           0x00000000];  // bit0: do not care this bit, bit1: care this bit
+
+  // additional for udp can
+  optional string remote_ip = 7;
+  optional int32 remote_port = 8;
+  optional int32 local_port = 9;
+  optional string channel_name = 10;
+}
+
+message CANCardParameter {
+  enum CANCardBrand {
+    FAKE_CAN = 0;
+    ESD_CAN = 1;
+    SOCKET_CAN_RAW = 2;
+    HERMES_CAN = 3;
+  }
+
+  enum CANCardType {
+    PCI_CARD = 0;
+    USB_CARD = 1;
+  }
+
+  enum CANInterfaceType {
+    INVALID = 0;
+    VIRTUAL = 1;
+    KVASER_PCIE = 2;  // https://www.kvaser.com/product/kvaser-pciecan-4xhs/
+    SOCKET_CAN = 3;
+    RPC = 4;
+    STUB_TEST = 5;
+    DIMW_SOMEIP_RPC = 6;
+    SMART_UDP = 7;
+    DSV_AP_SOMEIP_RPC = 8;
+    CAN_RAW_RPC = 9;
+    SOC_TOPIC = 10;
+  }
+
+  enum CANChannelId {
+    CHANNEL_ID_ZERO = 0;
+    CHANNEL_ID_ONE = 1;
+    CHANNEL_ID_TWO = 2;
+    CHANNEL_ID_THREE = 3;
+  }
+
+  optional CANCardBrand brand = 1;
+  optional CANCardType type = 2;
+  optional CANChannelId channel_id = 3;
+  optional CANInterfaceType interface_type = 4;
+  repeated CANChannel channels = 5;
+}

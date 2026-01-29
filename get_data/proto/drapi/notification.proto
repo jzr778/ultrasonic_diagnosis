@@ -1,0 +1,777 @@
+syntax = "proto3";
+
+import "drapi/operation_status.proto";
+import "drapi/base.proto";
+import "drapi/business_info.proto";
+import "dsm/dsm.proto";
+import "drapi/gwm_hut_notification.proto";
+import "drapi/route_planning.proto";
+
+package dr.notification;
+
+/*****************************指令执行状态异步事件*****************************/
+// topic:blc/event
+message EventInfo {
+  string id = 1;
+  uint64 timestamp = 2;  // ms
+  oneof event {
+    // common 100 ~ 999
+    StatusChange status_change = 100;
+    TakeOverRequest take_over = 101;
+    RemindInfo remind_info = 102;
+    ActiveResultRemind active_result = 103;
+    FaultRemind fault_remind = 104;
+    DriveOffInfo drive_off = 105;                    //车辆启动
+    DecelerationInfo deceleration = 106;             //减速提示
+    TrafficLightWarning trafficlight_warning = 107;  //红绿灯异常提示
+    ErrorLane error_lane = 108;             //主车位于错误的车道提示
+    DrivingDowngrading down_grading = 109;  //功能降级
+    FeatureAbort feature_abort = 110;       //功能异常退出
+    LaExitInfo laterm_exit = 111;           // ica/nca临退
+    StepingIntoSpecialArea step_into_area = 112;  // 即将进入特定区域
+    HandsOffWarn hands_off_warn = 113;            // 脱手告警
+    DriverTakeOver driver_take_over = 114;  //驾驶员在各种场景时接管
+
+    // ACC 1000~1499
+    ACCStatusChange acc_status_change = 1000;
+    SpeedLimitChange speed_limit = 1001;
+    dr.business_info.FollowTimeGap time_gap = 1002;
+    ConfirmSpeed confirm_speed = 1003;  //限速确认提醒
+
+    // ICA 1500 ~ 1999
+    ICAStatusChange ica_status_change = 1500;
+    NudgeStatusChange nudge_status_change = 1996;  //智慧避让状态变化
+    LaneChangeStatusChange lane_change_status_change = 1997;  //变道状态变化
+    ILCLaneChangeRequestResult ilc_lane_change_rq_result = 1998;  //变道请求结果
+    ILCStatusChange ilc_status_change = 1999;
+    LaneChangeWarning lane_change_warning = 2000;  //变道困难
+
+    // NCA 2000 ~2499
+    NCAStatusChange nca_status_change = 2002;
+    NCAOutODD nca_out_odd = 2003;
+    TurnArround trun_arround = 2004;  //掉头状态
+
+    // NCA internal 2400~2499
+    dr.business_info.CurNaviPointIndex cur_navi_point_index = 2400;
+
+    // APA 2500 ~ 2999
+    APAStatusChange apa_status_change = 2500;
+    ParkingLotDetected parking_lot_detected = 2501;
+    Parking parking = 2503;
+    OutParking out_parking = 2504;
+    APASelectParkingSpace apa_select_parkingspace = 2505;
+    APAParkOutParkingSpace parkout_parkingspace = 2506;
+    dr.business_info.SuggestOutParkingInfo suggest_out_parking_info = 2507;
+
+    // VPA 3000 ~ 3499
+    VPAStatusChange vpa_status_change = 3000;
+
+    VPALearingProgress vpa_learning_info = 3004;
+    VPARoutingProgress vpa_routing_info =
+        3005;  //巡航过程中上报避让新人和减速带信息，1hz
+    VPALearningSavedParkingSpace vpa_learning_saved_parking_space =
+        3006;  //学习完成输出记忆车位
+    VPARoutingGetTargetParkingSpace vpa_routing_get_target_parking_space =
+        3007;  //巡航过程中输出目标车位
+    VPALearingCompletedInfo vpa_learning_completed_info =
+        3008;  // 地图保存完成后上报信息
+
+    // AVM 3500 ~ 3600
+    AVMStatusChange avm_status_change = 3500;
+    AVMSettings avm_settings = 3501;
+
+    SentinelEvent sentinel_event = 3600;
+
+    // PDC 4000 ~ 4499
+    PDCInfo pdc_info = 4000;
+    PDCData pdc_data = 4001;
+
+    // 5000-5100
+    CalibrationStatus calibration_status = 5000;
+
+    // RPA 5101 - 5199
+    dr.business_info.RPABusinessState rpa_business_status = 5101;  // 2hz
+    RPAStatusChange rpa_status_change = 5102;
+    dr.business_info.SuggestOutParkingInfo rpa_suggest_out_parking_info = 5103;
+
+    // RADS 5200 ~ 5399
+    RADSProgress rads_progress = 5201;
+    APSTextDisp aps_text_display = 5202;  // G 区文字提示 (GWM)
+    dr.business_info.APSSysSoundIndcn aps_sys_sound_indcn = 5203;  // 声音提示
+
+    // GWLSS 5400 ~ 5499
+    GWMLSSWarningSts gwmlss_warning_sts =
+        5401;  // GWMLSS告警状态
+               // https://rqk9rsooi4.feishu.cn/docx/XFwIdTouoopjwrxV0s0cOfwOnyb
+    dr.notification.gwmhut.GWMParkingHUTNotification gwm_hut_data = 5402;
+
+    // DSM 6000~6099 -- Use DSMEvent in drapi/dsm_event.proto instead.
+    DSMStart dsm_start = 6000 [deprecated = true];
+
+    // TSR 6100 ~ 6299
+    TSRSign tsr_event = 6100;
+  }
+}
+
+/******************************异步的通知消息引用的结构体**********************/
+// common
+message StatusChange {
+  oneof from {
+    dr.operationstatus.ACCStatusInfo acc_status_info = 1;
+    dr.operationstatus.ICAStatusInfo ica_status_info = 2;
+    dr.operationstatus.NCAStatusInfo nca_status_info = 3;
+  }
+  oneof to {
+    dr.operationstatus.ACCStatusInfo to_acc_status_info = 4;
+    dr.operationstatus.ICAStatusInfo to_ica_status_info = 5;
+    dr.operationstatus.NCAStatusInfo to_nca_status_info = 6;
+  }
+}
+
+enum TakeOverRequest {
+  TAKEOVER_REQUEST_NOT_EXIST = 0;
+  // common
+  BLOCK_ALL_ROAD = 1;
+  ABNORMAL_SINGLE_ROAD = 2;
+  UPSTREAM_DATA_FAILURE = 3;
+
+  // graceful exit
+  DRIVER_SEATBELT_NOT_BUCKLED = 10;  // 安全带未系
+  DOOR_OPENED = 11;                  // 四门两盖未关
+  WIPER_HIGH = 12;                   // 雨刮高速
+
+  ACC_TAKEOVER_BY_FAULT = 300;
+}
+
+enum RemindInfo {
+  // common
+  NO_SUGGEST = 0;
+  CLOSE_DOOR = 1;                //关闭车门
+  FASTEN_SEAT_BEAT = 2;          //系安全带
+  RELEASE_THE_HANDBRAKE = 3;     //松手刹
+  GEAR_TO_DRIVER = 4;            //挂d档位
+  PRESS_RES_OR_ACCELERATOR = 5;  //上拨拨杆或者轻踩油门
+  GEAR_TO_PARKING = 6;           //挂p档位
+  HANDS_OFF_LEVEL3 = 9;          //脱手30s -- use HandsOffWarn instead
+  HANDS_OFF_LEVEL2 = 10;         //脱手60s
+  HANDS_OFF_LEVEL1 = 11;         //脱手90s
+  HANDS_ON = 12;                 //解除脱手告警
+  RED_LIGHTS_STOP = 13;          //红灯减速停车
+  // 干预油门
+  REQUEST_TAKEOVER = 14;                     //接管提示
+  LEFT_LANE_MERGE_STARTED = 15;              //开始向左汇入
+  RIGHT_LANE_MERGE_STARTED = 16;             //开始向右汇入
+  LANE_MERGE_DONE = 17;                      //汇入结束
+  LEFT_INTERSECTION_TURN_STARTED = 18;       //路口向左转向
+  RIGHT_INTERSECTION_TURN_STARTED = 19;      //路口向右转向
+  INTERSECTION_TURN_DONE = 20;               //路口转向结束
+  NUDGE_TRUCK_STARTED = 21;                  //避让大车
+  NUDGE_TRUCK_DONE = 22;                     //避让大车结束
+  OBSTACLE_DETECTED_IN_THE_BLIND_SPOT = 23;  //出现盲区障碍物
+  BLIND_SPOT_OBSTACLE_DISAPPEARS = 24;       //盲区障碍物消失
+  ENTER_CONSTRUCTION_ZONE_SCENARIO = 25;     //前方施工
+  LEAVE_CONSTRUCTION_ZONE_SCENARIO = 26;     //离开施工场景
+  LEFT_TURN = 27;                            // 即将左转
+  RIGHT_TURN = 28;                           // 即将右转
+  DETOUR = 29;                               // 即将绕行
+  STRAIGHTEN_THE_STEERING_WHEEL = 30;        //回正方向盘
+  REACH_SPEED_UPPER_LIMIT = 31;              //到达限速上限
+  REACH_SPEED_LOWER_LIMIT = 32;              //到达限速下限
+  EPB_REQUEST_TIME_OUT = 33;                 //请求epb超时
+  GEAR_P_REQUEST_TIME_OUT = 34;              //请求p档位超时
+
+  // acc 100~400
+  CAN_NOT_ACTIVE_ACC = 100;
+  ACC_ACTIVED = 101;  //降级至ACC
+  ACC_ACTIVE_FAILED = 102;
+  ACC_CANCELED = 103;  // ACC已取消
+  ACC_CANCEL_FAILED = 104;
+  ACC_ABORT = 105;                     // ACC已退出
+  CAN_NOT_ACTIVE_ACC_BY_RESUME = 106;  //首次激活无法通过上拨激活ACC
+  CAN_NOT_ACTIVE_ACC_WHEN_PARKING = 107;
+  ACC_OVERRIDE = 108;  //驾驶员油门接管
+
+  // ica 500~800
+  CAN_NOT_ACTIVE_ICA = 500;
+  ICA_ACTIVED = 501;  //降级至ICA
+  ICA_ACTIVED_FAILED = 502;
+  ICA_CANCELED = 503;  // ICA已取消
+  ICA_ABORT = 504;     // ICA已退出
+  ICA_CANCEL_FAILED = 505;
+  ICA_RECOVER = 506;  // ICA已恢复
+  ICA_LATEMEXIT_CAN_NOT_RETURN_TO_NORMAL = 507;
+  OPEN_ICA = 508;       //打开ica软开关
+  ICA_LATEMEXIT = 509;  // ICA临退
+
+  // nca 900~1200
+  CAN_NOT_ACTIVE_NCA = 900;
+  NCA_ACTIVED = 901;
+  NCA_ACTIVED_FAILED = 902;
+  NCA_CANCELED = 903;  // NCA已取消
+  NCA_ABORT = 904;     // NCA已退出
+  NCA_CANCEL_FAILED = 905;
+  NCA_RECOVER = 906;                     // NCA已恢复
+  NCA_YAWED = 907;                       //车辆偏航
+  NCA_REROUTING_SUCCESS = 908;           //路线重规划成功
+  NCA_EXCEED_SPEED_LIMIT_WARNING = 909;  //调速超限告警
+  OPEN_NCA = 910;                        //打开nca开关
+  NCA_LATEMEXIT = 911;                   // NCA临退
+
+  // apa 1200~1400
+  APA_RELEASE_BREAK = 1201;          // 提示请松开刹车
+  APA_CLOSE_TANK_FILTER_GAP = 1202;  // 提示请关闭加油盖
+  APA_CLOSE_CHARG_COVER = 1203;      // 提示请关闭充电盖
+  APA_SPEED_TOO_HIGH = 1204;         // 提示车速过快
+  APA_HINT_RESUME_PARKING =
+      1205;  // 提示满足ActivePause->Active 跳转条件可以继续泊车,
+  APA_INSIDE_PARKING_SPACE = 1206;  // 目前已经在车位内，检测到在车位内持续发送
+  APA_OUTSIDE_PARKING_SPACE = 1207;  // 目前不在车位内，APA 激活之后持续发送
+  APA_ACTIVE_FAILED = 1208;  // APA激活失败
+  CAN_NOT_ACTIVE_APA_WHEN_DRIVING = 1209;
+  APA_ACTIVE_SUCCESS = 1210;  // APA 激活成功
+  APA_ACTIVE_TIMEOUT = 1211;  // APA 激活超时
+  APA_DISABLED = 1212;        // APA 已经禁用
+
+  // vpa 1400-1600
+  VPA_LEARNING_AVALIABLE = 1401;   // VPA 到达建图区域
+  VPA_ROUTING_AVALIBLE = 1402;     // VPA 到达记忆巡航区域
+  VPA_MAP_LEARNING_FAILED = 1403;  // VPA 学习失败
+  VPA_ROUTING_FINISHED = 1405;     // VPA 巡航结束
+  VPA_ROUTING_FAILED = 1406;       // VPA 巡航失败
+  VPA_LEARNING_EXCEED_SPEED_LIMIT_WARNING = 1407;  // VPA 学习车速过高
+  VPA_ODD_ABOUT_TO_EXIT = 1408;  // 规范1.7.8 系统即将退出ODD
+  VPA_SYSTEM_ERROR = 1409;       // 规范1.7.8 系统出现故障提示
+  VPA_ROUTING_REQUEST_TAKEOVER_DETURE = 1410;  // 绕行是提醒接管
+  VPA_ROUTING_REQUEST_TAKEOVER_1 = 1411;       // 规范1.7.8 接管提醒1
+  VPA_ROUTING_REQUEST_TAKEOVER_2 = 1412;       // 规范1.7.8 接管提醒2
+  VPA_ROUTING_HINT_AVOID_PEDESTRAIN = 1413;    // 提醒正在避让行人
+  VPA_ROUTING_HINT_DETURE = 1414;              // 提醒正在绕行
+  CAN_NOT_ACTIVE_VPA_WHEN_DRIVING = 1415;
+  VPA_NO_EMPTY_PARKINGSPACE = 1416;             // 没有空车位
+  VPA_EXIT_REASON_STEER_OVERRIDE = 1417;        // VPA 退出方向盘接管
+  VPA_EXIT_REASON_BRAKE_OVERRIDE = 1418;        // VPA 退出刹车接管
+  VPA_EXIT_REASON_THROTTLE_OVERRIDE = 1419;     // VPA 退出油门接管
+  VPA_EXIT_REASON_GEAR_OVERRIDE = 1420;         // VPA 退出档位接管
+  VPA_EXIT_REASON_LOCALIZATION_FAILURE = 1421;  // VPA 退出定位失败
+  VPA_EXIT_REASON_STATIC_OBSTACLE_DRIVING_BLOCK =
+      1422;  // VPA 退出静态障碍物无法通过，提示"请立即接管车辆"
+  VPA_EXIT_REASON_NO_PARKING_SPACE = 1423;  // VPA 退出无可泊车位
+  VPA_EXIT_REASON_ODD_INVALID = 1424;       // VPA 退出驶离 ODD 范围
+  VPA_EXIT_REASON_ABS_ACTIVED = 1425;       // VPA 退出ABS 激活
+  VPA_EXIT_REASON_VDC_ACTIVED = 1426;       // VPA 退出VDC 激活
+  VPA_EXIT_REASON_ESC_ACTIVED = 1427;       // VPA 退出ESC 激活
+  VPA_EXIT_REASON_TCS_ACTIVED = 1428;       // VPA 退出TCS 激活
+  VPA_EXIT_REASON_AEB_ACTIVED = 1429;       // VPA 退出AEB 激活
+  VPA_EXIT_REASON_HDC_ACTIVED = 1430;       // VPA 退出HDC 激活
+  VPA_EXIT_REASON_VCU_NOT_READY = 1431;     // VPA 退出VCU 非Ready
+  VPA_EXIT_REASON_DOOR_OPENED = 1432;       // VPA 退出车门打开
+  VPA_DRIVING_DYNAMIC_OBSTACLE_BLOCKED =
+      1433;  // VPA 准动态障碍物，提示 "等待绕行通过"
+  VPA_DRIVING_DYNAMIC_OBSTACLE_REMOVED =
+      1434;  // VPA 准动态障碍物移除，Planning 将通过
+  VPA_LEARNING_DO_NOT_REVERSING = 1435;  // VPA 学习提示"学习过程请勿倒车"
+  VPA_LEARNING_HIDE_PARKING_HINT =
+      1436;  // VPA 学习不显示泊车相关提醒
+             // https://rqk9rsooi4.feishu.cn/docx/LZ8ldVyVtoP9LfxMfcCcatafnHd
+  VPA_EXIT_REASON_SEATBELT_NOT_BUCKLED = 1437;  // VPA 退出安全带未系
+  VPA_EXIT_REASON_HOOD_OPENED = 1438;           // VPA 退出前舱盖打开
+  VPA_EXIT_REASON_TRUNK_OPENED = 1439;          // VPA 退出后尾箱打开
+  VPA_LEARNING_SPEEDING_HINT = 1440;  //学习过程中超速提醒（25 < speed < 30）
+  VPA_EXIT_REASON_SPEED_OVER_30 = 1441;  // VPA 退出超速30
+  VPA_EXIT_REASON_COLLIDE_OVERRIDE = 1442;  // VPA 退出，即将碰撞，提示接管
+
+  // tjp 1601-1699
+  TJP_ACTIVED_SUCCESS = 1601;
+  TJP_ACTIVED_FAILED = 1602;
+  TJP_TAKEOVER_REMIND = 1603;  // TJP介入请求
+  TJP_READY_TO_ACTIVE = 1604;  // 提示可激活TJP功能
+}
+
+// common
+message ActiveResultRemind {
+  dr.operationstatus.Feature feature = 1;
+  dr.business_info.ActiveResult result = 2;
+  RemindInfo remind = 3;                     //操作指引提示
+  dr.operationstatus.ReasonInfo reason = 4;  //失败原因
+  FaultEventInfo fault_reason = 5;           //故障原因
+}
+
+message FaultEventInfo {
+  int32 event_id = 1;
+  string alert_info = 2;
+  string suggestion_prompt = 3;
+}
+
+message FaultRemind {
+  enum Level {
+    LEVEL_UNKNOWN = 0;
+    LEVEL1 = 1;
+    LEVEL2 = 2;
+    LEVEL3 = 3;
+    LEVEL4 = 4;
+
+    LEVEL_MAX = 999;  //无故障
+  }
+  enum Policy {
+    POLICY_UNKNOW = 0;  //人驾驶时policy为unknown, 后续需要加上泊车策略
+    EXIT_NCA = 1;
+    EXIT_ICA = 2;
+    EXIT_ACC = 3;
+    STOP = 4;
+    DELAY_STOP = 5;
+    PULL_OVER = 6;
+    DELAY_PULL_OVER = 7;
+    DOWNGRADE_TO_ACC = 8;
+    DOWNGRADE_TO_ICA = 9;
+    JUST_WARNING = 10;
+  }
+  Level level = 1;
+  repeated FaultEventInfo event_info = 2;
+  Policy policy = 3;
+  dr.operationstatus.FaultInfo fault_info = 4;  //故障原因与safety策略
+}
+
+message DriveOffInfo {
+  enum Reason {  //起步原因
+    REASON_UNKNOWN = 0;
+    FRONT_CAR_STARTED = 1;
+    GREEN_LIGHT = 2;
+  }
+  enum Suggest {  //操作指引
+    SUGGEST_UNKNOWN = 0;
+    ATTENTION_ROAD_AHEAD = 1;
+    KEEP_ATTENTION = 2;
+    TAKE_OVER_THE_CAR = 3;
+    PRESS_ACCELERATOR = 4;
+  }
+  enum State {  //自车起步状态
+    STATE_UNKNOW = 0;
+    STARTED = 1;        //车辆起步
+    READY_STARTED = 2;  //车辆可起步
+  }
+  Reason reason = 1;
+  Suggest suggest = 2;
+  State state = 3;
+}
+
+message DecelerationInfo {
+  enum Reason {
+    UNKNOWN = 0;
+    FOLLOW_CAR = 1;              //前车导致减速
+    RED_TRAFFIC_LIGHT = 2;       //红灯刹停
+    YELLOW_TRAFFIC_LIGHT = 3;    //黄灯减速
+    PEDESTRIAN = 4;              //行人减速
+    COMPLEX_ROAD_CONDITION = 5;  //弯道减速
+    OTHER_OBSTACLES = 6;         //其他障碍物
+    CROSS_LINE = 7;              //超过停止线
+    OBSTACLE_COLLISION = 8;      //碰撞风险
+  }
+  Reason reason = 1;
+}
+
+message TrafficLightWarning {
+  enum TrafficLightState {
+    TRAFFICLIGHTSTATE_UNKNOWN = 0;
+    NONE = 1;                       //黑灯
+    NORMAL = 2;                     //正常
+    BLOCKED = 3;                    //遮挡
+    UNABLE_TO_LINK_LANE = 4;        //绑路失败
+    RESULT_IS_NOT_TRUSTWORTHY = 5;  //结果不可信，红绿颜色跳变等
+  }
+  TrafficLightState tl_state = 1;
+  dr.base.Color tl_color = 2;
+}
+
+message ErrorLane {
+  enum EgoCarPos {
+    EGOCARPOS_UNKNOWN = 0;
+    ENTER_ERROR_LANE = 1;    //进入错误道路
+    LEAVE_ERROR_LANE = 2;    //离开错误道路
+    STOP_ON_ERROR_LANE = 3;  //停在错误道路
+  }
+  enum ErrorType {
+    ERRORTYPE_UNKNOWN = 0;
+    ICA_ON_CROSSROADS_NON_STRAIGHT_LANE = 1;  // ICA十字路口非直行车道
+  }
+  EgoCarPos pos = 1;
+  ErrorType error_type = 2;
+}
+
+//行车功能降级 1、nca-->ica or acc 2、ica-->acc
+message DrivingDowngrading {
+  dr.operationstatus.Feature from = 1;       // ica or nca
+  dr.operationstatus.Feature to = 2;         // ica or acc
+  dr.operationstatus.ReasonInfo reason = 3;  //降级原因
+}
+
+// 非预期退出
+message FeatureAbort {
+  dr.operationstatus.Feature feature = 1;
+  RemindInfo remind = 2;                     //操作指引提示
+  dr.operationstatus.ReasonInfo reason = 3;  //失败原因
+  FaultEventInfo fault_reason = 4;           //故障原因
+}
+
+// 即将进入特殊区域提醒,用于导航信息无法覆盖的部分如待转区
+message StepingIntoSpecialArea {
+  enum SpecialAreaType {
+    UNKNONW_SPECIAL_AREA = 0;
+    WAITING_AREA = 1;
+    BUS_LANE = 2;       //公交车道
+    VARIABLE_LANE = 3;  //可变车道
+    TIDE_LANE = 4;      //潮汐车道
+  }
+  SpecialAreaType type = 1;
+}
+
+message HandsOffWarn {
+  enum HandsOffLevel {
+    HANDS_ON = 0;
+    HANDS_OFF_LEVEL0 = 1;  // reserved
+    HANDS_OFF_LEVEL1 = 2;
+    HANDS_OFF_LEVEL2 = 3;
+    HANDS_OFF_LEVEL3 = 4;
+    HANDS_OFF_LEVEL4 = 5;
+    HANDS_OFF_LEVEL5 = 6;
+  }
+  HandsOffLevel level = 1;
+}
+
+message DriverTakeOver {
+  enum Scene {
+    SCENE_UNKNOWN = 0;
+    TRAFFICLIGHT_RESULT_IS_NOT_TRUSTWORTHY = 1;  //红绿灯识别异常时，驾驶员接管
+    EOP = 2;                                     // EOP时驾驶员接管
+    CROSS_LINE = 3;  //闯红灯时，驾驶员接管
+  }
+  Scene scene = 1;
+}
+
+// ACC
+message ACCStatusChange {
+  dr.operationstatus.ACCStatus from = 1;
+  dr.operationstatus.ACCStatus to = 2;
+  bool is_enter_graceful_exit = 3;           //是否进入优雅退出
+  dr.operationstatus.ReasonInfo reason = 4;  //状态变化的原因
+}
+
+message SpeedLimitChange {
+  enum Reason {
+    UNKNOWN = 0;
+    AUTO = 1;
+    MANUAL = 2;
+  }
+  double speed_limit = 1;
+  Reason reason = 2;
+  int32 speed_limit_kmh = 3;
+  int32 speed_limit_kph = 4;
+  bool is_map_speedlimit_changed_by_driver =
+      10;  //地图限速被用户调节限速更新：true，其他：false, 默认值: false
+}
+
+message ConfirmSpeed {
+  enum Display {
+    DISPLAY_UNKNOWN = 0;
+    NO_DISPLAY = 1;
+    CONFIRM = 2;
+  }
+  Display dispaly = 1;
+}
+
+// ICA
+message ICAStatusChange {
+  dr.operationstatus.ICAStatus from = 1;
+  dr.operationstatus.ICAStatus to = 2;
+}
+
+message ILCLaneChangeRequestResult {
+  dr.base.Direction type = 1;                      //请求变道方向
+  dr.business_info.LaneChangeRqResult result = 2;  //结果
+  dr.operationstatus.ReasonInfo reason = 3;        //失败的原因
+}
+
+message ILCStatusChange {
+  dr.operationstatus.ILCStatus from = 1;
+  dr.operationstatus.ILCStatus to = 2;
+}
+
+message LaneChangeStatusChange {
+  dr.routeplanning.LaneChangeStatus from = 1;
+  dr.routeplanning.LaneChangeStatus to = 2;
+  dr.routeplanning.BehaviorReason reason = 3;
+  dr.base.Direction lane_change_direction = 4;
+}
+
+message NudgeStatusChange {
+  dr.routeplanning.NudgeStatus from = 1;
+  dr.routeplanning.NudgeStatus to = 2;
+  dr.routeplanning.BehaviorReason reason = 3;
+  dr.base.Direction nudge_direction = 4;
+  dr.routeplanning.NudgeType type = 5;
+}
+
+message LaneChangeWarning {
+  enum Type {
+    TYPE_UNKNOWN = 0;  //无warning
+    EXTRICATION = 1;   //导航，路型，避险变道困难
+    WRONG_WAY = 2;     //汇出变道困难
+    EOP_NO_GAP = 3;    // EOP接管提醒
+  }
+  Type type = 1;
+}
+
+// NCA
+message NCAStatusChange {
+  dr.operationstatus.NCAStatus from = 1;
+  dr.operationstatus.NCAStatus to = 2;
+}
+
+// 车辆掉头
+message TurnArround {
+  enum State {
+    STATE_UNKNOWN = 0;
+    READY = 1;  //准备掉头
+  }
+  State state = 1;
+}
+
+// 临退
+message LaExitInfo {
+  dr.operationstatus.Feature feature = 1;    // ica or nca
+  dr.operationstatus.ReasonInfo reason = 2;  //临退原因
+}
+
+message NCAOutODD {
+  enum Type {
+    UNKNOWN = 0;
+    ARRIVING_FINAL_DESTINATION = 1;  //即将到达终点
+    UNABLE_TURN_ARROUND = 2;         //前方无法掉头
+  }
+  bool need_remind = 1;    //是否需要声音提示
+  double remaining_s = 2;  //剩余距离 m
+  Type type = 3;
+}
+
+// APA
+message APAStatusChange {
+  dr.operationstatus.APAStatus from = 1;
+  dr.operationstatus.APAStatus to = 2;
+  dr.operationstatus.APAStatusChangeReason reason = 3;
+}
+
+message APASelectParkingSpace {
+  dr.base.ParkingSpace parkingspace = 1;
+  bool show = 2;  // 是否显示选择车位
+}
+
+message APAParkOutParkingSpace {
+  dr.base.ParkingSpace parkingspace = 1;
+}
+
+message ParkingLotDetected {  // 检测到停车场通知
+  enum ParkingLotType {
+    UNKNOWN = 0;        // 未知停车场
+    ROUTE_COVERED = 1;  // 已覆盖路线
+  }
+  ParkingLotType parking_lot_type = 1;
+  repeated dr.base.ParkingSpace areas = 2;  // 车位信息
+}
+
+message Parking {
+  uint32 progress = 1;  // 进度 0-100
+}
+
+message OutParking {
+  uint32 progress = 1;  // 进度 0-100
+}
+
+// VPA
+message VPAStatusChange {
+  dr.operationstatus.VPAStatus from = 1;
+  dr.operationstatus.VPAStatus to = 2;
+}
+
+message VPALearingProgress {
+  double distance = 1;               // 距离，单位米
+  int32 map_saving_progress = 2;     // 进度 0-100
+  int32 passed_speedbump_count = 3;  // 减速带数量
+}
+
+message VPARoutingProgress {
+  bool arrived = 1;
+  double remain_distance = 2;          // 剩余距离
+  uint32 avoid_pedestrain_number = 3;  // 避让行人数量
+  uint32 passed_crosswalk_number = 4;  // 通过路口数量
+  uint32 speed_bump_number = 5;        // 减速带数量
+}
+
+message VPALearningSavedParkingSpace {
+  bool saved = 1;
+  dr.base.ParkingSpace parking_space = 2;  //学习完成后记忆车位
+}
+
+message VPARoutingGetTargetParkingSpace {
+  dr.base.ParkingSpace parking_space = 1;  //巡航过程中目标记忆车位
+}
+
+message VPALearingCompletedInfo {
+  uint32 vpa_learning_distance = 1;  //学习距离
+  uint32 vpa_speed_bumps = 2;        //减速带数量
+  bytes semantic_map = 3;            //语义地图 deeproute.map.RASMapPlus
+}
+
+// 被动触发AVM, AVM 向CDC\VIS 发送通知
+message AVMSettings {
+  dr.business_info.AVMSettingInfo settings = 2;
+}
+
+message AVMStatusChange {
+  dr.operationstatus.AVMStatus from = 1;
+  dr.operationstatus.AVMStatus to = 2;
+  dr.operationstatus.AVMChangeReason reason = 3;
+}
+
+message SentinelEvent {
+  dr.business_info.SentryModeStatistic sentry_mode_statistic = 1;
+}
+
+message PDCInfo {
+  enum BuzzerAlarmPattern {
+    BUZZER_OFF = 0;
+    BUZZER_ON_AT_LEVEL_1 = 1;  // 1hz
+    BUZZER_ON_AT_LEVEL_2 = 2;  // 2hz
+    BUZZER_ON_AT_LEVEL_3 = 3;  // 4hz
+    BUZZER_ON_AT_LEVEL_4 = 4;  // 1/0.18hz
+  }
+  BuzzerAlarmPattern buzzer_alarm_pattern = 1;
+}
+
+message PDCData {
+  message PDCCurve {
+    enum CurveType {
+      FRONT = 0;
+      BACK = 1;
+    }
+    dr.base.Polyline polyline = 1;
+    double distance = 2;
+    CurveType type = 3;
+  }
+  repeated PDCCurve pdc_curves = 1;
+}
+
+message CalibrationUploadStatus {
+  enum CalibrationUploadResult {
+    UNKONWN = 0;
+    SUCCESS = 1;
+    FAILED = 2;
+  }
+  CalibrationUploadResult result = 1;
+  int32 http_code = 2;
+}
+
+message CalibrationStatus {
+  dr.business_info.CalibrationMode calib_mode = 1;
+  dr.business_info.CalibrationState calib_state = 2;
+  dr.business_info.CalibrationStep calib_step = 3;
+  int32 progress_bar = 4;
+  CalibrationUploadStatus upload_status = 5;
+  dr.business_info.CalibrationErrorCode error_code =
+      6;  // error code if calibration fails
+  oneof CalibrationErrState {
+    dr.business_info.CalibrationSeresErrState err_state_seres = 7;
+    dr.business_info.CalibrationGwmErrState err_state_gwm = 8;
+    dr.business_info.CalibrationCommonErrorState error_state_common =
+        9;  //通用错误码
+  }
+}
+
+message RPAStatusChange {
+  dr.operationstatus.RPAStatus from = 1;
+  dr.operationstatus.RPAStatus to = 2;
+  dr.operationstatus.RPAStatusReason reason = 3;
+}
+
+message RADSProgress {
+  bool arrived = 1;
+  double remain_distance = 2;  // 剩余距离
+}
+
+message APSTextDisp {
+  repeated dr.business_info.APSText text = 1;
+}
+
+message GWMLSSWarningSts {
+  int32 ldw_warning = 1;  // 0:无告警 1: 告警
+  int32 rdp_warning = 2;
+  int32 elk_warning = 3;
+  dr.business_info.GWMLSSWarningDebugInfo debug_info = 4;
+  bool lss_overtime = 5;
+}
+
+message DSMStart {
+  bool success = 1;          // 初始化结果
+  dr.dsm.State state = 2;    // 初始状态
+  dr.dsm.SubState mode = 3;  // 初始模式
+  int32 time_cost_s = 4;     // 初始化耗时，单位s
+}
+
+// from perception camera
+message TrafficSignInfo {
+  enum SignType {
+    SIGN_BAN_CAR = 0;
+    SIGN_BAN_ENTER = 1;
+    SIGN_BAN_HEIGHT = 2;
+    SIGN_BAN_LEFT = 3;
+    SIGN_BAN_LEFT_RIGHT = 4;
+    SIGN_BAN_OTHER = 5;
+    SIGN_BAN_OVERTAKE = 6;
+    SIGN_BAN_PARKING = 7;
+    SIGN_BAN_PASS = 8;
+    SIGN_BAN_RIGHT = 9;
+    SIGN_BAN_SLOW = 10;
+    SIGN_BAN_STOP = 11;
+    SIGN_BAN_STRAIGHT = 12;
+    SIGN_BAN_STRAIGHT_RIGHT = 13;
+    SIGN_BAN_TRAILER = 14;
+    SIGN_BAN_U_TURN = 15;
+    SIGN_BAN_VEHICLE = 16;
+    SIGN_BAN_WEIGHT = 17;
+    SIGN_ENTER_HIGHWAY = 18;
+    SIGN_MAX_SPEED = 19;
+    SIGN_MIN_SPEED = 20;
+    SIGN_NON_SPEED = 21;
+    SIGN_OTHER = 22;
+    SIGN_OUT_HIGHWAY = 23;
+    SIGN_UNBAN_OVERTAKE = 24;
+    SIGN_WARN_ACCIDENT = 25;
+    SIGN_WARN_ANIMAL = 26;
+    SIGN_WARN_BICYCLE = 27;
+    SIGN_WARN_CONSTRUCTION = 28;
+    SIGN_WARN_CROSS = 29;
+    SIGN_WARN_FOG = 30;
+    SIGN_WARN_ICE_ROAD = 31;
+    SIGN_WARN_KID = 32;
+    SIGN_WARN_LEFT_MERGE = 33;
+    SIGN_WARN_LEFT_SHARP_TURN = 34;
+    SIGN_WARN_LIVESTOCK = 35;
+    SIGN_WARN_MORE_TURN = 36;
+    SIGN_WARN_OTHER = 37;
+    SIGN_WARN_PEOPLE = 38;
+    SIGN_WARN_RAIN = 39;
+    SIGN_WARN_RIGHT_MERGE = 40;
+    SIGN_WARN_RIGHT_SHARP_TURN = 41;
+    SIGN_WARN_SLOW = 42;
+    SIGN_WARN_TWO_TURN_1 = 43;
+    SIGN_WARN_TWO_TURN_2 = 44;
+    SIGN_WARN_VILLAGE = 45;
+    SIGN_WARN_WEATHER = 46;
+  };
+  SignType sign_type = 1;
+  float limit_value = 2;
+}
+
+message TSRSign {
+  TrafficSignInfo speed_limit_sign = 1;
+  TrafficSignInfo no_speed_limit_sign = 2;
+  float maintain_distance = 3;  // m
+}

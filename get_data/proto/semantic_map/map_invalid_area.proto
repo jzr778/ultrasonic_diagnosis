@@ -1,0 +1,16 @@
+syntax = "proto2";
+
+package deeproute.hdmap;
+
+import "common/geometry.proto";
+import "semantic_map/map_overlap.proto";
+//An invalid area indicates an unlabeled area
+message InvalidArea {
+  optional int32 id = 1;
+
+  optional common.Polygon polygon = 2;
+
+  optional int32 layer = 3;
+
+  repeated Overlap overlaps = 4;
+}

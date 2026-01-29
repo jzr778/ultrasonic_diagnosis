@@ -1,0 +1,48 @@
+syntax = "proto2";
+
+package deeproute.localization;
+
+import "common/geometry.proto";
+import "lock_on_road/lock_on_road.proto";
+import "map/sd_map.proto";
+
+message LockOnRoadSinglePoseDebugInfo{
+  optional common.Point3D position = 1;           // UTM position of pose, for debug
+  optional common.Point3D euler_angles = 2;       // RPY of pose, for debug
+  optional common.Point3D matched_position = 3;   // geo referenced position on the link, in UTM, for debug
+  optional int32 gnss_type = 4;                   // for debug, from sensor
+  optional int32 obs_lane_index = 5;              // for debug, from ras map
+  optional int32 obs_lane_sum = 6;                // for debug, from lane map
+  optional int64 ras_lane_id = 7;                 // given by RAS map, the lane on which vehicle is on
+  optional int64 time = 8;                        // time of input pose
+  optional LockOnRoadResult.Status status = 9;
+}
+
+message LockOnRoadDdmmDebugInfo {
+  optional int64 time = 1;
+  optional deeproute.sd_map.SdLinks sd_links = 2;
+  
+  message TimeAndPose {
+    optional int64 time = 1;
+    optional common.Point3D position = 2;
+    optional common.Point3D euler_angles = 3;
+  }
+  
+  repeated TimeAndPose trajectory_points = 3;
+  
+  message ValueAndNumber{
+    optional float value = 1;
+    optional float number = 2;
+  }
+
+  repeated ValueAndNumber model_input_data = 4;
+
+  repeated string matched_links = 5;
+
+  repeated string matched_dr_links = 6;
+}
+
+message LockOnRoadDebugInfo{
+  // debug info for all poses of a single trajectory.
+  repeated LockOnRoadSinglePoseDebugInfo pose_debug_info = 1;
+}

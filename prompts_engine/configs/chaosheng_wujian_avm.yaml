@@ -1,0 +1,38 @@
+# AEB Agent 配置文件
+#
+# 这个配置定义了 AEB 场景分析的完整 Prompt 结构
+# 所有组件都通过模板文件定义，实现了配置与代码的完全分离
+
+version: "1.0.0"
+description: "超声波检测点是否误检场景分析 Agent"
+
+# System 消息组件（基础层）
+# 这些组件定义了 AI 的角色、术语和分析原则
+system_components:
+  - template: "layer1_foundation/role_context/chaosheng_wujian_avm.jinja2"
+    description: "定义 AI 的角色和任务背景"
+  
+  - template: "layer1_foundation/terminology/chaosheng_wujian_avm.jinja2"
+    description: "定义关键术语和缩写"
+
+
+# 输入数据组件（动态组合）
+# 类似 tasks，支持条件渲染和自动编号
+inputs:
+  - name: "**检测点位置信息 (Location Information of Detection Points)**"
+    template: "layer2_input/detection_point_avm.jinja2"
+    description: "图像上检测点像素坐标"
+
+
+# 任务列表（动态组合并生成 Schema）
+# 每个任务对应最终输出 JSON 的一个字段
+tasks:
+  - name: "**判断给定的检测点是否是误检 (Determine whether the given detection point is a false detection)**"
+    template: "layer3_analysis/chaosheng_wujian_avm.jinja2"
+    description: "任务流程"
+
+
+# 输出格式配置
+output_format:
+  template: "layer4_output/chaosheng_wujian_avm.jinja2"
+  description: "输出格式"

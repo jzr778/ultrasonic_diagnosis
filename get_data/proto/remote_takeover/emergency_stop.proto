@@ -1,0 +1,13 @@
+syntax = "proto2";
+
+package deeproute.remote_takeover;
+
+message EmergencyStop {
+  enum Status {
+    EMERGENCY_INVALID = 0;
+    EMERGENCY_STOP_FORCE = 1;
+    EMERGENCY_STOP = 2;
+    EMERGENCY_STOP_RELEASE = 3;
+  }
+  optional Status status = 1;
+}

@@ -1,0 +1,25 @@
+syntax = "proto2";
+
+package deeproute.prediction;
+
+import "prediction/trajectory.proto";
+import "prediction/intention.proto";
+import "perception/deeproute_perception_obstacle.proto";
+
+message PredObstacle {
+  optional int64 id = 1;                                      // id
+  repeated deeproute.prediction.Trajectory trajectories = 2;  // traj
+  optional deeproute.prediction.Intention intention = 3; // intention
+}
+
+message PredEgo {
+  optional int64 timestamp_us = 1;                            // timestamp
+  repeated deeproute.prediction.Trajectory trajectories = 2;  // ego traj
+}
+
+message PredObstacles {
+  optional int64 timestamp_us = 1;
+  repeated PredObstacle pred_obstacles = 2;
+  optional PredEgo pred_ego = 3;  // ego traj
+  optional deeproute.perception.ModelBasedDecision model_based_decision = 4;
+}

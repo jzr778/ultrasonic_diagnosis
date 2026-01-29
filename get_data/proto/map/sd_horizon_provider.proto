@@ -1,0 +1,50 @@
+syntax = "proto2";
+
+package deeproute.map;
+
+import "common/geometry.proto";
+import "map/sd_map.proto";
+import "map/map_common.proto";
+import "routing/navinfo_routing.proto";
+import "drapi/gwm_navigation.proto";
+
+message AmapNavigationInfo {
+  optional uint64 path_id = 1;  // 导航路径Id,对应GlobalRoute中的path_id
+  optional int32 curr_link_id = 2;           // 当前小路段Link Id
+  optional int32 curr_step_id = 3;           // 当前导航段Step Id
+  optional int32 distance_to_next_link = 4;  // 到下个Link的距离[m]
+  optional int32 amap_has_traffic_light = 5;  // 是否有红绿灯，0无效值，1是，2否
+  optional dr.gwm.navigation.TrafficLight traffic_light =
+      6;  // 红绿灯，包含状态和倒计时
+
+  optional deeproute.common.Point3D traffic_position_2d =
+      7;  // 红绿灯位置世界坐标
+}
+
+message SdHorizonLinkData {
+  repeated common.Point2D shape_points = 1;
+}
+
+// vehicle sd map
+message SdHorizonMap {
+  repeated SdHorizonLinkData sd_horizon_link_data = 1;
+  repeated sd_map.LinkData sd_horizon_map_data = 2;
+
+  // The current link index of sd_horizon_map_data
+  optional uint32 current_link_index_of_horizon = 7;
+
+  optional navinfo.Route horizon_routing_response_data = 3;
+  // identification sd_horizon_map for each frame
+  optional common.Point3D positon = 4;
+  optional common.Point3D euler_angles = 5;
+  optional int64 time_measurement = 6;
+
+  // traffic light info from navagation
+  optional AmapNavigationInfo amap_nav_info = 8;
+
+  optional SdRoadInfo sd_road_info = 9;
+
+  // Used to deal with the situation where the lor sd_link_index does not
+  // correspond to the routing response after the horizon map is cropped.
+  optional uint32 current_link_index_of_routing_response = 10;
+}

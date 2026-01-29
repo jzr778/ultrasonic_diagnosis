@@ -1,0 +1,44 @@
+syntax = "proto2";
+
+package deeproute.hdmap;
+
+import "common/geometry.proto";
+
+message TrafficLight {
+
+    optional int32 id = 1;
+
+    optional deeproute.common.Point3D location = 2;  // Center of the box of lights.
+
+    // A single light is a bitset, i.e., a green left-turn arrow light should have value
+    //    GREEN | ARROW_LEFT = 68.
+    // For another example, a red or white pedestrian light should have value
+    //    RED | WHITE | PEDESTRIAN = 1033.
+    enum Light {
+        INVALID = 0;
+
+        // Colors
+        RED = 1;
+        YELLOW = 2;
+        GREEN = 4;
+        WHITE = 8;
+
+        // Shapes
+        CIRCLE = 16;
+        ARROW_FORWARD = 32;
+        ARROW_LEFT = 64;
+        ARROW_RIGHT = 128;
+        ARROW_U_TURN_LEFT = 256;
+        ARROW_U_TURN_RIGHT = 512;
+        PEDESTRIAN = 1024;
+        METERING = 2048; // metering lights on US highway.
+    }
+    repeated int32 lights = 3 [packed = true];
+
+    optional float height = 4 [default = 1.0668];
+    optional float width = 5 [default = 0.3429];
+
+    optional double cost = 6;
+    repeated int32 layers = 7;
+    optional bool is_unprotected = 8;
+}

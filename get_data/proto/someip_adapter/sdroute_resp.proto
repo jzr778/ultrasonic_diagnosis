@@ -1,0 +1,12 @@
+syntax = "proto2";
+
+package deeproute.someip_adapter.gwm;
+
+// topic: /gwm/someip/ivi_response
+message NavPathInfoRsep {
+    enum SDRouteResp {
+        NO_RESPONSE = 0;
+        RESPONSE = 1;
+    }
+    optional SDRouteResp resp = 1;
+}

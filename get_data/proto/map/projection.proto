@@ -1,0 +1,9 @@
+syntax = "proto2";
+
+package deeproute.map;
+
+message ProjectionPoint {
+  optional double lat = 1;
+  optional double lon = 2;
+  optional double scale = 3;
+}

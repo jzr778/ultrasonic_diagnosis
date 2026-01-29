@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package dr.appnavigation;
+
+/********************************app实时导航信息*******************************/
+
+// topic : /vis/navigation
+message NavigationInfo {
+  uint64 timestamp = 1;
+  NavigationState navigation_state = 2;
+}
+
+enum NavigationState {
+  UNKNOWN_NAVIGATION_STATE = 0;
+  CRUISING = 1;
+  IN_NAVIGATION = 2;
+  YAWED = 3;
+}

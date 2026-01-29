@@ -1,0 +1,288 @@
+syntax = "proto2";
+
+package deeproute.perf_collector;
+
+import "common/module_event.proto";
+
+enum SysWarnID {  // 待补充其他告警事件
+  SYS_NORMAL = 0;
+  SYS_CPU_LOAD = 1;
+  SYS_CTXT = 2;
+  SYS_INTR = 3;
+  SYS_SOFTIRQ = 4;
+  SYS_PROCS_RUNNING = 5;
+  SYS_PROCS_BLOCKED = 6;
+  SYS_FREE_MEMORY = 7;
+  SYS_DIRTY_MEMORY = 8;
+  SYS_UNRECLAIMED_MEMORY = 9;
+  SYS_PAGE_IN = 10;
+  SYS_PAGE_FAULT = 11;
+  SYS_PAGE_MAJFAULT = 12;
+  SYS_CPU_TEMP = 13;
+  SYS_GPU_TEMP = 14;
+  SYS_BOARD_TEMP = 15;
+  SYS_GPU_LOAD = 16;
+  SYS_GPU_MEMORY = 17;
+}
+
+enum TaskWarnID {  // 待补充其他告警事件
+  TASK_NORMAL = 0;
+  TASK_MORE_THREADS = 1;
+  TASK_MORE_VSS = 2;
+  TASK_MORE_RSS = 3;
+  TASK_CPU_LOAD = 4;
+  TASK_WAIT_LONG = 5;
+  TASK_BLOCKED_LONG = 6;
+  TASK_MORE_ICS = 7;
+  TASK_MORE_CS = 8;
+  TASK_MORE_MIGRATION = 9;
+  TASK_MORE_RCHAR = 10;
+  TASK_MORE_WCHAR = 11;
+  TASK_SYSC_READ = 12;
+  TASK_SYSC_WRITE = 13;
+  TASK_MORE_BI = 14;
+  TASK_MORE_BO = 15;
+}
+
+enum PartitionWarnID {
+  PARTITION_FULL = 0;
+  PARTITION_READONLY =1;
+}
+
+// 对应于Event id PERF_SYS_WARNING_EVENT
+message SysWarning {  // 自定义的数据项目，跟trace 事件的属性相关
+  optional string time =
+      1;  // 会记录下告警发生的时间，格式：2023-03-03-07:18:56.312
+  optional SysWarnID warning_id = 2;
+  optional string description = 3;  // 这个waring 对应的文字简短描述
+  optional uint64 cpu = 4;
+  optional uint64 intr = 5;
+  optional uint64 ctxt = 6;
+  optional uint64 running = 7;
+  optional uint64 blocked = 8;
+  optional uint64 softirq = 9;
+  optional uint64 free = 10;
+  optional uint64 cache = 11;
+  optional uint64 dirty = 12;
+  optional uint64 slab_ur = 13;
+  optional uint64 pgin = 14;
+  optional uint64 pgout = 15;
+  optional uint64 pgfault = 16;
+  optional uint64 majfault = 17;
+  optional uint32 cpu_temp = 18;
+  optional uint32 gpu_temp = 19;
+  optional uint32 board_temp = 20;
+  optional uint32 gpu_load = 21;
+  optional uint32 gpu_memory = 22;
+  optional uint64 usr = 23;
+  optional uint64 sys = 24;
+  optional uint64 iowait = 25;
+  optional uint64 irq = 26;
+  optional uint64 soft = 27;
+  optional uint64 idle = 28;
+}
+
+// 超过 SoftLimit 的统计可视化需要
+message CgroupMemrorySoftLimit {
+  optional string module_name = 1;
+  optional uint32 soft_limit = 2;
+  optional uint32 limit = 3;
+  optional uint32 usage = 4;
+}
+
+// 统计可视化需要
+message CgroupMemroryFailCnt {
+  optional string module_name = 1;
+  optional uint32 soft_limit = 2;
+  optional uint32 limit = 3;
+}
+
+
+// 对应于Event id PERF_TASK_WARNING_EVENT
+message TaskWarning {  // 自定义的数据项目，跟trace 事件的属性相关
+  optional string time =
+      1;  // 会记录下告警发生的时间，格式：2023-03-03-07:18:56.312
+  optional dr.common.Module module_id = 2;  // 继承module里模块的进程ID
+  optional string module_name = 3;
+  optional TaskWarnID warning_id =
+      4;  // 可能一个Warning 事件是通过多个指标综合判断的
+  optional string description = 5;  // 这个waring 对应的文字简短描述
+  optional uint64 vtime = 6;
+  optional uint64 thread_num = 7;
+  optional uint64 pexec = 8;
+  optional uint64 texec_max = 9;
+  optional uint64 sleep = 10;
+  optional uint64 wait_t = 11;
+  optional uint64 io_t = 12;
+  optional uint64 ics = 13;
+  optional uint64 cs = 14;
+  optional uint64 migrations = 15;
+  optional uint64 rchar = 16;
+  optional uint64 wchar = 17;
+  optional uint64 rcnt = 18;
+  optional uint64 wcnt = 19;
+  optional uint64 bi = 20;
+  optional uint64 bo = 21;
+  optional uint64 vss = 22;
+  optional uint64 rss = 23;
+}
+
+// 对应于Event id PERF_TRACE_SYS
+message SysTrace {
+  optional string time =
+      1;  // 会记录下告警发生的时间，格式：2023-03-03-07:18:56.312
+  optional uint64 cpu = 2;
+  optional uint64 intr = 3;
+  optional uint64 ctxt = 4;
+  optional uint64 running = 5;
+  optional uint64 blocked = 6;
+  optional uint64 softirq = 7;
+  optional uint64 free = 8;
+  optional uint64 cache = 9;
+  optional uint64 dirty = 10;
+  optional uint64 slab_ur = 11;
+  optional uint64 pgin = 12;
+  optional uint64 pgout = 13;
+  optional uint64 pgfault = 14;
+  optional uint64 majfault = 15;
+  optional uint32 cpu_temp = 16;
+  optional uint32 gpu_temp = 17;
+  optional uint32 board_temp = 18;
+  optional uint32 gpu_load = 19;
+  optional uint32 gpu_memory = 20;
+  optional uint64 usr = 21;
+  optional uint64 sys = 22;
+  optional uint64 iowait = 23;
+  optional uint64 irq = 24;
+  optional uint64 soft = 25;
+  optional uint64 idle = 26;
+  optional uint64 mem_total = 27;
+  optional uint64 mem_avail = 28;
+  optional uint64 mem_shmem = 29;
+  optional uint64 mem_mapped = 30;
+  optional uint64 pgscan_direct = 31;
+  optional uint64 pgsteal_direct = 32;
+  optional uint64 allocstall_dma = 33;
+  optional uint64 allocstall_normal = 34;
+  optional uint64 allocstall_movable = 35;
+  optional uint64 compact_stall = 36;
+}
+
+// 对应于Event id PERF_TRACE_TASK
+message TaskTrace {
+  optional dr.common.Module module_id = 1;  // 继承module里模块的进程ID
+  optional string module_name = 2;          // 继承module里模块的进程ID
+  optional string time =
+      3;  // 会记录下告警发生的时间，格式：2023-03-03-07:18:56.312
+  optional uint64 vtime = 4;
+  optional uint64 thread_num = 5;
+  optional uint64 pexec = 6;
+  optional uint64 texec_max = 7;
+  optional uint64 sleep = 8;
+  optional uint64 wait_t = 9;
+  optional uint64 io_t = 10;
+  optional uint64 ics = 11;
+  optional uint64 cs = 12;
+  optional uint64 migrations = 13;
+  optional uint64 rchar = 14;
+  optional uint64 wchar = 15;
+  optional uint64 rcnt = 16;
+  optional uint64 wcnt = 17;
+  optional uint64 bi = 18;
+  optional uint64 bo = 19;
+  optional uint64 vss = 20;
+  optional uint64 rss = 21;
+  optional uint64 uss = 22;
+  optional uint64 pss = 23;
+}
+
+message PartitionTrace {
+  optional string time = 1;
+  optional string name = 2;
+  optional string mount_point = 3;
+  optional uint64 capacity = 4;
+  optional uint64 used = 5;
+  optional uint64 free = 6;
+  optional uint32 percent = 7;
+}
+
+message PartitionWarning {
+  optional PartitionWarnID warning_id = 1;
+  optional string time = 2;
+  optional string name = 3;
+  optional string mount_point = 4;
+  optional uint64 capacity = 5;
+  optional uint64 used = 6;
+  optional uint64 free = 7;
+  optional uint32 percent = 8;
+}
+
+message NetDeviceTrace {
+  optional string time = 1;
+  optional string name = 2;
+  optional uint64 rx_bytes = 3;
+  optional uint64 rx_packets = 4;
+  optional uint64 rx_errs = 5;
+  optional uint64 rx_drop = 6;
+  optional uint64 rx_fifo = 7;
+  optional uint64 rx_frame = 8;
+  optional uint64 rx_compressed = 9;
+  optional uint64 rx_multicast = 10;
+  optional uint64 tx_bytes = 11;
+  optional uint64 tx_packets = 12;
+  optional uint64 tx_errs = 13;
+  optional uint64 tx_drop = 14;
+  optional uint64 tx_fifo = 15;
+  optional uint64 tx_colls = 16;
+  optional uint64 tx_carrier = 17;
+  optional uint64 tx_compressed = 18;
+}
+
+message PerfSysWarning{
+  optional string time = 1;
+  optional string description = 2;
+  optional uint64 value = 3;
+}
+
+message PerfTaskWarning {
+  optional string time = 1;
+  optional dr.common.Module module_id = 2;
+  optional string module_name = 3;
+  optional string description = 4;
+  optional uint64 value = 5;
+}
+
+message PerfPartitionWarning {
+  optional string time = 1;
+  optional string name = 2;
+  optional string mount_point = 3;
+  optional uint64 capacity = 4;
+  optional uint64 used = 5;
+  optional uint64 free = 6;
+  optional uint32 percent = 7;
+}
+
+message PerfWarnJson {
+  optional string module_name = 1;
+  optional uint32 value = 2;
+  optional string warn_info = 3;
+}
+// 单个Core的资源占用信息
+message CpuCoreInfo {
+  optional uint32 cpuid = 1;  // CPU id
+  optional uint32 usr = 2;    // usr cpu time %
+  optional uint32 sys = 3;    // system cpu time %
+  optional uint32 ni = 4;     // user nice cpu time %
+  optional uint32 wa = 5;     // io wait cpu time %
+  optional uint32 hi = 6;     // hardware irq %
+  optional uint32 si = 7;     // software irq % 
+  optional uint32 total = 8; // total usage of the core %
+}
+
+// 对应于Event id PERF_TRACE_CPUCORES,用来上报每个core的资源占用信息
+message CpuCoreTrace {
+  optional string time =
+      1;  // 会记录下告警发生的时间，格式：2023-03-03-07:18:56.312
+  optional uint32 total_num = 2;  // total number of cpu cores
+  repeated CpuCoreInfo cores_info = 3;
+}

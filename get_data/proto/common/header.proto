@@ -1,0 +1,37 @@
+syntax = "proto2";
+
+package deeproute.common;
+
+import "common/error_code.proto";
+
+message Header {
+  // DEPRECATED: This field used to store message publishing time in seconds. But as time goes,
+  // it is not followed strictly any more. For example, for lidar/camera, sampling timestamp is
+  // stored in this field, instead of publishing timestamp. Therefore, this field should not be
+  // trusted any more, and field "timestamp" along with field "source_timestamp" defined in
+  // "onboard_header.proto" shoud be used instead.
+  optional double timestamp_sec = 1;
+
+  // Module name.
+  optional string module_name = 2;
+
+  // Sequence number for each message. Each module maintains its own counter for
+  // sequence_num, always starting from 1 on boot.
+  optional uint32 sequence_num = 3;
+
+  // Lidar Sensor timestamp for nano-second.
+  optional uint64 lidar_timestamp = 4;
+
+  // Camera Sensor timestamp for nano-second.
+  optional uint64 camera_timestamp = 5;
+
+  // Radar Sensor timestamp for nano-second.
+  optional uint64 radar_timestamp = 6;
+
+  // data version
+  optional uint32 version = 7 [default = 1];
+
+  optional StatusPb status = 8;
+
+  optional string frame_id = 9;
+}

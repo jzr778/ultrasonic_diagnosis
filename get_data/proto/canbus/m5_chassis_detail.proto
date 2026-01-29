@@ -1,0 +1,780 @@
+syntax = "proto2";
+
+package deeproute.canbus;
+
+message M5ChassisDetail {
+  optional EPS_state_124 eps_states = 1;
+  optional EPS_SAS_144 eps_sas = 2;
+
+  optional ESC_state1_212 esc_state1 = 6;
+  optional ESC_state2_2A2 esc_state2 = 7;
+  optional ESC_state3_2A3 esc_state3 = 8;
+  optional ESC_yawStateNOfilter_253 esc_yaw_state_no_filter = 9;
+  optional ESC_wssFront_272 esc_wss_front = 10;
+  optional ESC_wssRear_282 esc_wss_rear = 11;
+
+  optional VCU_stateCha1_3A1 vcu_state_cha1 = 15;
+  optional VCU_stateCha2_241 vcu_state_cha2 = 16;
+  optional VCU_thermalCha_3BD vcu_thermal_cha = 17;
+
+  optional BCM_peps_2CE bcm_peps = 20;
+  optional BCM_rsm_3D1 bcm_rsm = 21;
+  optional BCM_tpms_411 bcm_tpms = 22;
+  optional BCM_tpms1_421 bcm_tpms1 = 23;
+  optional GTW_AC_BCM_CHA_CAN_39E gtw_ac_bcm_cha_can = 24;
+  optional ABM_state_380 abm_state = 25;
+  optional PLG_state_394 plg_state = 26;
+  optional BLE_Cmd_059 ble_cmd = 27;
+  optional IC_state_2FE ic_state = 28;
+
+  optional IVI_ChassisSet_065 ivi_chassis_set = 30;
+  optional IVI_infoSet_0C5 ivi_info_set = 31;
+  optional IVI_StatusAndNotify_495 ivi_status_and_notify = 32;
+  optional IVI_set_3B5 ivi_set = 33;
+  optional IVI_media_395 ivi_media = 34;
+  optional IVI_SLA_408 ivi_sla = 35;
+  optional MFW_Ctrl_0A9 mfw_ctrl = 36;
+
+  optional BMS_metric_514 bms_metric = 40;
+  optional BMS_STATE_144 bms_state = 41;
+  optional DCDC_state_38D dcdc_state = 42;
+
+  optional Diag_FuncReq_7DF diag_func_req = 45;
+}
+
+message EPS_SAS_144 {
+  // steer angle without calibration, [degree] [-780, 780]
+  optional float eps_sas_raw_steering_angle = 1;
+}
+
+message EPS_state_124 {
+  enum EpsEndTorqueCtrlReason {
+    NORMAL_OPERATION = 0x00;
+    OVER_SPEED = 0x01;
+    TORQUE_REQUEST_EXCEEDS_3_6NM = 0x02;
+    ABNORMAL_CAN_INPUT = 0x04;
+    TORQUE_REQUEST_3_6_300MS = 0x08;
+    EPS_FAILURE = 0x10;
+    ESP_ACTIVE = 0x20;
+    ABS_ACTIVE = 0x40;
+  }
+  enum EpsTorqueCtrSts {
+    NO_REQUEST = 0x00;
+    REQUEST_HONORED = 0x01;
+    REQUEST_NOT_ALLOWEDTEMP = 0x02;
+    REQUEST_NOT_ALLOWEDPERMANENT = 0x03;
+  }
+  enum EpsApaControlSts {
+    APA_STANDBY = 0x00;
+    REPLY_FOR_CONTROL_EPS = 0x01;
+    APA_ACTIVE = 0x02;
+    APA_ABORT = 0x03;
+    EPS_APA_CONTROL_FAILURE = 0x07;
+  }
+  enum ApaControlFaultSts {
+    APA_NORMAL_OPERATION = 0x00;
+    EPS_INTERNAL_RECOVERABLE_FAILURE = 0x01;
+    ABNORMAL_SIGNAL = 0x02;
+    OVERSPEED = 0x03;
+    DRIVER_INTERFERENCE = 0x04;
+    EXCESS_ANGLE_DEVIATION = 0x05;
+    ABNORMAL_APA_REQUEST = 0x06;
+    APALOW_PRIORITY = 0x07;
+    APA_EPS_FAILURE = 0x0F;
+  }
+  enum EpsSasFailure {
+    EPS_SAS_NORMAL = 0x00;
+    EPS_SAS_FAULT = 0x01;
+  }
+  enum EpsModeSts {
+    RESERVE = 0x00;
+    COMFORT = 0x01;
+    SPORT = 0x02;
+    INVALID = 0x03;
+  }
+
+  optional EpsEndTorqueCtrlReason eps_end_torque_ctrl_reason = 1;
+  optional EpsTorqueCtrSts eps_torque_ctrl_status = 2;
+  optional EpsApaControlSts eps_apa_control_sts = 3;
+  optional ApaControlFaultSts eps_apa_control_fault_sts = 4;
+  optional EpsSasFailure eps_sas_failure = 5;
+  optional EpsModeSts eps_mode_status = 6;
+}
+
+message ESC_state1_212 {
+  enum EscDtcActive {
+    DTC_INACTIVE = 0;
+    DTC_ACTIVE = 1;
+  }
+  enum EscEscFault {
+    ESC_NORMAL = 0;
+    ESC_FAULT = 1;
+  }
+  enum EscOffSts {
+    ESC_OFF = 0;
+    ESC_ON = 1;
+  }
+  enum EscEbdFault {
+    EBD_NORMAL = 0;
+    EBD_FAULT = 1;
+  }
+  enum EscWheelCyBrakeForceExist {
+    BRAKE_FORCE_AVAILABLE = 0;
+    NO_BRAKE_FORCE = 1;
+  }
+  enum EscHhcAvailable {
+    HHC_NOT_AVAILABLE = 0;
+    HHC_AVAILABLE = 1;
+  }
+  enum EscHhcActive {
+    HHC_INACTIVE = 0;
+    HHC_ACTIVE = 1;
+  }
+  enum EscHdcSts {
+    HDC_STS_OFF = 0;
+    HDC_STS_STANDBY = 1;
+    HDC_STS_ACTIVE = 2;
+  }
+  enum EscCdpAvailable {
+    CDP_NOT_AVAILABLE = 0;
+    CDP_AVAILABLE = 1;
+  }
+  enum EscCdpActive {
+    CDP_INACTIVE = 0;
+    CDP_ACTIVE = 1;
+  }
+  enum EscAvhStandby {
+    AVH_NOT_STANDBY = 0;
+    AVH_STANDBY = 1;
+  }
+  enum EscAvhActive {
+    AVH_INACTIVE = 0;
+    AVH_ACTIVE = 1;
+  }
+  enum EscTcsActive {
+    TCS_INACTIVE = 0;
+    TCS_ACTIVE = 1;
+  }
+  enum EscEscActive {
+    ESC_INACTIVE = 0;
+    ESC_ACTIVE = 1;
+  }
+  enum EscVdcActive {
+    VDC_INACTIVE = 0;
+    VDC_ACTIVE = 1;
+  }
+  enum EscAbsActive {
+    ABS_INACTIVE = 0;
+    ABS_ACTIVE = 1;
+  }
+  enum EscAbsFault {
+    ABS_NORMAL = 0;
+    ABS_FAULT = 1;
+  }
+
+  optional EscDtcActive esc_dtc_active = 1;
+  optional EscEscFault esc_esc_fault = 2;
+  optional EscOffSts esc_off_status = 3;
+  optional EscEbdFault esc_ebd_fault = 4;
+  optional EscWheelCyBrakeForceExist esc_wheel_cy_brake_force_exist = 5;
+  optional EscHhcAvailable esc_hhc_available = 6;
+  optional EscHhcActive esc_hhc_active = 7;
+  optional EscHdcSts esc_hdc_status = 8;
+  optional EscCdpAvailable esc_cdp_available = 9;
+  optional EscCdpActive esc_cdp_active = 10;
+  optional EscAvhStandby esc_avh_standby = 11;
+  optional EscAvhActive esc_avh_active = 12;
+  optional EscTcsActive esc_tcs_active = 13;
+  optional EscEscActive esc_esc_active = 14;
+  optional EscVdcActive esc_vdc_active = 15;
+  optional EscAbsActive esc_abs_active = 16;
+  optional EscAbsFault esc_abs_fault = 17;
+}
+
+message ESC_state2_2A2 {
+  enum EscVlcActive {
+    VLC_INACTIVE = 0;
+    VLC_ACTIVE = 1;
+  }
+  enum EscVlcAvailable {
+    VLC_NOT_AVAILABLE = 0;
+    VLC_AVAILABLE = 1;
+  }
+  enum EscVlcError {
+    VLC_NOT_ERROR = 0;
+    VLC_ERROR = 1;
+  }
+  enum EscBrakeLightIlluminate {
+    BRAKE_LIGHT_NOT_ILLUMINATE = 0;
+    BRAKE_LIGHT_ILLUMINATE = 1;
+  }
+  enum EscCddTempOff {
+    CDD_TEMP_OFF_NORMAL = 0;
+    CDD_TEMP_OFF_FAULT = 1;
+  }
+  enum EscCddError {
+    CDD_TEMP_ERR0R_NORMAL = 0;
+    CDD_TEMP_ERROR_FAULT = 1;
+  }
+  enum EscCddAvailable {
+    CDD_NOT_AVAILABLE = 0;
+    CDD_AVAILABLE = 1;
+  }
+  enum EscCddActive {
+    CDD_INACTIVE = 0;
+    CDD_ACTIVE = 1;
+  }
+  enum EscVlcTorqReqActive {
+    NOT_ACTIVE = 0x0;
+    ACTIVE = 0x1;
+  }
+
+  optional EscVlcActive esc_vlc_active = 1;
+  // longitudinal acceleration request, [m/s^2] [-7,5.75]
+  optional float vlc_inter_targetax = 2;
+  optional EscVlcAvailable esc_vlc_available = 3;
+  optional EscVlcError esc_vlc_error = 4;
+  optional EscBrakeLightIlluminate esc_brake_light_illuminate = 5;
+  optional EscCddTempOff esc_cdd_temp_off = 6;
+  optional EscCddError esc_cdd_error = 7;
+  optional EscCddAvailable esc_cdd_available = 8;
+  optional EscCddActive esc_cdd_active = 9;
+  // longitudinal torque request, [Nm] [-500, 1547.5]
+  optional float esc_vlc_torq_req = 10;
+  optional EscVlcTorqReqActive esc_vlc_torq_req_active = 11;
+}
+
+message ESC_state3_2A3 {
+  enum EscApaLongCtrlSts {
+    OFF = 0x0;
+    STANDBY = 0x1;
+    AUTOMATIC_PARK_ACTIVE = 0x2;
+    CTRL_ERROR = 0x7;
+  }
+  enum EscApaLongCtrlFaultSts {
+    NO_ERROR = 0x0;
+    VEHICLE_BLOCKED = 0x1;
+    UNEXPECTED_GEAR_POSITION = 0x2;
+    UNEXPECTED_EPB_ACTION = 0x3;
+    UNEXPECTED_GEAR_INTERVENTION = 0x4;
+    FAULT_ERROR = 0x7;
+  }
+  enum EscApaLongCtrlStsAvailable {
+    NOT_AVAILABLE = 0x0;
+    AUTOMATIC_PARK = 0x1;
+  }
+  enum EscApaCddActive {
+    NOT_ACTIVE = 0x0;
+    ACTIVE = 0x1;
+  }
+  enum EscApaCddHold {
+    NOT_HOLD = 0x0;
+    HOLD = 0x1;
+  }
+
+  optional EscApaLongCtrlSts esc_apa_long_ctrl_sts = 1;
+  optional EscApaLongCtrlFaultSts esc_apa_long_ctrl_fault_sts = 2;
+  optional EscApaLongCtrlStsAvailable esc_apa_long_ctrl_sts_available = 3;
+  optional EscApaCddActive esc_apa_cdd_active = 5;
+  optional EscApaCddHold esc_apa_cdd_hold = 6;
+}
+
+message ESC_yawStateNOfilter_253 {
+  enum EscYrsCalibStsNoFilter {
+    NOT_IN_CALIBRATION = 0;
+    IN_CALIBRATION = 1;
+    CALIBRATION_FINISHED_SUCCESS = 2;
+    CALIBRATION_FINISHED_ERROR = 3;
+  }
+  // yaw rate without filter, [degree/s] [-163.84, 163.84]
+  optional float esc_yaw_rate_no_filter = 1;
+  optional EscYrsCalibStsNoFilter esc_yrs_calib_status_no_filter = 2;
+  // lateral acceration without filter, [m/s^2] [-21, 21]
+  optional float esc_lateral_acceleration_no_filter = 3;
+  // longitudinal acceration without filter, [m/s^2] [-21, 21]
+  optional float esc_long_acceleration_no_filter = 4;
+}
+
+message ESC_wssFront_272 {
+  enum EscWheelDirection {
+    INVALID = 0;
+    FORWARD = 1;
+    REVERSE = 2;
+    STOP = 3;
+  }
+
+  optional EscWheelDirection esc_wheel_direction_fr = 1;
+  optional EscWheelDirection esc_wheel_direction_fl = 2;
+  // front right wheel speed impulse, [Unit: none] [0, 65535]
+  optional int32 esc_sum_of_edge_fr_wss = 3;
+  // front left wheel speed impulse, [Unit: none] [0, 65535]
+  optional int32 esc_sum_of_edge_fl_wss = 4;
+}
+
+message ESC_wssRear_282 {
+  enum EscWheelDirection {
+    INVALID = 0;
+    FORWARD = 1;
+    REVERSE = 2;
+    STOP = 3;
+  }
+  optional EscWheelDirection esc_wheel_direction_rr = 1;
+  optional EscWheelDirection esc_wheel_direction_rl = 2;
+  // rear right wheel speed impulse, [Unit: none] [0, 65535]
+  optional int32 esc_sum_of_edge_rr_wss = 3;
+  // rear left wheel speed impulse, [Unit: none] [0, 65535]
+  optional int32 esc_sum_of_edge_rl_wss = 4;
+}
+
+message VCU_stateCha1_3A1 {
+  enum VcuDriveMode {
+    ECO = 0x0;
+    COMFORT = 0x1;
+    SPORT = 0x2;
+    FREEDOM_reserve = 0x3;
+    ACCELERATE = 0x4;
+    INVALID = 0x7;
+  }
+  enum VcuReady {
+    NOT_READY = 0x0;
+    READY = 0x1;
+  }
+  enum VcuHighVoltageSuccess {
+    LOW_VOLT = 0x0;
+    HIGH_VOLT_UP = 0x1;
+    HIGH_VOLT_DOWNING = 0x2;
+    HIGH_VOLT_UPING = 0x3;
+    FAILURE_AND_LOW_VOLT = 0x4;
+    RESERVE_HIGHVOLT1 = 0x5;
+    RESERVE_HIGHVOLT2 = 0x6;
+    RESERVE_HIGHVOLT3 = 0x7;
+  }
+  enum VcuApaAvailable {
+    NOT_AVAILABLE = 0x0;
+    AVAILABLE = 0x1;
+  }
+  enum VcuExhibitionMode {
+    OFF = 0x0;
+    ON = 0x1;
+    EXHIBITION_MODE_INVALID = 0x2;
+  }
+
+  optional VcuDriveMode vcu_drive_mode = 1;
+  optional VcuReady vcu_ready = 2;
+  optional VcuHighVoltageSuccess vcu_high_voltage_success = 3;
+  optional VcuApaAvailable vcu_apa_available = 4;
+  optional VcuExhibitionMode vcu_exhibition_mode = 5;
+}
+
+message VCU_stateCha2_241 {
+  enum VcuTcmfail {
+    NORMAL_TCM = 0x0;
+    LIMPHOME_TCM = 0x1;
+  }
+  enum VcuMotorRunning {
+    MOTOR_NOT_RUNNING = 0x0;
+    MOTOR_RUNNING = 0x1;
+  }
+  optional VcuTcmfail vcu_tcm_fail = 1;
+  optional VcuMotorRunning vcu_motor_running = 2;
+}
+
+message VCU_thermalCha_3BD {
+  enum VcuMotorCoolMode {
+    VCU_MOTOR_OFF = 0x0;
+    VCU_MOTOR_ON = 0x1;
+  }
+
+  // Motor circuit water temperature, [Celsius] [-40,214]
+  optional int32 vcu_mot_loop_wat_temp = 1;
+  // Drive unit cooling pump flow, [L/min] [0,35]
+  optional float vcu_drive_unit_coolant_pump_flow_rate = 2;
+  optional VcuMotorCoolMode vcu_motor_cool_mode = 3;
+}
+
+message BCM_peps_2CE {
+  enum BcmRemoteMode {
+    INVALID = 0;
+    NORMAL = 1;
+    REMOTE = 2;
+  }
+  enum BcmPepsStatus {
+    NO_WARNING = 0;
+    WARNING = 1;
+  }
+  enum BcmPepsPowerMode {
+    DEFAULT_POWERMODE = 0;
+    OFF_POWERMODE = 1;
+    ON_POWERMODE = 2;
+    INVALID_POWERMODE = 7;
+  }
+
+  optional BcmRemoteMode bcm_remote_mode = 1;
+  optional BcmPepsStatus bcm_low_beam_failure_ind = 2;
+  optional BcmPepsStatus bcm_front_left_turn_light_fail_ind = 3;
+  optional BcmPepsStatus bcm_front_right_turn_light_fail_ind = 4;
+  optional BcmPepsStatus bcm_rear_fix_left_turn_light_fail_ind = 5;
+  optional BcmPepsStatus bcm_rear_move_left_turn_light_fail_ind = 6;
+  optional BcmPepsStatus bcm_rear_mo_right_turn_light_fail_ind = 7;
+  optional BcmPepsStatus bcm_rear_fix_right_turn_light_fail_ind = 8;
+  optional BcmPepsPowerMode bcm_peps_power_mode = 9;
+}
+
+message BCM_rsm_3D1 {
+  enum BcmPositionLightOnReq {
+    OFF_REQUEST = 0;
+    ON_REQUEST = 1;
+  }
+  optional BcmPositionLightOnReq bcm_position_light_on_req = 1;
+}
+
+message BCM_tpms_411 {
+  enum BcmTpmsStatus {
+    INITIAL_TPMS = 0;
+    NORMAL_TPMS = 1;
+    SYS_ERROR = 2;
+    LOW_BATT_VOL = 3;
+    HIGH_TYRE_PRESSURE = 4;
+    HIGH_TEMP = 5;
+    RAPID_LEAK = 6;
+    LOW_TYRE_PRESSURE = 7;
+  }
+  enum BcmTyrePressure {
+    VALUE_0_POINT_9 = 0;
+    VALUE_1 = 1;
+    INVALID = 15;
+  }
+  enum BcmTyreTeme {
+    VALUE_IS_LESS_THAN_NEGATIVE_40 = 0x0;
+    VALUE_IS_NEGATIVE_40 = 0x1;
+    TYRE_LF_TEME_INVALID = 0xFF;
+  }
+
+  optional BcmTpmsStatus bcm_tpms_lf_status = 1;
+  optional BcmTyrePressure bcm_tyre_lf_pressure = 2;
+  optional BcmTyreTeme bcm_tyre_lf_temp = 3;
+  optional BcmTpmsStatus bcm_tpms_rf_status = 4;
+  optional BcmTyrePressure bcm_tyre_rf_pressure = 5;
+  optional BcmTyreTeme bcm_tyre_rf_temp = 6;
+}
+
+message BCM_tpms1_421 {
+  enum BcmTpmsStatus {
+    INITIAL_TPMS = 0;
+    NORMAL_TPMS = 1;
+    SYS_ERROR = 2;
+    LOW_BATT_VOL = 3;
+    HIGH_TYRE_PRESSURE = 4;
+    HIGH_TEMP = 5;
+    RAPID_LEAK = 6;
+    LOW_TYRE_PRESSURE = 7;
+  }
+  enum BcmTyrePressure {
+    VALUE_0_POINT_9 = 0;
+    VALUE_1 = 1;
+    INVALID = 15;
+  }
+  enum BcmTyreTemp {
+    VALUE_IS_LESS_THAN_NEGATIVE_40 = 0x0;
+    VALUE_IS_NEGATIVE_40 = 0x1;
+    TYRE_LF_TEME_INVALID = 0xFF;
+  }
+
+  optional BcmTpmsStatus bcm_tpms_lr_status = 1;
+  optional BcmTyrePressure bcm_tyre_lr_pressure = 2;
+  optional BcmTyreTemp bcm_tyre_lr_temp = 3;
+  optional BcmTpmsStatus bcm_tpms_rr_status = 4;
+  optional BcmTyrePressure bcm_tyre_rr_pressure = 5;
+  optional BcmTyreTemp bcm_tyre_rr_temp = 6;
+}
+
+message PLG_state_394 {
+  enum PlgTailGateOpenSts {
+    CLOSED = 0;
+    OPENED = 1;
+    CLOSING = 2;
+    OPENING = 3;
+    STOPPED = 4;
+    CLOSED_NOT_COMPLETELY = 5;
+    LOCKING = 6;
+    UNLOCKING = 7;
+    FORCE_TO_OPEN_TO_THE_AREA = 8;
+  }
+  optional PlgTailGateOpenSts plg_tailgate_open_sts = 1;
+  optional PlgTailGateOpenSts plg_tailgate_open_sts2 = 2;
+}
+
+message GTW_AC_BCM_CHA_CAN_39E {
+  enum LedStatus {
+    LED_OFF = 0;
+    LED_ON = 1;
+  }
+  enum BcmAutoLampSwSts {
+    NON_AUTO = 0;
+    AUTO = 1;
+  }
+
+  optional LedStatus bcm_left_bsd_led_sts = 1;
+  optional LedStatus bcm_right_bsd_led_sts = 2;
+  optional BcmAutoLampSwSts bcm_auto_lamp_sw_sts = 3;
+}
+
+message ABM_state_380 {
+  enum AcuWarningLampStatus {
+    OFF = 0x0;
+    ON = 0x1;
+    FLASH = 0x2;
+  }
+  enum AcuCrashOutputStatus {
+    NO_CRASH = 0x0;
+    CRASH = 0x1;
+  }
+
+  optional AcuWarningLampStatus acu_warning_lamp_status = 1;
+  optional AcuCrashOutputStatus acu_crash_output_status = 2;
+}
+
+message IVI_ChassisSet_065 {
+  enum IviStatus {
+    NO_REQUEST = 0x0;
+    OFF = 0x1;
+    ON = 0x2;
+    INVALID = 0x3;
+  }
+  enum IviLaneAssistSet {
+    SET_NO_REQUEST = 0x0;
+    SET_OFF = 0x1;
+    LDW = 0x2;
+    LDW_AND_RDP = 0x3;
+    SET_INVALID = 0x7;
+  }
+  enum IviLasWarningMode {
+    MODE_NO_REQUEST = 0x0;
+    MODE_OFF = 0x1;
+    ONLY_VISION = 0x2;
+    VISION_AND_VOICE = 0x3;
+    MODE_INVALID = 0x7;
+  }
+
+  optional IviStatus ivi_aeb_on_off_set = 1;
+  optional IviStatus ivi_lca_bsd_on_off_set = 2;
+  optional IviStatus ivi_rcta_on_off_set_reserved = 3;
+  optional IviStatus ivi_dow_on_offset = 4;
+  optional IviStatus ivi_hma_on_offset = 5;
+  optional IviLaneAssistSet ivi_lane_assist_func_set = 6;
+  optional IviLasWarningMode ivi_las_warning_mode_selection = 7;
+  optional IviStatus ivi_pcw_on_offset = 8;
+  optional IviStatus ivi_tja_func_set = 9;
+  optional IviStatus ivi_auto_dodge_on_offset = 10;
+}
+
+message IVI_infoSet_0C5 {
+  enum IviStatus {
+    NO_REQUEST = 0x0;
+    OFF = 0x1;
+    ON = 0x2;
+    INVALID = 0x3;
+  }
+
+  optional IviStatus ivi_pdc_on_off_set = 1;
+}
+
+message IVI_StatusAndNotify_495 {
+  enum IviStatus {
+    NO_REQUEST = 0x0;
+    OFF = 0x1;
+    ON = 0x2;
+    INVALID = 0x3;
+  }
+
+  optional IviStatus ivi_sentry_req = 1;
+}
+
+message IVI_set_3B5 {
+  enum IviTakePhotoReq {
+    NO_REQUEST = 0x0;
+    FRONT = 0x1;
+    REAR = 0x2;
+    LEFT = 0x3;
+    RIGHT = 0x4;
+    THREE_DIMEN_FRONT_VIEW = 0x5;
+    PLANFORM = 0x6;
+    OFF = 0x7;
+  }
+  enum IviInterfaceSwitchReq {
+    INTERFACE_NO_REQUEST = 0x0;
+    APA_ON = 0x1;
+    AVM_ON = 0x2;
+    INTERFACE_OFF = 0x3;
+  }
+  enum IviLanguageSet {
+    SIMPLIFIED_CHINESE = 0x0;
+    ENGLISH = 0x1;
+    RESERVED = 0x2;
+    NO_COMMAND = 0x3;
+  }
+  optional IviInterfaceSwitchReq ivi_interface_switch_req = 1;
+  optional IviLanguageSet ivi_language_set = 2;
+  optional IviTakePhotoReq ivi_take_photo_req = 3;
+}
+
+message IVI_media_395 {
+  enum IviDmsSysDefault {
+    DMS_OFF = 0x0;
+    DMS_ON = 0x1;
+    MDS_INVALID = 0x3;
+  }
+  optional IviDmsSysDefault ivi_dms_sys_fault = 1;
+}
+
+message IVI_SLA_408 {
+  enum IviCurrentRoadType {
+    EXPRESSWAY = 0x0;
+    NATIONAL_HIGH_WAY = 0x1;
+    PROVINCIAL_HIGH_WAY = 0x2;
+    COUNTY_HIGH_WAY = 0x3;
+    TOWN_SHIP_ROAD = 0x4;
+    VILIAGE_ROAD = 0x5;
+    CITY_EXPRESSWAY = 0x6;
+    URBAN_MAJOR_ROAD = 0x7;
+    SECONDARY_ROAD = 0x8;
+    GENERAL_ROAD = 0x9;
+    NONNAVIGATIONAL_ROAD = 0xA;
+    INVALID = 0xF;
+  }
+  enum IviNaviSpeedLimit {
+    NO_DSPLAY = 0x0;
+    SPL_5 = 0x1;
+    SPL_10 = 0x2;
+    SPL_150 = 0x1E;
+    SPL_CANCELLED = 0xFF;
+  }
+  enum IviNaviType {
+    GPS_NAVI = 0x0;
+    SIMULATE_NAVI = 0x1;
+    CRUISE_NAVI = 0x2;
+  }
+  enum IviNaviSpeedLimitValid {
+    LIMIT_VALID = 0x0;
+    LIMIT_INVALID = 0x1;
+  }
+  enum IviNaviStatus {
+    EXIST = 0x0;
+    NO_EXIST = 0x1;
+  }
+
+  optional IviCurrentRoadType ivi_current_road_type = 1;
+  optional IviNaviSpeedLimitValid ivi_navi_camera_speed_limit_value_valid = 2;
+  optional IviNaviSpeedLimitValid ivi_navi_speed_limit_value_valid = 3;
+  optional IviNaviType ivi_navi_type = 4;
+  optional IviNaviSpeedLimit ivi_navi_camera_speed_limit_value = 5;
+  optional IviNaviSpeedLimit ivi_navi_speed_limit_value = 6;
+  optional IviNaviStatus ivi_navi_status = 7;
+}
+
+message MFW_Ctrl_0A9 {
+  enum MfwCtrlValue {
+    MFW_CTRL_NO_PRESS = 0x0;
+    MFW_CTRL_PRESS = 0x1;
+    MFW_CTRL_INVALID = 0x2;
+  }
+  enum MfwIviReset {
+    MFW_RESET_NO_PRESS = 0x0;
+    MFW_RESET_PRESS = 0x1;
+    MFW_RESET_INVALID = 0x3;
+  }
+  enum MfwTjaIcaActiveKeySts {
+    MFW_ACTIVE_VALID = 0x0;
+    MFW_ACTIVE_INVALID = 0x1;
+  }
+
+  optional MfwCtrlValue mfw_apa_avm_key = 1;
+  optional MfwCtrlValue mfw_tja_ica_active_key_sts = 2;
+  optional MfwTjaIcaActiveKeySts mfw_tja_ica_active_key_sts_valid = 3;
+  optional MfwIviReset mfw_reset = 4;
+}
+
+message IC_state_2FE {
+  enum IcDisplayStatus {
+    DISPLAY_NORMAL = 0x0;
+    DISPLAY_FAULT = 0x1;
+  }
+  optional IcDisplayStatus ic_display_fail = 1;
+}
+
+message DCDC_state_38D {
+  enum DcdcSystemStatus {
+    DCDC_INIT_STATE = 0x0;
+    DCDC_STANDBY_STATE = 0x1;
+    DCDC_WORK_STATE = 0x2;
+    DCDC308_RES0 = 0x3;
+    DCDC308_RES1 = 0x4;
+    DCDC_SLEEP_STATE = 0x5;
+    DCDC_RECV_FAULT_STATE = 0x6;
+    DCDC_LOCK_FAULT_STATE = 0x7;
+  }
+
+  optional DcdcSystemStatus dcdc_status = 1;
+}
+
+message BLE_Cmd_059 {
+  enum BleKeyLocation {
+    NO_REQUEST = 0x0;
+    DISTANCE_7_TO_8_METERS = 0x1;
+    DISTANCE_1_5_TO_7_METERS = 0x2;
+    DISTANCE_1_5_METERS = 0x3;
+    IN_CAR = 0x4;
+    IN_TRUNK_AREA_1_2_METERS = 0x5;
+    NO_KEY = 0x6;
+  }
+
+  optional BleKeyLocation ble_key_location = 1;
+}
+
+message BMS_metric_514 {
+  // Battery power status (display SOC), [%] [0,1]
+  optional float bms_soc = 1;
+  // Battery power status (actual SOC), [%] [0,1]
+  optional float bms_soc_actual = 2;
+}
+
+message BMS_STATE_144 {
+  enum BmsState {
+    INIT = 0;
+    STANDBY = 1;
+    PRECHARGE = 2;
+    CONTACTORS_CLOSED = 3;
+    AC_CHARGE = 4;
+    DC_CHARGE = 5;
+    SHUT_DOWN = 6;
+    OFF = 7;
+    FAULT = 8;
+    V2L = 9;
+    V2V = 10;
+    RTCPolling = 11;
+  }
+  enum BmsChargeState {
+    BMS_STATE_OFF = 0;
+    INIT0 = 1;
+    BMS_STATE_STANDBY = 2;
+    CHARGING = 3;
+    CHARGE_END = 4;
+    Warming = 5;
+    BMS_STATE_FAULT = 6;
+    Float = 7;
+  }
+  enum BmsChargeConnection {
+    DISCONNECT = 0;
+    CONNECT = 1;
+  }
+
+  optional BmsState bms_state = 1;
+  optional BmsChargeState bms_dc_charge_state = 2;
+  optional BmsChargeState bms_ac_charge_state = 3;
+  optional BmsChargeConnection bms_ac_charge_connection = 4;
+  optional BmsChargeConnection bms_dc_charge_connection = 5;
+}
+
+message Diag_FuncReq_7DF {
+  optional int64 diag_func_req_data = 1;
+}

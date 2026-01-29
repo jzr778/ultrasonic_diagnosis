@@ -1,0 +1,509 @@
+syntax = "proto3";
+import "drapi/business_info.proto";
+package dr.notification.gwmhut;
+
+message
+GWMParkingHUTNotification {  // https://rqk9rsooi4.feishu.cn/file/IK15bClQYo79cXxgxwocdhmBnYd
+  // VPA: 1 ~ 20
+  HAVPFunctTextDisp text_disp = 2;        //文字提示显示
+  FunctBtnSts funct_btn_sts = 3;          //功能按键状态
+  FunctBtnDisp funct_btn_disp = 4;        //按键显示
+  FunctWorkSts funct_work_sts = 5;        //工作状态
+  Signal_Indnc signal_indnc = 6;          //信号优先级判断
+  InterfaceDisTyp interface_dis_typ = 7;  //界面显示类型
+  PopupDisp popup_disp = 8;               //提示弹窗
+  BtnEnaAck btn_ena_ack = 9;              //开关点击反馈
+  // BtnEnaReq btn_ena_req = 10;            //开关点击信号,放在command.proto中
+  GuidanceSts guidance_sts = 11;                  //马上试试，引导提示
+  MapBuildProcBar map_build_proc_bar = 12;        //记忆泊车进度
+  StartPrkBtnDisp start_prk_btn_disp = 13;        //开始记忆泊车按键
+  UpdateRouteBtnDisp update_route_btn_disp = 14;  //更新路线按键
+
+  // APA: 21 ~ 40
+  dr.business_info.APSText aps_text =
+      15;                          // APA RADS 文字提示，GW: APS_Textdisp
+  APSWorkSts aps_work_sts = 16;    // APA 工作状态,GW:APS_worksts
+  HAPHmiIndex hap_hmi_index = 17;  // AVM 视图布局模式, GW: HAP_Hmi_Index
+  APSSysSoundIndcn aps_sys_sound_indcn = 18;  //声音提示, GW: APS_SysSoundIndcn
+  HAPSwtDispCtrlCmd hap_swt_disp_ctrl_cmd =
+      19;  // 按键是否显示 GW: HAP_SwtDispCtrlCmd， 比如继续泊车，选择泊出模式
+  APABacgrdWorkSts apa_background_work_sts =
+      20;  // APA 后台工作状态, GW:  APA_BacgrdWorkSts
+  APAFuncSts apa_function_status = 21;  // APA功能状态, GW: APA_FuncSts
+  PrkMode parking_mode = 22;  // 当前选中的车位是否支持车头、车位泊入
+  HAPPrkgModCurrSts hap_prkg_mod_curr_sts =
+      23;                        // 当前泊出模式 GWM: HAP_PrkgModCurrSts
+  APSProcBar aps_proc_bar = 24;  // APA进度条
+  OutParkingDirctionValid out_parking_valid = 25;  // 泊出模式是否可用
+  ApaMenudispctrlcmd apa_menu_disp_ctrl_cmd = 26;  // APA开关状态
+
+  // RADS 41 ~ 50
+  RADSFuncSts rads_function_status = 41;  // 循迹倒车功能软开关状态
+
+  // RPA 51 ~ 60
+}
+
+message Signal_Indnc {
+  enum Indnc {
+    CAN = 0;
+    SOME_IP = 1;
+  }
+  Indnc indnc = 1;
+}
+
+message BtnEnaAck {
+  enum Ack {
+    NO_RESPONSE = 0;
+    RESPONSE = 1;
+  }
+  Ack ack = 1;
+}
+
+message FunctBtnSts {
+  enum BtnSts {
+    UNAVAILABLE = 0;
+    AVAILABLE = 1;
+    HIGHLIGHT = 2;
+    RESERVED = 3;
+  }
+  BtnSts status = 1;
+}
+
+message FunctWorkSts {
+  enum WorkSts {
+    STANDBY = 0;
+    MAPBUILDING = 1;
+    MAPBUILT_COMPLETE = 2;
+    CRUISE = 3;
+    FAILURE = 4;
+    PAUSE = 5;
+    PARKING = 6;
+    COMPLETE = 7;
+    FAULT = 8;
+  }
+  WorkSts status = 1;
+}
+
+message InterfaceDisTyp {
+  enum DisTyp {
+    NONE = 0;
+    PRE_MAPBUILT = 1;
+    MAPBUILTING = 2;
+    CRUISE = 3;
+    MAPBUILT_COMPLETE = 4;
+    HAVP_COMPLETED = 5;
+    MAPSHOWTOSTART = 6;
+    GUIDANCE = 7;
+    SELECTSLOT_3D = 8;
+    CRUISE_3D = 9;
+  }
+  DisTyp type = 1;
+}
+
+message FunctBtnDisp {
+  enum Disp {
+    NONE = 0;
+    START_HAVP = 1;
+    CONTINUE_HAVP = 2;
+    START_SVP = 3;
+    CONTINUE_SVP = 4;
+    START_APA = 5;
+    TRY = 6;
+    SEARCH_SLOT_ALONG_WAY = 7;
+    APA_CONTINUESEARCHSLOT = 8;
+  }
+  Disp disp = 1;
+}
+
+message GuidanceSts {
+  enum Status {
+    NO_DISPLAY = 0;
+    NO_COMPLETE = 1;
+    COMPLETE1 = 2;
+    COMPLETE2 = 3;
+    COMPLETE3 = 4;
+    COMPLETE4 = 5;
+    COMPLETE5 = 6;
+  }
+  Status status = 1;
+}
+
+message MapBuildProcBar {
+  int32 proc = 1;
+}
+
+message StartPrkBtnDisp {
+  enum Disp {
+    NO_DISPLAY = 0;
+    AVAILABLE = 1;
+    UNAVAILABLE = 2;
+  }
+  Disp disp = 1;
+}
+
+message UpdateRouteBtnDisp {
+  enum Disp {
+    NO_DISPLAY = 0;
+    AVAILABLE = 1;
+    UNAVAILABLE = 2;
+  }
+  Disp disp = 1;
+}
+
+message HAVPFunctTextDisp {
+  enum Disp {
+    NONE = 0x0;
+    START_PARKING_IN = 0x1;
+    ROUTE_LEARNING = 0x2;
+    PLEASE_SELECT_SLOT_USE_AUTOMATIC_PARKING_AFTER_BRAKING = 0x3;
+    PLEASE_USE_AUTOMATIC_PARKING_AFTER_BRAKING = 0x4;
+    POUR_INTO_YOUR_PARKING_SLOT = 0x5;
+    SPEED_BUMP = 0x6;
+    EXCEEDS_DISTANCE = 0x7;
+    LEARNINIG_INTO_THE_RAMP = 0x8;
+    LEARNINIG_OFF_THE_RAMP = 0x9;
+    START_PARKING_OUT = 0xA;
+    ROUTE_LEARNING_PARKING_OUT = 0xB;
+    FOLLOW_INSTRUCTIONS = 0xC;
+    LEARNINIG_CAMERA_BLOCKED = 0xD;
+    LEARNINIG_THE_LOOP_CAMERA_FAULTY = 0xE;
+    LEARNINIG_RADAR_FAULTY = 0xF;
+    LEARNINIG_ASSOCIATED_SYSTEM_FAULTY = 0x10;
+    LEARNINIG_SYSTEM_FAULTY = 0x11;
+    LEARNINIG_ILLUMINATION_CONDITIONS = 0x12;
+    LEARNINIG_RAINING_CONDITIONS = 0x13;
+    LEARNINIG_ENVIRONMENT_TOO_EMPTY = 0x14;
+    ROUTE_REPEAT = 0x15;
+    EXCESSIVE_SLOPE = 0x16;
+    TIME_OUT_0x17 = 0x17;
+    DISTANCE_TOO_LONG = 0x18;
+    SPEED_OVER_15 = 0x19;
+    SPEED_TOO_HIGH = 0x1A;
+    LEARNINIG_USER_EXIT = 0x1B;
+    LEARNINIG_DOOR_OPEN = 0x1C;
+    LEARNINIG_REAR_DOOR_OPEN = 0x1D;
+    LEARNINIG_REARVIEW_MIRROR_FOLDED = 0x1E;
+    LEARNINIG_LOOSEN_SEAT_BELT = 0x1F;
+    BACKWARD = 0x20;
+    BACKWARD_EXIT = 0x21;
+    MAP_BUILDING = 0x22;
+    NOT_IN_SLOT = 0x23;
+    TAIL_IN_SLOT = 0x24;
+    MAP_BUILD_SUCCESS = 0x25;
+    MAP_BUILD_FAIL = 0x26;
+    INSUFFICIENT_STORAGE_SPACE = 0x27;
+    DISTANCE_TOO_SHORT = 0x28;
+    HAVP_READY_TO_START = 0x29;
+    KEEP_GOING = 0x2A;
+    RELEASE_THE_BRAKES_AND_WE_SET_OFF = 0x2B;
+    DRIVE_TO_YOUR_TERMINAL_SLOT = 0x2C;
+    DRIVE_TO_YOUR_TERMINAL_EXIT = 0x2D;
+    PARK_IN_CRUISING = 0x2E;
+    TURN_LEFT = 0x2F;
+    TURN_RIGHT = 0x30;
+    CROSSING = 0x31;
+    NARROW_ROAD = 0x32;
+    ROAD_DIFFICULT_HELP_ME_DRIVE = 0x33;
+    CRUSING_INTO_THE_RAMP = 0x34;
+    CRUSING_OUT_OF_THE_RAMP = 0x35;
+    WAIT_FOR_THE_CAR_AHEAD = 0x36;
+    GO_AROUND_THE_VEHICLE_AHEAD = 0x37;
+    THE_REAR_VEHICLE_FOLLOW = 0x38;
+    THE_REAR_VEHICLE = 0x39;
+    PEDESTRIAN = 0x3A;
+    PEDESTRIAN_CROSSING = 0x3B;
+    AVOID_NEARBY_OBSTACLES = 0x3C;
+    ARRIVING_YOUR_SLOT = 0x3D;
+    PARK_IN_PARKING = 0x3E;
+    CRUSING_ENGINE_HOOD_OPEN = 0x3F;
+    CRUSING_TRUNK_OPEN = 0x40;
+    CRUSING_DOOR_OPEN = 0x41;
+    CRUSING_REARVIEW_MIRROR_FOLD = 0x42;
+    CRUSING_SEAT_BELT_LOOSEN = 0x43;
+    DRIVE_NOT_INSIDE = 0x44;
+    TIME_OUT_0x45 = 0x45;
+    STATISTIC_OBSTACLE_30S = 0x46;
+    TARGET_SLOT_OCCUPIED_PLOT_AVAILABLE_NEARBY = 0x47;
+    POSITIONING_UNSUCCESSFUL = 0x48;
+    CRUSING_ILLUMINATION_CONDITIONS = 0x49;
+    CRUSING_RAINING_CONDITIONS = 0x4A;
+    CRUSING_LVP_FAILURE = 0x4B;
+    CRUSING_ASSOCIATED_SYSTEM_FAILURE = 0x4C;
+    CRUSING_TIME_OUT = 0x4D;
+    PARKING_TIME_OUT = 0x4E;
+    NUMBER_OF_PAUSES_EXCEEDED = 0x4F;
+    VEHICLE_RANGE_TOO_LOW = 0x50;
+    CRUSING_RCTB_FCTB_ACTIVATION = 0x51;
+    CRUSING_AEB_ACTIVATION = 0x52;
+    CRUSING_ESP_ACTIVATION = 0x53;
+    CRUSING_TCS_ABS_ACTIVATION = 0x54;
+    CRUSING_HDC_ACTIVATION = 0x55;
+    TIRE_PRESSURE_IS_TOO_LOW = 0x56;
+    TARGET_SLOT_OCCUPIED_NO_SLOT_NEARBY = 0x57;
+    PARKINGIN_FAILURE = 0x58;
+    ROUTE_MATCHING_TIMEOUT = 0x59;
+    ACTIVATION_FAILED = 0x5A;
+    CRUISING_CAMERA_BLOCKED = 0x5B;
+    CRUISING_THE_LOOP_CAMERA_FAULTY = 0x5C;
+    CRUISING_RADAR_FAULTY = 0x5D;
+    SEARCH_SLOT_ALONG_WAY = 0x5E;
+    BERTH_IN_COMPLETE = 0x5F;
+    BERTH_OUT_COMPLETE = 0x60;
+    PULL_UP_EPB = 0x61;
+    GEAR_INTERVENE = 0x62;
+    STEERING_INTERVENE = 0x63;
+    BRAKE_INTERVENE = 0x64;
+    CRUSING_USER_EXIT = 0x65;
+    CRUSING_EXCESSIVE_SLOPE = 0x66;
+    CRUSING_SPEED_TOO_HIGH = 0x67;
+    VEHICLE_BACK = 0x68;
+    HANDS_OFF_THE_STEERING_WHEEL = 0x69;
+    DRIVING_MODE_NOT_SUPPORTED = 0x6A;
+    PARKING_QUIT_PARKING_SLOT_BY_YOURSELF = 0x6B;
+    GO_AROUND_NEARBY_OBSTACLES = 0x6C;
+    GO_AROUND_THE_COMING_VEHICLE = 0x6D;
+    RELEASE_THE_BRAKE_PARKING_START = 0x6E;
+    AUTO_PARKING_BE_READY_TO_BRAKE = 0x6F;
+    PAY_ATTENTION_TO_THE_RISK_OF_SCRATCHES = 0x70;
+    DETECTING_PARKING_SPACE = 0x71;
+    PARKING_SUSPENDED_CLOSE_TRUNK = 0x72;
+    PARKING_SUSPENDED_CLOSE_DOOR = 0x73;
+    PARKING_SUSPENDED_FASTEN_SEAT_BELT = 0x74;
+    PARKING_SUSPENDED_FOLD_THE_MIRROR = 0x75;
+    PARKING_SUSPENDED_CLOSE_CABIN_COVER = 0x76;
+    PARKING_SUSPENDED_OBSTACLES_DETECTED = 0x77;
+    PARKING_SUSPENDED_PEDESTRIAN_DETECTED = 0x78;
+    PARKING_SUSPENDED_VEHICLE_DETECTED = 0x79;
+    PARKING_CONTINUES = 0x7A;
+    BRAKE_RECOVERED_CONFIRM_TO_CONTINUE = 0x7B;
+    PARKING_SUSPENDED_PLEASE_RELEASE_THE_BRAKE_PEDAL = 0x7C;
+    PARKING_SUSPENDED_PLEASE_RELEASE_THE_ACCELERATOR_PEDAL = 0x7D;
+    FINDING_SLOT_PLEASE_BRAKE = 0x7E;
+    ENGINE_HOOD_OPEN = 0x7F;
+    PLEASE_KEEP_BRAKING = 0x80;
+    MATCH_SUCCESSFUL_START_HAVP = 0x81;
+    GUIDANCE_START = 0x82;
+    GUIDANCE_SUCCESS = 0x83;
+
+    // dr
+    LEARNINIG_CHARGEING_CAP_OPENED = 0x84;
+    LEARNINIG_FUEL_CAP_OPENED = 0x85;
+    CRUSING_CHARGEING_CAP_OPENED = 0x86;
+    CRUSING_FUEL_CAP_OPENED = 0x87;
+    THROTTLE_INTERVENE = 0x88;  //巡航中油门接管
+  }
+  Disp disp = 1;
+}
+
+message PopupDisp {
+  enum Disp {
+    NONE = 0x0;
+    START_LEARNING = 0x1;
+    LEARN_ROUTE_CONFIRM = 0x2;
+    TURN_ON_BACKGROUND_FUNCTIONS = 0x3;
+    PLEASE_ADJUST_UNDER_P = 0x4;
+    HAVP_RAMPWAY = 0x5;
+    HAVP_ENVIRONMENT_EMPTY = 0x6;
+    OUTSIDE_THE_UNDERGROUND_CAR_PARK = 0x7;
+    HAVP_CAMERA_BLOCKED = 0x8;
+    HAVP_LOOP_CAMERA_FAULTY = 0x9;
+    HAVP_RADAR_FAULTY = 0xA;
+    HAVP_ASSOCIATED_SYSTEM_FAULTY = 0xB;
+    HAVP_SYSTEM_FAULTY = 0xC;
+    HAVP_DOOR_OPEN = 0xD;
+    HAVP_REAR_DOOR_OPEN = 0xE;
+    HAVP_SAFETY_BELT_UNFASTENED = 0xF;
+    HAVP_ENGINE_COVER_OPEN = 0x10;
+    HAVP_RCTB_FCTB_ACTIVATION = 0x11;
+    HAVP_AEB_ACTIVATION = 0x12;
+    HAVP_TCS_ABS_ACTIVATION = 0x13;
+    HAVP_ESP_ACTIVATION = 0x14;
+    HAVP_HDC_ACTIVATION = 0x15;
+    HAVP_TIRE_PRESSURE_IS_TOO_LOW = 0x16;
+    HAVP_ILLUMINATION_CONDITIONS = 0x17;
+    HAVP_RAINING_CONDITIONS = 0x18;
+    CLICK_FINISH = 0x19;
+    THE_LEARNING_ROUTE_IS_NOT_LOCATED = 0x1A;
+    PLEASE_SWITCH_TO_D_GEAR = 0x1B;
+    HAVP_PUSH_REQUEST_MAP_BUILDING = 0x1C;
+    HAVP_PUSH_REQUEST_ROUTE_REPLAY = 0x1D;
+    SVP_PUSH_REQUEST = 0x1E;
+    ACCELERATOR_PEDAL = 0x1F;
+    TAKE_OVER_IMMEDIATELY = 0x20;
+    REQUEST_STOP = 0x21;
+    SVP_REQUEST_CLOSE_ENGINE_HOOD = 0x22;
+    SVP_REQUEST_CLOSE_TRUNK = 0x23;
+    SVP_REQUEST_UNFOLD_REARVIEW_MIRROR = 0x24;
+    SVP_REQUEST_CLOSE_DOOR = 0x25;
+    SVP_REQUEST_FASTEN_SEATBELT = 0x26;
+    SVP_RCTB_FCTB_ACTIVATION = 0x27;
+    SVP_AEB_ACTIVATION = 0x28;
+    SVP_TCS_ABS_ACTIVATION = 0x29;
+    SVP_ESP_ACTIVATION = 0x2A;
+    SVP_HDC_ACTIVATION = 0x2B;
+    SVP_TIRE_PRESSURE_IS_TOO_LOW = 0x2C;
+    SVP_ILLUMINATION_CONDITIONS = 0x2D;
+    SVP_RAINING_CONDITIONS = 0x2E;
+    EXCESSIVE_SLOPE = 0x2F;
+    SVP_VEHICLE_RANGE_TOO_LOW = 0x30;
+    SVP_CAMERA_BLOCKED = 0x31;
+    SVP_THE_LOOP_CAMERA_FAULTY = 0x32;
+    SVP_RADAR = 0x33;
+    SVP_ASSOCIATED_SYSTEM_FAULTY = 0x34;
+    SVP_SYSTEM_FAULTY = 0x35;
+    NEED_UPDATE = 0x36;
+    MAP_UPDATING = 0x37;
+    MAP_UPDATE_SUCCESS = 0x38;
+    MAP_UPDATE_FAIL = 0x39;
+    SVP_TURN_ON_BACKGROUND_FUNCTIONS = 0x3A;
+
+    // for deeproute internal debug
+    PRE_MAPPING_CHECK_CANCEL = 0xA0;
+  }
+  repeated Disp disp = 1;
+}
+
+message APSWorkSts {
+  enum Status {
+    DISABLE = 0;
+    STANDBY = 1;
+    SEARCHING = 2;
+    GUIDANCE = 3;
+    FAILED = 4;
+    WAIT_FOR_ENGINE_RESTART = 5;
+  }
+  Status status = 1;
+}
+
+message HAPHmiIndex {
+  enum Index {
+    RESERVED = 0;
+    MAIN_SCREEN = 1;
+    EOL_TEST = 2;
+    P2P_SCREEN = 3;
+    ASSIST_SCREEN = 4;
+    HAVP_SCREEN = 5;
+    PAVP_SCREEN = 6;
+    RADS_SCREEN = 7;
+    FADS_SCREEN = 8;
+  }
+  Index index = 1;
+}
+
+message APSSysSoundIndcn {
+  enum Index {
+    NO_WARNING = 0;
+    APS_FAILED_TONE = 1;
+    APS_SUCCESSFUL_TONE = 2;
+    APS_WARNING_TONE = 3;
+    APS_REQUEST_TONE = 4;
+  }
+  Index index = 1;
+}
+
+message HAPSwtDispCtrlCmd {
+  enum Disp {
+    NO_DISPLAY = 0;
+    PARK_OUT_DIRECTION_SELECT_MENU = 1;
+    CONTINUE_PARK_MENU = 2;
+    STUDY_FINISH_BUTTON = 3;
+    CONTINUE_RADS_MENU = 4;
+    RDAS_ACTIVE_DISTANCE_ARROW_STEERING = 5;
+    CONTINUE_FADS_MENU = 6;
+  }
+  Disp disp = 1;
+}
+
+message APABacgrdWorkSts {
+  enum Status {
+    NOT_ACTIVE = 0;
+    ACTIVE = 1;
+  }
+  Status sts = 1;
+}
+
+message HAPPrkgModCurrSts {
+  enum Status {
+    NO_DISPLAY = 0;
+    LEFT_PARALLEL_PARK_IN = 1;
+    RIGHT_PARALLEL_PARK_IN = 2;
+    LEFT_VERT_PARK_IN = 3;
+    RIGHT_VERT_PARK_IN = 4;
+    LEFT_TSHAPE_PARK_IN = 5;
+    RIGHT_TSHAPE_PARK_IN = 6;
+    LEFT_PARALLEL_PARK_OUT = 7;
+    RIGHT_PARALLEL_PARK_OUT = 8;
+    FRONT_VERT_PARK_OUT = 9;
+    REAR_VERT_PARK_OUT = 10;         // 0xA
+    P2P_SUMMON = 11;                 // 0xB
+    LEFT_FRONT_VERT_PARK_OUT = 12;   // 0xC
+    RIGHT_FRONT_VERT_PARK_OUT = 13;  // 0xD
+    LEFT_REAR_VERT_PARK_OUT = 14;    // 0xE
+    RIGHT_REAR_VERT_PARK_OUT = 15;   // 0xF
+  }
+  Status sts = 1;
+}
+
+message APSProcBar {
+  int32 proc = 1;
+}
+
+message OutParkingDirctionValid {
+  bool l_para_prkg_out_vald = 1;
+  bool r_para_prkg_out_vald = 2;
+  bool head_vert_prkg_out_vald = 3;
+  bool tail_vert_prkg_out_vald = 4;
+  bool ltail_vert_prkg_out_vald = 5;
+  bool rtail_vert_prkg_out_vald = 6;
+  bool lhead_vert_prkg_out_vald = 7;
+  bool rhead_vert_prkg_out_vald = 8;
+}
+
+message ApaMenudispctrlcmd {
+  enum ApaMenudispctrlcmdType {
+    APA_MENUDISPCTRLCMD_NO_DISP_AVM_MENU = 0;
+    APA_MENUDISPCTRLCMD_PARK_IN_INDICATE_MENU = 1;
+    APA_MENUDISPCTRLCMD_PARK_IN_SELECT_SLOT_MENU = 2;
+    APA_MENUDISPCTRLCMD_PARK_IN_MODE_SELECT_MENU = 3;
+    APA_MENUDISPCTRLCMD_PARK_IN_PROCESS = 4;
+    APA_MENUDISPCTRLCMD_REMOTE_PARK_IN_PROCESS = 5;
+    APA_MENUDISPCTRLCMD_PARK_OUT_CONFIRM_MENU = 6;
+    APA_MENUDISPCTRLCMD_PARK_OUT_PROCESS = 7;
+    APA_MENUDISPCTRLCMD_PARK_IN_INDICATE_MENU_NORPA = 8;
+    APA_MENUDISPCTRLCMD_PARK_IN_SELECT_SLOT_MENU_NORPA = 9;
+    APA_MENUDISPCTRLCMD_PARK_IN_MODE_SELECT_MENU_NORPA = 10;
+    APA_MENUDISPCTRLCMD_PARK_OUT__INDICATE_MENU = 11;
+    APA_MENUDISPCTRLCMD_USER_DEFINED_PARKING_SLOT_MENU = 12;
+    APA_MENUDISPCTRLCMD_PARK_IN_REMOTESEARCHINGSLOT_MENU = 13;
+    APA_MENUDISPCTRLCMD_PAVP_SCREEN_SECTION_A = 14;
+    APA_MENUDISPCTRLCMD_REVERSED = 15;
+  }
+  ApaMenudispctrlcmdType type = 1;
+}
+
+message APAFuncSts {
+  enum Status {
+    FUNCTION_STANDBY = 0;
+    FUNCTION_ACTIVE = 1;
+    FUNCTION_DISABLE = 2;
+    RESERVED = 3;
+  }
+  Status status = 1;
+}
+
+message PrkMode {
+  enum Mode {
+    NO_SELECT = 0;
+    HEAD_PARKING_IN = 1;
+    TAIL_PARKING_IN = 2;
+  }
+  Mode mode = 1;
+}
+message RADSFuncSts {
+  enum Status {
+    FUNCTION_STANDBY = 0;
+    FUNCTION_ACTIVE = 1;
+    FUNCTION_DISABLE = 2;
+  }
+  Status status = 1;
+}

@@ -1,0 +1,18 @@
+syntax = "proto2";
+
+package deeproute.routing;
+
+message PassingCrossingInfo {
+  enum CrossingType {
+    STRAGHT = 0;
+    LEFT = 1;
+    RIGHT = 2;
+    TURN_ROUND = 3;
+  }
+  optional CrossingType crossing_type = 1;
+  optional double crossing_size = 2;
+}
+
+message EventReportErrorMessage {
+  optional string error_message = 1;
+}

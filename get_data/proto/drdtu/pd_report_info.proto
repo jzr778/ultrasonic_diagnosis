@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package deeproute.pdreportinfo;
+
+message LimSpeed {
+  string name = 1;
+  string type = 2;
+  double setup_x = 3;
+  double setup_y = 4;
+  double setup_yaw = 5;
+  double effect_x = 6;
+  double effect_y = 7;
+  double effect_length = 8;
+  double value = 9; 
+}
+
+message PdReportInfo { //topic  "/drdtu/pdreportinfo_out"
+  string msg_type = 1; //message type，default: pd_info_report.v1
+  string gps_time = 2; //"20200602.121212.123"  //local time，format “YMD.HMS.MS” 
+  float sug_speed = 3; //Suggest speed unit : m/s， When there is no suggest speed, set 0
+  repeated LimSpeed limspeeds = 4; 
+}

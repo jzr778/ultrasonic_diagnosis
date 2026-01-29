@@ -1,0 +1,97 @@
+syntax = "proto2";
+
+package deeproute.map;
+
+enum LaneTurn {
+  INVALID = 0;
+  STRAIGHT = 1;
+  LEFT = 2;
+  RIGHT = 3;
+  U_TURN_LEFT = 4;
+  U_TURN_RIGHT = 5;
+}
+
+enum LaneType {
+  NORMAL = 0;    // Normal lane for motor vehicles.
+  BIKING = 1;    // Lane for non-motorized vehicles.
+  BUS_LANE = 2;  // Only for bus.
+  SHOULDER = 3;  // Emergency stopping lane on the high way.
+  OFF_RAMP = 4;  // Ramp where cars drive off the high way.
+  ON_RAMP = 5;
+  LEFT_TURN_WAITING = 6;
+  REVERSIBLE_LANE = 7;
+  VARIABLE_LANE = 8;
+  TIDAL_LANE = 9;
+}
+
+enum RoadClass {
+  RC_HIGHWAY = 0;
+  RC_URBAN_EXPRESSWAY = 1;
+  RC_OTHER = 99;
+}
+
+enum LinkUsage {
+  LU_INVALID = 0;
+  LU_RIGHT_TURN_LANE = 14;  // 右转专用道
+  LU_OTHER = 99;
+}
+
+enum CrossingType {
+  INVALID_CROSSING = 0;
+  MERGING_CROSSING = 1;  // 汇入路口
+  T_CROSSING = 2;        // T字路口
+  Y_CROSSING = 3;        // Y字路口
+  X_CROSSING = 4;        // 十字路口
+  TUNNEL_ENTRANCE = 5;   // 隧道入口
+  TRAFFIC_LIGHTS = 6;    // 交通灯
+  OTHER_CROSSING = 99;
+}
+
+enum CameraType {
+  CAMERA_TYPE_NONE = 0;
+  CAMERA_TYPE_RED_LIGHT_RUNNING = 1;
+  CAMERA_TYPE_ELECTRONIC_TAGGING = 2;
+  CAMERA_TYPE_FIXED_SPEED = 3;
+  CAMERA_TYPE_MOVING_SPEED = 4;
+  CAMERA_TYPE_BUS_LANES = 5;
+  CAMERA_TYPE_ONE_WAY = 6;
+  CAMERA_TYPE_EMERGENCY_LANES = 7;
+  CAMERA_TYPE_NON_MOTORIZED_VEHICLE = 8;
+  CAMERA_TYPE_INTER_SPOT_ENTER = 9;
+  CAMERA_TYPE_INTER_SPOT_EXIT = 10;
+  CAMERA_TYPE_CONTINUOUS_ENTER = 11;
+  CAMERA_TYPE_CONTINUOUS_EXIT = 12;
+  CAMERA_TYPE_OTHERS = 13;
+  CAMERA_TYPE_HOV = 14;
+  CAMERA_TYPE_ZIPPER = 15;
+  CAMERA_TYPE_VERSION1 = 16;
+  CAMERA_TYPE_TAIL_NUMBER = 17;
+  CAMERA_TYPE_TO_BEIJING = 18;
+  CAMERA_TYPE_WHISTLE = 19;
+  CAMERA_TYPE_BUS_STATION = 20;
+  CAMERA_TYPE_FORBID_TURN_RIGHT = 21;      // 禁止右转
+  CAMERA_TYPE_FORBID_LINE = 22;            // 违反禁止标线
+  CAMERA_TYPE_ILLEGAL_STOP = 23;           // 非法停车
+  CAMERA_TYPE_LOW_SPEED = 24;              // 超低速
+  CAMERA_TYPE_VARIABLE_SPEED = 25;         // 可变限速
+  CAMERA_TYPE_LANE_SPEED = 26;             // 分车道限速
+  CAMERA_TYPE_CAR_TYPE_SPEED = 27;         // 分车种限速
+  CAMERA_TYPE_LANE = 28;                   // 违规占车道
+  CAMERA_TYPE_ILLEGAL_CROSS = 29;          // 违规过路口
+  CAMERA_TYPE_FORBID_SIGN = 30;            // 违反禁令标志
+  CAMERA_TYPE_ILLEGAL_USE_LIGHT = 31;      // 违规用灯
+  CAMERA_TYPE_BELT = 32;                   // 安全带
+  CAMERA_TYPE_PHONE = 33;                  // 开车打手机
+  CAMERA_TYPE_ENVIRONMENT_LIMIT = 34;      // 环保限行
+  CAMERA_TYPE_PROTECT_HUMAN = 35;          // 礼让行人
+  CAMERA_TYPE_YEAR_EXAMINE = 36;           // 车辆未按规定年检
+  CAMERA_TYPE_OFFGAS = 37;                 // 尾气超标
+  CAMERA_TYPE_TRAFFIC_DISPATCH = 38;       // 路况监控
+  CAMERA_TYPE_ENTRANCE = 39;               // 出入口摄像头
+  CAMERA_TYPE_FORBID_TURN_AROUND = 40;     // 禁止掉头摄像头
+  CAMERA_TYPE_ETC_TOLL = 41;               // etc收费电子眼
+  CAMERA_TYPE_NOT_FOLLOW_GUIDE_LANE = 42;  // 不按导向车道行驶
+  CAMERA_TYPE_TRAFFIC_FLOW_MONITOR = 43;   // 流量监控（车流量）
+  CAMERA_TYPE_KEEP_SAFE_DISTANCE = 44;     // 保持安全车距
+  CAMERA_TYPE_ILLEGAL_LANE_CHANGE = 45;    // 违法变道
+}

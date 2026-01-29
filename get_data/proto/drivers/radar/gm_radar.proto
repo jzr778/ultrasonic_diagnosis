@@ -1,0 +1,174 @@
+syntax = "proto2";
+
+package deeproute.gm.c01.radar;
+
+message RadarState {
+  enum ErrorStatus {
+    NO_ERROR = 0;
+    NOT_DEFINED = 1;
+    MISALIGNMENT_ELEVATION = 2;
+    MISALIGNMENT_AZIMUTH = 3;
+    TEMPORARY_FAILURE = 4;
+    PERMANENT_FAILURE = 5;
+    VOLTAGE_ERROR = 6;
+    PRODUCTION_MODE = 7;
+    EOL_ERROR = 8;
+    CALIBRATION_PARAMETER_ERROR = 9;
+    ERROR_STATUS_RESERVED = 10;
+  }
+
+  enum BlindStatus {
+    NO_BLINDNESS = 0;
+    BLINDNESS = 1;
+    PRE_BLINDNESS = 2;
+    RESERVED2 = 3;
+  }
+  // autosar时间戳
+  optional uint64 as_timestamp = 1;
+  optional uint32 hdr_timestamp = 2;
+  // 遮挡状态
+  optional bool is_blockage = 3;
+  // 错误状态
+  optional ErrorStatus error_status = 4;
+  // 时间戳状态
+  optional uint32 timestamp_status = 5;
+  optional uint32 nof_objects = 6;
+  // 需要看下数据范围，如果是0-1，则需要乘100
+  optional float guardrail_confidence = 7;
+  optional uint32 guardrail_dxstart = 8;
+  optional uint32 guardrail_dxend = 9;
+  optional uint32 guardrailc0 = 10;
+  optional uint32 guardrailc1 = 11;
+  optional uint32 guardrailc2 = 12;
+  optional uint32 guardrailc3 = 13;
+  optional float obj_aziangle_calib = 14;
+  optional BlindStatus blind_status = 15;
+}
+
+message RadarObs {
+  // The movement type of the object
+  enum DynProp {
+    DYNPROP_STATIONARY = 0;
+    DYNPROP_MOVING = 1;
+    DYNPROP_STOPPED = 2;
+    DYNPROP_CROSSING = 3;
+    DYNPROP_ONCOMING = 4;
+    DYNPROP_UNKNOWN = 5;
+    DYNPROP_INVALID = 6;
+  }
+  // The measurement status of object
+  enum MeasState {
+    MEAS_STATE_NEW = 0;
+    MEAS_STATE_MEASURED = 1;
+    MEAS_STATE_PREDICTED = 2;
+    MEAS_STATE_UNKNOWN = 3;
+    MEAS_STATE_INVALID = 4;
+  }
+  // object type
+  enum ObstacleClass {
+    OBSTACLE_CLASS_PEDESTRIAN = 0;
+    OBSTACLE_CLASS_CYCLIST = 1;
+    OBSTACLE_CLASS_MOTORCYCLE = 2;
+    OBSTACLE_CLASS_CAR = 3;
+    OBSTACLE_CLASS_TRUCK = 4;
+    OBSTACLE_CLASS_UNKNOWN = 5;
+    OBSTACLE_CLASS_INVAILD = 6;
+  }
+  // object motion direction  新增
+  enum MotionDirection {
+    MOTION_DIRECTION_INIT = 0;
+    MOTION_DIRECTION_INVERSE = 1;
+    MOTION_DIRECTION_SAME = 2;
+    MOTION_DIRECTION_CROSS = 3;
+    MOTION_DIRECTION_RESERVED = 4;
+  }
+  // object reference point 新增
+  enum ReferencePoint {
+    REF_POINT_REAR = 0;
+    REF_POINT_REAR_LEFT = 1;
+    REF_POINT_LEFT = 2;
+    REF_POINT_FRONT_LEFT = 3;
+    REF_POINT_FRONT = 4;
+    REF_POINT_FRONT_RIGHT = 5;
+    REF_POINT_RIGHT = 6;
+    REF_POINT_REAR_RIGHT = 7;
+  }
+
+  optional uint64 timestamp = 1;  
+  // object id
+  optional int32 id = 2;             // Y
+  // object life cycles
+  optional int32 age = 3;            // Y
+  // object longitude distance  (+) = forward; (unit m)
+  optional float longitude_dist = 4;// Y
+  // object lateral distance    (+) = left; (unit m)
+  optional float lateral_dist = 5;  // Y
+  // object longitude velocity  (+) = forward; (unit m/s)
+  optional float longitude_vel = 6; // Y
+  // object lateral velocity  (+) = left; (unit m/s)
+  optional float lateral_vel = 7;   // Y
+  optional float longitude_acc = 8; // Y
+  optional float lateral_acc = 9;   // Y
+  // optional float lon_dist_std = 10; // Y
+  // optional float lat_dist_std = 11; // Y
+  // optional float lon_vel_std = 12;  // Y
+  // optional float lat_vel_std = 13;  // Y
+  // optional float lon_acc_std = 14;  // Y
+  // optional float lat_acc_std = 15;  // Y
+
+  // optional float oritation_angle = 16;  // Y
+  // optional float oritation_angle_std = 17;
+
+  optional float length = 18; // Y
+  optional float width = 19;  // Y
+  optional float height = 20; // Y
+
+  // optional float length_std = 21;
+  // optional float width_std = 22;
+  // optional float height_std = 23;
+
+  optional float rcs = 24;    // Y 
+  // The probability of an object being an obstacle
+  optional float obstacle_prob = 25;  // Y
+  // Existence probability of object
+  optional int32 confidence = 26;      // Y
+  // optional int32 latency = 27;
+  optional DynProp dynprop = 28;       // Y
+  optional MeasState meas_state = 29;  // Y
+  optional ObstacleClass obstacle_class = 30; // Y
+  // relative or absolute >> true rel  ||  false abs
+  // optional bool is_rel_speed = 31 [default = true];
+  // 这个不确定是不是可以用16替代
+  optional float heading = 32;  // 新增
+  // optional float yaw_rate = 33; // 新增
+  // 这个不明白什么意思
+  // optional bool is_hwa_target = 34 [default = false]; // 新增
+  // optional MotionDirection motion_direction = 35; // 新增
+  // optional ReferencePoint ref_point = 36; // 新增
+}
+
+message RadarObstacleArray {
+  optional uint32 canid = 1;
+  // @C_Mark@2@;
+  repeated RadarObs radar_obs = 2;
+  optional uint32 block_counter = 3;
+}
+
+message RadarStateArray {
+  optional uint32 canid = 1;
+  optional RadarState radar_state = 2;
+  optional uint32 block_counter = 3;
+}
+
+message RadarHeader {
+  enum RadarArrayType {
+    RADAR_STATE = 0;
+    RADAR_OBS_ARRAY = 1;
+  }
+
+  optional uint32 canframenum = 1;
+  //bitmap 2bit表示帧类型
+  optional uint64 bitmap = 2;
+  optional uint32 datalength = 3;
+  optional uint32 rolling_counter = 4;
+}

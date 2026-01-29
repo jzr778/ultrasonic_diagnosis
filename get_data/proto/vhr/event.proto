@@ -1,0 +1,70 @@
+syntax = "proto2";
+
+package dr.vhr;
+
+import "safety/safety_event.proto";
+import "safety/vehicle_info.proto";
+import "drapi/operation_status.proto";
+import "vhr/event_extra_info.proto";
+
+//VHR Event
+message VhrEvent {
+
+  // dr.common.event  Event ID, Event at proto/common/module_event.proto
+  //为了防止新加不同的proto版本Event识别不出来，这里用dr.common.Event的枚举值来代替（特别是云端要兼容多个版本的proto库）。
+  optional uint32 event_id = 1;
+
+  // dr.common.Module module Module ID, Module at proto/common/module_event.proto
+  //为了防止新加不同的proto版本Module识别不出来，这里用dr.common.Module的枚举值来代替
+  optional uint32 module_id = 2;
+
+  // 时间Unix时间戳，理论上支持纳秒/微秒/毫秒（根据不同长度识别），建议使用纳秒。
+  optional uint64 timestamp = 3;
+
+  // Sequence Number，事件序列化号，用于标识事件的顺序，从1开始，建议每个Event按顺序递增，可以根据序列号判断丢失的事件。
+  optional uint32 sequence_num = 4;
+
+  // Event Info，事件信息，可以是JSON字符串或者ProtoBuf bytes，目前建议使用JSON字符串。
+  oneof info {
+    string json_info = 5; //JSON string
+    bytes proto_info = 6; //ProtoBuf bytes
+  }
+
+  // Event Level，事件级别，根据不同事件类型，建议使用不同的级别。
+  optional dr.safety.EventLevel  level = 7 [default = INFO];
+
+  // 驾驶模式，根据车辆当时的驾驶模式设置，建议填充。如果经过safety，则由safety的补充驾驶模式。
+  optional dr.safety.vehicle_info.DrivingMode mode = 8 [default = MODE_UNKNOWN]; //车辆驾驶模式
+
+  //已激活状态机, event : BLC_STATE_ACTIVE_STATUS_UPDATE_EVENT
+  //https://code.deeproute.ai/deeproute-projects/public/common/-/blob/development/proto/drapi/operation_status.proto?ref_type=heads#L995
+  // 车辆状态机当前状态，这个根据BLC的状态机来设置。
+  optional dr.operationstatus.Feature state = 9 [default = UNKNOWN_FEATURE];
+
+  //事件类型，如果经过safety，则safety根据策略填充，否则自己根据实际情况填充。默认填 ET_ONE_SHOT 即可
+  optional dr.safety.EventType type = 10 [default = ET_ONE_SHOT];
+
+  //type=2携带上来，表示debounce消息条数。
+  optional uint32  count = 11;
+
+  //type=2携带上来，表示开始事件（type=1）到结束事件（type=2）的时长，单位毫秒：ms
+  optional uint64 duration = 12;
+
+  //扩展字段信息，携带额外信息，目前用于车辆信息的补充，可以根据车辆的实际情况来补充。
+  optional EventExtraInfo extra_info = 13;
+
+  // reserved
+  reserved 14 to 90;
+
+  //如果离线上报，例如本身crash，无法实时关联到当前行程，则通过其他行程上报，则通过覆盖来实现。
+  optional int32 custom_override = 91;
+
+  //是否自定义行程名称（离线上报特殊需求）
+  optional string custom_trip_name = 92;
+
+  //是否自定义driver version（离线上报特殊需求）
+  optional string custom_driver_version = 93;
+
+  //是否自定义event timestamp（离线上报特殊需求）
+  optional uint64 custom_timestamp = 94;
+}

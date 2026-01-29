@@ -1,0 +1,61 @@
+syntax = "proto2";
+
+package deeproute.common;
+
+enum NodeStatus {
+  PARSE_CONFIG_FAILED = 0; // only for starter
+  PREPARE_TO_START = 1;
+  START_FAILED = 2;
+  RUNNING = 3;
+  ABNORMAL_EXIT = 4;
+  CLOSED_BY_STARTER = 5; // only for starter
+  NORMAL_EXIT = 6;
+}
+
+message NodeInfo {
+  optional string node_name = 1;
+  optional int32 node_status = 2; // only for starter
+  optional string node_log = 3;
+  optional bool is_first_dead_node = 4; // only for starter
+  optional NodeStatus status = 5;
+}
+
+message StarterNodeInfo {
+  repeated NodeInfo node_info = 1;
+}
+
+// /em/fg_info
+message DemFunctionGroupInfo {
+  repeated NodeInfo node_info = 1;
+  optional string function_group_name = 2; // for dem debug
+  optional string function_group_state = 3; // for dem debug
+}
+
+message Syslog {
+  optional string debug_level = 1;
+  optional string module_name = 2;
+  optional int32 event_id = 3;
+  optional string event_name = 4;
+  optional string msg = 5;
+  optional string cmd = 6;
+}
+
+message Notification {
+  optional string debug_level = 1;
+  optional string module_name = 2;
+  optional string msg = 3;
+  optional int32 event_id = 4;
+}
+
+message CarStatus {
+  optional int32 id = 1;
+  optional string module_name = 2;
+  optional string msg = 3;
+}
+
+message Operationlog {
+  optional int32 event_id = 1;
+  optional string module_name = 2;
+  optional string msg = 3;
+  optional string event_name = 4;
+}

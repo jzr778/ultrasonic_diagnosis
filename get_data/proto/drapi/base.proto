@@ -1,0 +1,114 @@
+syntax = "proto3";
+
+package dr.base;
+
+enum ErrorCode {
+  SUCCESS = 0;
+  UNKNOWN_ERROR = 1;
+  NOT_READY = 2;
+  REPEATED_REQUEST = 3;
+  LOCATION_ERROR = 4;
+  PARAMETER_ERROR = 5;
+  REQUEST_TIMEOUT = 6;
+  PLANNING_FAILURE = 7;
+  DSM_FAILURE = 8;
+  AD_ACTIVED = 9;
+}
+
+enum CoorSys {
+  COORSYS_UNKNOWN = 0;
+  COORSYS_GCJ02 = 1;
+  COORSYS_WGS84 = 2;
+  COORSYS_HD = 3;
+}
+
+// omitting the height field for representing a 2D location.
+message PointLLH {
+  double lon = 1;     // Longitude in degrees, ranging from -180 to 180.
+  double lat = 2;     // Latitude in degrees, ranging from -90 to 90.
+  double height = 3;  // WGS-84 ellipsoid height in meters.
+}
+
+// A general 2D point. Its meaning and units depend on context, and must be
+// explained in comments.
+message Point2D {
+  double x = 1;
+  double y = 2;
+}
+
+message Point2DWithHeading {
+  Point2D point = 1;
+  double heading = 2;
+}
+
+// A general 3D point. Its meaning and units depend on context, and must be
+// explained in comments.
+message Point3D {
+  double x = 1;
+  double y = 2;
+  double z = 3;
+}
+
+message Point3DWithHeading {
+  Point3D point = 1;
+  Point3D heading = 2;
+}
+
+// A general polygon, points are clockwise
+message Polygon {
+  repeated Point3D point = 1;
+}
+
+message Polyline {
+  repeated Point3D point = 1;
+}
+
+message ParkingSpace {
+  enum ParkingSpaceType {
+    UNKNOWN = 0;
+    VERTICAL = 1;  // rectangle
+    PARALLEL = 2;  // rectangle
+    SLANTED = 3;   // parallelogram, the angle is not 90 degree
+  }
+  int32 id = 1;
+  Polygon polygon = 2;
+  Point3D center_point = 3;
+  double heading = 4;
+  bool is_empty = 5;
+  int32 layer = 6;
+  ParkingSpaceType parking_space_type = 7;
+}
+
+// 矩形
+message RotatedRect {
+  Point2D center = 1;
+  Point2D size = 2;
+  float angle = 3;
+}
+
+// 档位信息
+enum GearPosition {
+  INVALID = 0;
+  PARK = 1;
+  REVERSE = 2;
+  NEUTRAL = 3;
+  DRIVE = 4;
+  LOW = 5;
+  UNSPECIFIED = 6;
+}
+
+//颜色
+enum Color {
+  UNKNOWN = 0;
+  RED = 1;
+  YELLOW = 2;
+  GREEN = 3;
+  BLACK = 4;
+};
+
+//方向
+enum Direction {
+  DIRECTION_UNKNOWN = 0;
+  LEFT = 1;
+  RIGHT = 2;
+};

@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package deeproute.dtu.data;
+
+enum Module {
+  DTU = 0;
+  PLANNER = 1;
+  CONTROL = 2;
+  LOCALIZATION = 3;
+  PERCEPTION = 4;
+  CANBUS = 5;
+  VISUALIZER = 6;
+  ROUTING = 7;
+  LOCAL_ROUTING = 8;
+  MAP_ENGINE = 9;
+}
+
+enum Code {
+  SUCCESS = 0;
+  FAILED = 1;
+}
+
+message ErrorCode {
+  Code err_code = 1;
+  string err_msg = 2;
+}
+
+message TravelStatus {    // topic "/planner/drdtu/travel_status"
+  uint32 time_stamp = 1;  // unit s
+  uint32 target_index =
+      2;  // target_index = 0, when go to start point, 1 go to second point
+  float remaining_distance = 3;     // unit m
+  float remaining_time = 4;         // unit s
+  float start_to_cur_distance = 5;  // distance from start to current
+  float start_to_cur_time = 6;      // time from start to current
+  string cmd_id = 7;
+}
+
+message ContainerInfo {
+  enum ContainerType {
+    CONTAINER_TYPE_NOT_SET = 0;
+    TWENTY_FEET = 1;
+    FORTY_FEET = 2;
+    FORTY_FIVE_FEET = 3;
+  }
+  double distance = 1;  // unit m
+  ContainerType type = 2;
+}
+
+message ContainerStatus {  // topic "/csm/drdtu/container_status"
+  bool has_container = 1;
+  ContainerInfo as_one_container = 2;
+  repeated ContainerInfo as_two_containers = 3;
+}

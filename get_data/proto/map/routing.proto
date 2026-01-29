@@ -1,0 +1,191 @@
+
+syntax = "proto2";
+
+package deeproute.map;
+
+import "common/geometry.proto";
+import "map/common_type.proto";
+import "map/amap_drive_route_planning.proto";
+import "graph_match/graph_matching.proto";
+import "odd/odd.proto";
+
+message RoutingRequestBody {
+  message RoutePlanParam {
+    // start point is or not Elevated.
+    //  0: default.
+    //  1: Prioritize the link on the elevated road as the starting point for
+    //     calculating the route.
+    //  2: Prioritize the link not on the elevated road as
+    //     the starting point for calculating the route.
+    optional int32 s_elevated = 1;
+
+    // Specify the navi ID of the starting link.
+    // Priority will be given to using this incoming link as the starting link
+    // to calculate the path if it exist.
+    optional string s_nav_info_id = 2;
+  }
+  optional RoutePlanParam route_plan_param = 1;
+}
+
+enum RoutePlanningType {
+  NAVI_PLANNING = 0;
+  DR_PLANNING = 1;
+  AMAP_PLANNING = 2;
+}
+
+message DrRoutePlanningMetric {
+  // Turnback metric
+  enum UTurnMetric {
+    NO_TURN_BACK = 0;
+    NORMAL_TURN_BACK = 1;
+  }
+
+  // High way metric
+  enum HighwayMetric {
+    NORMAL_HIGHWAY = 0;
+    NO_HIGHWAY = 1;
+    MORE_HIGHWAY = 2;
+  }
+}
+
+message RoutingOption {
+  // Planning Rule Type
+  // 0: High speed priority
+  // 1: Shortest path
+  // 4: System recommended (default)
+  // 5:Most economical (high road priority)
+  optional int32 cost = 1;
+  // 32-bit integer, each avoidance is represented by one bit.
+  // 0 means no avoidance, 1 means avoidance.
+  // The order from low to high is: high speed, toll, ferry.
+  optional int32 avoid_road_type = 2;
+  // avoid congestion
+  // 0: Do not use TMC (default) 1: Use TMC
+  optional bool avoid_congestion = 3;
+  // 1 (default)
+  // Ignored when there is a waypoint. Valid range: 1-3
+  optional int32 max_result_num = 4;
+  // GCJ02(default)
+  enum CoordinateSystem {
+    UNKNOW = 0;
+    GCJ02 = 1;
+  }
+  optional CoordinateSystem coordinate_system_type = 5;
+  // Starting point head angle
+  optional double heading = 6;
+
+  optional int32 s_elevated = 7;
+
+  optional string s_nav_info_id = 8;
+}
+
+message DrRoutingOption {
+  optional double heading = 1;
+  optional DrRoutePlanningMetric.UTurnMetric u_turn_metric = 2;
+  optional DrRoutePlanningMetric.HighwayMetric high_way_metric = 3;
+}
+
+message AmapRoutingOption {
+  optional bool use_temporary_odd = 1;
+
+  // v2
+  optional bool dynamic_static_odd_switch = 2;
+  optional bool roi_odd_switch = 3;
+}
+
+message RequestInfo {
+  optional RoutePlanningType route_planning_type = 1000;
+
+  // start point.
+  optional deeproute.common.PointLLH start_point = 1;
+  // Pass in multiple latitude and longitude in sequence. Supports up to 13
+  // waypoints.
+  repeated deeproute.common.PointLLH end_points = 2;
+
+  // for navi route planning
+  optional RoutingOption option = 3;
+  // for dr route planning
+  optional DrRoutingOption dr_option = 6;
+
+  optional AmapRoutingOption amap_option = 9;
+  optional AmapDriveRoutePlanningResponse amap_response = 7;
+
+  enum RequestType {
+    DEFAULT_EXECUTE = 0;
+    ONLY_PREVIEW = 1;
+  }
+  optional RequestType request_type = 4;
+
+  optional bool retry_on_net_error = 10;
+
+  optional int32 route_id = 5;
+  optional uint64 route_id_64 = 8;
+}
+
+enum RoutingCode {
+  SUCCESS = 0;
+
+  // routing 服务内部错误
+  INTERNAL = 1;
+  // route id未找到或请求区域没有地图数据
+  NOT_FOUND = 2;
+  // 请求参数有误
+  INVALID_ARGUMENT = 3;
+  // 算路失败
+  UNAVAILABLE = 4;
+  // 路线超长或是途经点过多
+  OUT_OF_RANGE = 5;
+  // 网络地址解析错误
+  NETWORK_ADDRESS_RESOLUTION_ERROR = 6;
+  // 请求超时
+  DEADLINE_EXCEEDED = 7;
+  ROUTING_UNKNOWN = 8;
+}
+
+// topic /map/routing/request
+message RoutingRequest {
+  optional string request_id = 1;
+  oneof request {
+    RequestInfo request_info = 2;
+  }
+}
+
+// topic /map/routing/response
+message RoutingResponse {
+  message Status {
+    optional RoutingCode code = 1;
+    optional string err_msg = 2;
+  }
+  optional Status status = 1;
+  optional string request_id = 2;
+  repeated Route routes = 3;
+}
+
+message SegmentInfo {
+  optional RoadClass road_class = 1;
+  repeated deeproute.common.PointLLH shape_points = 2;
+}
+
+message Route {
+  optional int32 id = 4;
+  optional uint64 id_64 = 10;
+
+  // Route distance, unit: meters.
+  optional int32 dis = 1;
+
+  // Route distance that can be able to use NCA, unit: meters.
+  optional int32 nca_dis = 9;
+
+  // Total route time. unit: seconds.
+  optional int32 dur = 2;
+
+  optional int32 traffic_lights_num = 5;
+
+  repeated deeproute.common.PointLLH shape_points = 3;
+
+  repeated SegmentInfo segment_infos = 6;
+
+  repeated graph_match.MismatchSegmIndex mismatch_indexes = 7;
+
+  optional odd.PreviewRouteOddLimitInfo odd_preview_result = 8;
+}

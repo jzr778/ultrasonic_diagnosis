@@ -1,0 +1,46 @@
+syntax = "proto2";
+
+package deeproute.remote_takeover;
+
+import "canbus/chassis.proto";
+import "common/header.proto";
+import "common/vehicle_state/vehicle_state.proto";
+import "common/vehicle_signal.proto";
+import "common/error_code.proto";
+
+message NotifyControl {
+
+  enum StatusType{
+    STATUSTYPE_INVALID = 0;
+    STATUSTYPE_CANCEL = 1;
+    STATUSTYPE_REQUEST_CONTROL_MODE = 2;
+    STATUSTYPE_REQUEST_ADS_MODE = 3;
+    STATUSTYPE_REQUEST_SEND_AUTO_REQUEST = 4;
+  }
+
+  optional deeproute.common.Header header = 1;
+
+  // according to data source
+  optional double longitudinal_cmd = 2;
+
+  // target non-directional steering rate in rad/s
+  optional double steering_rate = 3;
+
+  // target steering angle in radian
+  optional double steering_target = 4;
+
+  optional deeproute.canbus.Chassis.DrivingMode driving_mode = 5;
+  optional deeproute.canbus.Chassis.GearPosition gear_location = 6;
+
+  optional deeproute.common.VehicleState.TurnSignal turnsignal = 7 [ deprecated = true ];
+
+  optional StatusType status_type = 8;
+
+  optional deeproute.common.VehicleSignal signal = 9;
+
+}
+
+message NotifyControlResponse {
+  optional NotifyControl notify_control = 1;
+  optional deeproute.common.Code err_code = 2;
+}

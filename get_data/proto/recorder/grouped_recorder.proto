@@ -1,0 +1,44 @@
+syntax = "proto2";
+
+import "recorder/record_stats.proto";
+import "recorder/record_config.proto";
+import "recorder/topic_group.proto";
+
+package deeproute.recorder;
+
+message GroupedRecorderTask {
+  /**
+   @~english path to output file, supports date magics like {YYYY}{MM}{DD}{hh}{mm}{ss}
+   @~chinese 输出文件的路径，支持形如{YYYY}{MM}{DD}{hh}{mm}{ss}的日期magic
+   **/
+  optional string path = 1;
+
+  /**
+   @~english topics to record
+   @~chinese 想录制的topic
+   **/
+  optional TopicGroup tgroup = 2;
+
+  /**
+   @~english the record config
+   @~chinese 录制配置
+   **/
+  optional RecordConfig cfg = 3;
+}
+
+message GroupedRecorderConfig {
+  /**
+   @~english simultaniously recorded multiple tasks
+   @~chinese 并行录制的多个任务
+   **/
+  repeated GroupedRecorderTask tasks = 1;
+}
+
+message GroupedRecorderStats {
+  /**
+   @~english stats of pending tasks
+   @~chinese 正在进行中任务的状态
+   **/
+  repeated RecordStats pending = 1;
+}
+

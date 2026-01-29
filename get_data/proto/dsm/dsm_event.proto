@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+import "dsm/dsm.proto";
+
+package dr.dsm;
+
+// topic:/dsm/event
+message DSMEvent {
+  string id = 1;
+  oneof event {
+    // 0~99 reserved
+    DSMInit dsm_init = 100;
+    UpdateModule module_state_update = 101;
+    APIVersion api_version = 102;         // For compatibility with safe-app
+    Recovery recovery = 103;              // 恢复策略时间，单次
+  }
+}
+
+message DSMInit {
+  enum Status {
+    IN_PROGRESS = 0;
+    SUCCESS = 1;
+    FAILED = 2;
+  }
+  Status status = 1;
+  repeated string failed_modules = 2;  // filled if status==FAILED
+}
+
+message APIVersion {
+  bool ota_setting = 1;
+}
+
+enum RecoveryAction {
+  RA_START = 0;
+  RA_COMPLETE = 1;
+  RA_FAILED = 2;
+  RA_CANCELED = 3;
+}
+message Recovery {
+  int32 recovery_id = 1;
+  RecoveryAction action = 2;
+}
+
+// topic: /dsm/reset_event
+message DSMResetEvent {
+  bool total_reset = 1;
+}

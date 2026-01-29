@@ -1,0 +1,50 @@
+syntax = "proto2";
+
+package deeproute.canbus;
+
+message MarChassisDetail {
+  optional GW_HSC2_FrP00_169 gw_hsc2_frp00 = 1;
+}
+
+message GW_HSC2_FrP00_169 {
+  enum Available {
+    FALSE = 0;
+    TRUE = 1;
+  }
+
+  optional Available epb_available = 1;
+  optional Available eps_available = 2;
+  optional Available tccm_available = 3;
+  optional Available scu_available = 4;
+  optional Available scs_available = 5;
+  optional Available sdm_available = 6;
+  optional Available tcm_available = 7;
+  optional Available ecm_available = 8;
+  optional Available tca_available = 9;
+  optional Available plcm_available = 10;
+  optional Available msm_available = 11;
+  optional Available fvcm_available = 12;
+  optional Available hcu_available = 13;
+  optional Available dhl_available = 14;
+  optional Available sas_available = 15;
+  optional Available radar_available = 16;
+  optional Available bms_available = 17;
+  optional Available isc_available = 18;
+  optional Available escl_available = 19;
+  optional Available ficm_available =20;
+  optional Available tbox_available = 21;
+  optional Available pmdc_available = 22;
+  optional Available peps_available = 23;
+  optional Available aca_available = 24;
+  optional Available ipc_available = 25;
+  optional Available bcm_available = 26;
+  optional Available p2p_available = 27;
+  optional Available apa_available = 28;
+  optional Available hvdcdc_available = 29;
+  optional Available rda_available = 30;
+  optional Available tpms_available = 31;
+  optional Available pacm_available = 32;
+  optional Available alcm_available = 33;
+  optional Available ehbs_available = 34;
+  optional Available savm_available = 35;
+}

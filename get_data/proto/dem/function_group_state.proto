@@ -1,0 +1,22 @@
+syntax = "proto2";
+
+package deeproute.dem;
+
+message FunctionGroupState {
+  optional string function_group_name = 1;
+  optional string state_name = 2;
+  optional ExecutionsStartTime executions_start_time = 3;
+}
+
+message ExecutionStartTime {
+  optional string execution_name = 1;
+  optional int64 execution_start_time = 2;  // ms
+}
+
+message ExecutionsStartTime {
+  repeated ExecutionStartTime executions_start_time = 1;
+}
+
+message BusinessFunctionGroupsState {
+  repeated FunctionGroupState business_fg_state = 1;
+}

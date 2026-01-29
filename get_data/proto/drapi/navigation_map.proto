@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package dr.navigation_map;
+
+enum RoadClass {
+  RC_HIGHWAY = 0;
+  RC_URBAN_EXPRESSWAY = 1;
+  RC_OTHER = 99;
+}

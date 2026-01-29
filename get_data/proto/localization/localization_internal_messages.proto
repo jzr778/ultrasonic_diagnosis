@@ -1,0 +1,51 @@
+syntax = "proto2";
+
+package deeproute.localization.message;
+
+import "common/geometry.proto";
+
+import "drivers/pointcloud2.proto";
+
+enum OdometryMode {
+  ODOMETRY = 1;
+  LIO = 2;
+  MAP_REGISTRATION = 3;
+}
+
+message LidarMatchingMessage {
+  optional int64 measurement_time = 1;
+  optional int64 reference_time = 2;
+  optional OdometryMode odometry_mode = 3;
+  // optional bool is_map_registration = 3;
+  optional deeproute.common.Transformation3 delta_pose = 4;
+  //   optional Matrix6d pose_covariance = 5;
+  repeated float position_covariance = 5 [packed = true];
+  repeated float attitude_covariance = 6 [packed = true];
+  optional deeproute.common.Transformation3 pose_for_sensing = 7;
+  optional double overlap_ratio = 8;
+  optional bool is_degenerate = 9;
+  optional deeproute.common.Transformation3 map_pose = 10;
+  optional deeproute.common.Transformation3 reference_pose = 11;
+  optional int64 lidar_mapping_init_time = 12;
+}
+
+message KeyframeUpdateStatus {
+  optional int64 measurement_time = 1;
+  optional bool update_keyframe = 2;
+  optional int64 update_keyframe_time = 3;
+}
+
+message MapMatchingStatus {
+  optional int64 measurement_time = 1;
+  optional deeproute.common.Transformation3 map_to_odometry_transformation = 2
+      [deprecated = true];
+  optional deeproute.common.Transformation3 map_to_vehicle_transformation = 3;
+  optional int64 ego_lane_id = 4;
+}
+
+message LidarMappingInfo {
+  optional int64 measurement_time = 1;
+  optional deeproute.drivers.PointCloud2 local_map = 2;
+  optional deeproute.common.Transformation3 transformation_map_to_sensing = 3;
+  optional int64 lidar_mapping_init_time = 4;
+}

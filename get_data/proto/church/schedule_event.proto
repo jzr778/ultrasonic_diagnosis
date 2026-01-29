@@ -1,0 +1,57 @@
+syntax = "proto2";
+
+package deeproute.church;
+
+import "church/onboard_header.proto";
+
+message ScheduleProcessEvent {
+  // Component name
+  optional string component_name = 1;
+
+  // The sequence number of process
+  optional uint64 proc_number = 2;
+
+  // The start time (as control plane time), in nano-second
+  optional uint64 start_timestamp = 3;
+
+  // The end time (as control plane time), in nano-second
+  optional uint64 end_timestamp = 4;
+
+  // The header of messages in request
+  repeated OnboardHeader request_header = 5;
+
+  // The header of messages in response
+  repeated OnboardHeader response_header = 6;
+
+  // The start time (as data plane time), in nano-second
+  optional uint64 start_dataplane_timestamp = 7;
+
+  // The end time (as data plane time), in nano-second
+  optional uint64 end_dataplane_timestamp = 8;
+}
+
+message SchedulePublishEvent {
+  optional OnboardHeader publish_header = 1;
+}
+
+message ScheduleReceiveEvent {
+  optional OnboardHeader receive_header = 1;
+}
+
+message ScheduleEvent {
+  // The following two fields are necessary since ``ScheduleEvent`` are now sent in batches, not as
+  // single messages. This means they no longer have their own header, which used to be a reference
+  // of the related information.
+  //
+  // TODO(yanqingwang): reduce redundency by only introducing the following two fields for
+  // ScheduleReceiveEvent. That will be a breaking change.
+  optional uint64 timestamp = 1;            // The timestamp (as control plane time) when the event happens.
+  optional string component_name = 2;       // The component the event happens on.
+  optional uint64 dataplane_timestamp = 3;  // The timestamp (as data plane time) when the event happens.
+
+  oneof message {
+    ScheduleProcessEvent process_event = 10;
+    SchedulePublishEvent publish_event = 11;
+    ScheduleReceiveEvent receive_event = 12;
+  }
+}

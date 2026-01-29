@@ -1,0 +1,316 @@
+syntax = "proto2";
+
+package deeproute.perception;
+
+import "perception/deeproute_perception_obstacle.proto";
+import "perception/traffic_light_detection.proto";
+import "perception/deeproute_perception_ras_map.proto";
+import "common/geometry.proto";
+
+message CameraDebugInfo {
+  optional TrafficLight.Color tl_color = 1;
+  optional BBox2D projected_roi = 2;
+  optional string sensor_name = 3;
+  optional TrafficLightType tl_type = 4;
+  optional common.Point3D position = 5;
+  optional MapElement map_element = 6;
+  optional int32 count_down_number = 7;
+}
+
+message TrafficSignInfo {
+  enum SignType {
+    SIGN_BAN_CAR = 0;
+    SIGN_BAN_ENTER = 1;
+    SIGN_BAN_HEIGHT = 2;
+    SIGN_BAN_LEFT = 3;
+    SIGN_BAN_LEFT_RIGHT = 4;
+    SIGN_BAN_OTHER = 5;
+    SIGN_BAN_OVERTAKE = 6;
+    SIGN_BAN_PARKING = 7;
+    SIGN_BAN_PASS = 8;
+    SIGN_BAN_RIGHT = 9;
+    SIGN_BAN_SLOW = 10;
+    SIGN_BAN_STOP = 11;
+    SIGN_BAN_STRAIGHT = 12;
+    SIGN_BAN_STRAIGHT_RIGHT = 13;
+    SIGN_BAN_TRAILER = 14;
+    SIGN_BAN_U_TURN = 15;
+    SIGN_BAN_VEHICLE = 16;
+    SIGN_BAN_WEIGHT = 17;
+    SIGN_ENTER_HIGHWAY = 18;
+    SIGN_MAX_SPEED = 19;
+    SIGN_MIN_SPEED = 20;
+    SIGN_NON_SPEED = 21;
+    SIGN_OTHER = 22;
+    SIGN_OUT_HIGHWAY = 23;
+    SIGN_UNBAN_OVERTAKE = 24;
+    SIGN_WARN_ACCIDENT = 25;
+    SIGN_WARN_ANIMAL = 26;
+    SIGN_WARN_BICYCLE = 27;
+    SIGN_WARN_CONSTRUCTION = 28;
+    SIGN_WARN_CROSS = 29;
+    SIGN_WARN_FOG = 30;
+    SIGN_WARN_ICE_ROAD = 31;
+    SIGN_WARN_KID = 32;
+    SIGN_WARN_LEFT_MERGE = 33;
+    SIGN_WARN_LEFT_SHARP_TURN = 34;
+    SIGN_WARN_LIVESTOCK = 35;
+    SIGN_WARN_MORE_TURN = 36;
+    SIGN_WARN_OTHER = 37;
+    SIGN_WARN_PEOPLE = 38;
+    SIGN_WARN_RAIN = 39;
+    SIGN_WARN_RIGHT_MERGE = 40;
+    SIGN_WARN_RIGHT_SHARP_TURN = 41;
+    SIGN_WARN_SLOW = 42;
+    SIGN_WARN_TWO_TURN_1 = 43;
+    SIGN_WARN_TWO_TURN_2 = 44;
+    SIGN_WARN_VILLAGE = 45;
+    SIGN_WARN_WEATHER = 46;
+    SIGN_WARN_UPHILL = 47;
+    SIGN_WARN_DOWNHILL = 48;
+    SIGN_WARN_MORE_DOWNHILL = 49;
+    SIGN_WARN_WIND = 50;
+    SIGN_WARN_SLIPPERY = 51;
+    SIGN_WARN_TUNNEL = 52;
+    SIGN_WARN_BUMPY = 53;
+    SIGN_WARN_WATER = 54;
+    SIGN_WARN_DETOUR = 55;
+    SIGN_WARN_LEFT_DETOUR = 56;
+    SIGN_WARN_RIGHT_DETOUR = 57;
+    SIGN_WARN_MERGE = 58;
+    SIGN_WARN_NARROW = 59;
+    SIGN_WARN_ACCIDENT_MANA = 60;
+    SIGN_WARN_BUMP = 61;
+    SIGN_WARN_TWO_WAY = 62;
+    SIGN_WARN_RIGHT_MOUNTAIN = 63;
+    SIGN_WARN_RIGHT_NARROW = 64;
+    SIGN_WARN_EMBANKMENT = 65;
+    SIGN_WARN_RAILWAY = 66;
+    SIGN_WARN_GUARD_RAILWAY = 67;
+    SIGN_WARN_DISTANCE = 68;
+    SIGN_WARN_TRAFFIC_LIGHT = 69;
+    SIGN_WARN_QUEUE = 70;
+    SIGN_WARN_DANGER = 71;
+    SIGN_WARN_RIGHT_ROCK = 72;
+    SIGN_WARN_LEFT_ROCK = 73;
+    SIGN_WARN_TIDAL_LANE = 74;
+    SIGN_WARN_NARROW_BRIDGE = 75;
+    SIGN_WARN_HUMP_BRIDGE = 76;
+    SIGN_BAN_WAIT_MEETING = 77;
+    SIGN_BAN_TRUCK_TRAILER = 78;
+    SIGN_BAN_HORN = 79;
+    SIGN_BAN_LONG_STOP = 80;
+    SIGN_ASS_LEFT_RAMP = 81;
+    SIGN_ASS_CAR = 82;
+    SIGN_ASS_CAR_TRUCK = 83;
+    SIGN_ASS_TRUCK = 84;
+    SIGN_ASS_BUS = 85;
+    SIGN_ASS_DIRECTION = 86;
+    SIGN_ASS_FRONT = 87;
+    SIGN_ASS_RIGHT = 88;
+    SIGN_ASS_LEFT = 89;
+    SIGN_ASS_LEFT_RIGHT = 90;
+    SIGN_ASS_TIME = 91;
+  };
+  optional SignType sign_type = 1;
+  optional float limit_value = 2;
+  repeated int32 matched_lane_ids = 3;
+}
+
+message CameraObstacle {
+  optional int32 id = 1;                 // obstacle ID.
+  optional double confidence_score = 2;  // detection score
+  optional BBox2D bbox2d = 3;            // 2d detection result
+
+  enum Type {
+    UNKNOWN = 0;
+    TRAFFIC_LIGHT = 1;
+    TRAFFIC_SIGN = 2;
+    PEDESTRIAN = 3;  // Pedestrian, usually determined by moving behaviour.
+    BICYCLE = 4;     // bike, motor bike
+    VEHICLE = 5;     // car or truck.
+    UNKNOWN_MOVABLE = 6;
+    UNKNOWN_UNMOVABLE = 7;
+    LANEMARK = 8;
+  };
+  optional Type type = 4;  // obstacle type
+  optional int64 timestamp = 5;
+  optional TrafficLight.Color tl_color = 6 [deprecated = true];
+  optional CameraDebugInfo debug_info = 7;
+  optional TrafficSignInfo traffic_sign_info = 8;
+}
+
+// cubic polynomial y = a*x^3 + b*x^2 + c*x + d
+message LaneLineCubicCurve {
+  optional float longitude_min = 1;  // mimimum of x
+  optional float longitude_max = 2;  // maximum of x
+  optional float a = 3;
+  optional float b = 4;
+  optional float c = 5;
+  optional float d = 6;
+}
+
+message EndPoints {
+  optional common.Point2D start = 1;
+  optional common.Point2D end = 2;
+}
+
+message CameraLaneLine {
+  enum LaneLineType {
+    UNKNOWN_TYPE = 0;
+    DASHED_WHITE = 1;
+    SOLID_WHITE = 2;
+    DASHED_YELLOW = 3;
+    SOLID_YELLOW = 4;
+    DOUBLE_YELLOW = 5;
+    CURB = 6;
+  };
+  optional LaneLineType type = 1;
+
+  enum LaneLinePositionType {
+    UNKNOWN_POSITION_TYPE = 0;
+    BOLLARD_LEFT = 1;
+    FOURTH_LEFT = 2;
+    THIRD_LEFT = 3;
+    ADJACENT_LEFT = 4;
+    EGO_LEFT = 5;
+    EGO_RIGHT = 6;
+    ADJACENT_RIGHT = 7;
+    THIRD_RIGHT = 8;
+    FOURTH_RIGHT = 9;
+    BOLLARD_RIGHT = 10;
+  };
+  optional LaneLinePositionType pos_type = 2;
+
+  optional LaneLineCubicCurve curve_camera_coord = 3;
+
+  optional LaneLineCubicCurve curve_image_coord = 4;
+
+  repeated common.Point3D cam_points = 5;
+
+  repeated common.Point2D img_points = 6;
+
+  repeated EndPoints image_end_point_set = 7;
+
+  optional int32 track_id = 8;
+
+  optional float confidence = 9;
+}
+
+message CameraObstacles {
+  optional int64 time_measurement = 1;
+  repeated CameraObstacle camera_obstacle = 2;   // An array of obstacles
+  repeated CameraLaneLine camera_lane_line = 3;  // An array of lane lines
+}
+
+message CameraQualityInfo {
+  enum CamereAbnormalType {
+    NORMAL = 0;
+    BLUR = 1;
+    SMEAR = 2;
+    OverExposure = 3;
+  };
+  enum CamereQualityLevel {
+    NORMAL_QUALITY = 0;
+    LOW_QUALITY = 1;
+    VERY_LOW_QUALITY = 2;
+  };
+  optional CamereAbnormalType abnormal_type = 1;
+  optional string sensor_name = 2;
+  optional CamereQualityLevel quality_level = 3;
+  optional int32 keep_time_in_second = 4;
+}
+
+message CameraQuality {
+  optional int64 time_measurement = 1;
+  repeated CameraQualityInfo camera_quality_info = 2;
+}
+
+// 天气分类
+message CameraScheme {
+  enum CameraSchemeType {
+    REGULAR = 0;     // 正常天气
+    RAIN = 1;        // 雨天
+    SNOW = 2;        // 雪天
+    FROST = 3;       // 霜天
+    FOG = 4;         // 雾天
+    SMUDGE = 5;      // deprecate future
+    SAND_STORM = 7;  // 沙尘暴
+    UNKNOWN = 6;     // 未知
+  };
+  optional CameraSchemeType camera_scheme = 1;
+  optional float camera_scheme_prob = 2;
+}
+
+// 场景分类
+message CameraRegion {
+  enum CameraRegionType {
+    NONE = 0;                     // 无
+    OUTSIDE_TUNNEL = 1;           // 进隧道前看到隧道口了
+    INSIDE_TUNNEL = 2;            // 相机视野进入隧道
+    UNDERGROUND_PARKING_LOT = 3;  // 地下停车场
+    GROUND_PARKING_LOT = 4;       // 露天停车场
+    TOLL_STATION = 5;             // 收费站
+    CONSTRUCTION_AREA = 6;        // 施工区域
+    BUS_PARKING_AREA = 7;         // 公交停车区域
+  };
+  optional CameraRegionType camera_region = 1;
+  optional float camera_region_prob = 2;
+}
+
+// 路面情况场景分类
+message CameraRoadCondition {
+  enum CameraRoadConditionType {
+    REGULAR = 0;   // 正常道路
+    DUST = 1;      // 沙石道路
+    SLIPERRY = 2;  // 滑溜道路
+    PONDING = 3;   // 有积水的道路
+    PATHHOLE = 4;  // 有坑的路
+    ICING = 5;     // 结冰道路
+    UNKNOWN = 6;   // 未知
+  };
+  optional CameraRoadConditionType camera_road_condition = 1;
+  optional float camera_road_condition_prob = 2;
+}
+
+// 光照分类
+message CameraLightingStatus {
+  enum CameraLightingType {
+    DUSK = 0;    // 昏暗
+    DARK = 1;    // 基本全黑
+    BRIGHT = 2;  // 明亮良好
+  };
+  optional CameraLightingType light_type = 1;
+  optional float light_prob = 2;
+  optional bool has_vehicle_ahead = 3;
+}
+
+// 时间分类
+message CameraTimeStatus {
+  enum CameraTimesType {
+    DAY = 0;      // 白天
+    EVENING = 1;  // 傍晚
+    NIGHT = 2;    // 夜晚
+  };
+  optional CameraTimesType camera_time = 1;
+  optional float camera_time_prob = 2;
+}
+
+message CameraStatus {
+  optional int64 time_measurement = 1;
+  optional string sensor_name = 2;
+  optional float image_quality = 3;
+  optional CameraScheme camera_scheme = 4;
+  optional CameraLightingStatus camera_lighting_status = 5;
+  optional CameraRoadCondition camera_road_condition = 6;
+}
+
+message CameraInfo {
+  optional int64 time_measurement = 1;
+  optional string sensor_name = 2;
+  optional CameraScheme camera_scheme = 3;
+  optional CameraRegion camera_region = 4;
+  optional CameraRoadCondition camera_road_condition = 5;
+  optional CameraLightingStatus camera_scene = 6;
+  optional CameraTimeStatus camera_time = 7;
+}

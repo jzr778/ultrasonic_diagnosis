@@ -1,0 +1,96 @@
+syntax = "proto3";
+
+package deeproute.visualizer;
+
+enum CommandType {
+  COMMAND_TYPE_UNKNOW = 0;
+  OPEN_UNMOVABLE = 1;
+  CLOSE_UNMOVABLE = 2;
+}
+
+enum StaticObstacleType {
+  STATIC_TYPE_UNKNOW = 0;
+  OPEN_STATICOBSTACLE = 1;
+  CLOSE_STATICOBSTACLE = 2;
+}
+
+enum DynamicObstacleType {
+  DYNAMIC_TYPE_UNKNOW = 0;
+  OPEN_DYNAMICOBSTACLE = 1;
+  CLOSE_DYNAMICOBSTACLE = 2;
+}
+
+enum SonarType {
+  SONAR_TYPE_UNKNOW = 0;
+  OPEN_SONAR = 1;
+  CLOSE_SONAR = 2;
+}
+
+enum OpenSpaceObstacleType {
+  OPEN_SPACE_OBSTACLE_UNKNOW = 0;
+  OPEN_OPEN_SPACE_OBSTACLE = 1;
+  CLOSE_OPEN_SPACE_OBSTACLE = 2;
+}
+
+enum SDLaneType {
+  SDLANE_TYPE_UNKNOW = 0;
+  OPEN_SDLANE = 1;
+  CLOSE_SDLANE = 2;
+}
+
+enum EnteryLaneType {
+  ENTRY_LANE_TYPE_UNKNOW = 0;
+  OPEN_ENTRY_LANE = 1;
+  CLOSE_ENTRY_LANE = 2;
+}
+
+enum PerceptionFollowVirtualLaneType {
+  PERCEPTION_FOLLOW_LANE_TYPE_UNKNOW = 0;
+  OPEN_PERCEPTION_FOLLOW_LANE = 1;
+  CLOSE_PERCEPTION_FOLLOW_LANE = 2;
+}
+enum PNCFollowVirtualLaneType {
+  PNC_FOLLOW_LANE_TYPE_UNKNOW = 0;
+  OPEN_PNC_FOLLOW_LANE = 1;
+  CLOSE_PNC_FOLLOW_LANE = 2;
+}
+
+enum IlcOrAutoTurn {
+  ILC_OR_AUTO_TURN_UNKNOW = 0;
+  ILC_TURN = 1;
+  AUTO_TURN = 2;
+  DISABLE_ILC_TURN = 3;
+}
+
+enum L2StatusType {
+  L2_STATUS_TYPE_UNKNOW = 0;
+  L2_ACC = 1;
+  L2_LAS = 2;
+  L2_ICA = 3;
+  L2_NCA = 4;
+  L2_TJP = 5;
+}
+
+// topic: /visualizer/command
+// visualizer to planning
+message VisualizerCommand {
+  int64 id = 1;
+  CommandType command_type = 2;
+  StaticObstacleType static_obstacle_tpe = 3;
+  DynamicObstacleType dynamic_obstacle_type = 4;
+  SonarType sonar_type = 5;
+  SDLaneType sdlane_type = 6;
+  EnteryLaneType entry_lane_type = 7;
+  PerceptionFollowVirtualLaneType perception_follow_virtual_lane_type = 8;
+  PNCFollowVirtualLaneType pnc_follow_virtual_lane_type = 9;
+  IlcOrAutoTurn ilc_or_auto_turn = 10;
+  L2StatusType l2_status_type = 11;
+  OpenSpaceObstacleType open_space_obstacle_type = 12;
+  repeated double large_vehicle_lat_dist_thres = 13;
+}
+
+// topic: /visualizer/command_rp
+// planning to visualizer
+message VisualizerCommandRP {
+  int64 id = 1;
+}

@@ -1,0 +1,77 @@
+syntax  =  "proto3";
+ 
+package deeproute.visualizer;
+import "common/geometry.proto";
+
+//topic: /visualizer/rviz_marker
+
+//Some graphics is not support rendering in the original version 
+enum RvizType{
+  RVIZ_TYPE_UNKNOWN = 0;
+  RVIZ_TYPE_ARROW = 1;
+  RVIZ_TYPE_CUBE = 2;
+  RVIZ_TYPE_SPHERE = 3;
+  RVIZ_TYPE_CYLINDER = 4;
+  RVIZ_TYPE_LINE_STRIP = 5;
+  RVIZ_TYPE_LINE_LIST = 6;
+  RVIZ_TYPE_CUBE_LIST = 7;
+  RVIZ_TYPE_SPHERE_LIST = 8;
+  RVIZ_TYPE_POINTS = 9;
+  RVIZ_TYPE_TEXT_VIEW_FACING = 10;
+  RVIZ_TYPE_MESH_RESOURCE = 11;
+  RVIZ_TYPE_TRIANGLE_LIST = 12;  
+}
+
+message Header{
+  int64 seq = 1;
+  int64 timeStamp = 2;
+  string frame_id = 3;
+}
+
+enum ACTION{
+  ACTION_UNKNOWN = 0;
+  ACTION_ADD = 1;
+  ACTION_MODIFY = 2;
+  ACTION_DELETE = 3;
+  ACTION_DELETEALL = 4;
+}
+
+message Color{
+  int32 r = 1;
+  int32 g = 2;
+  int32 b = 3;
+  int32 a = 4;
+}
+ 
+message Marker {
+  Header header = 1;                        // header for time/frame information
+  string namespace = 2;                            // Namespace to place this object in... used in conjunction with id to create a unique name for the object
+  int64 id = 3;                             // object ID useful in conjunction with the namespace for manipulating and deleting the object later
+  RvizType type = 4;                        // Type of object
+  ACTION action = 5;                        // 0 add/modify an object, 1 (deprecated), 2 deletes an object, 3 deletes all objects
+  deeproute.common.Transformation3 Pose = 6;         // Pose of the object
+  deeproute.common.Point3D scale = 7;                 // Scale of the object 1,1,1 means default (usually 1 meter square)
+  Color color = 8;                          // Color [0.0-1.0]
+  float lifetime = 9;                       // How long the object should last before being automatically deleted.  0 means forever
+  bool frame_locked = 10; 
+
+  //Only used if the type specified has some use for them (eg. POINTS, LINE_STRIP, ...)
+  repeated  deeproute.common.Point3D points  =  11;
+
+  //Only used if the type specified has some use for them (eg. POINTS, LINE_STRIP, ...)
+  //number of colors must either be 0 or equal to the number of points
+  repeated Color colors = 12;
+
+  //NOTE: only used for text marker
+  string text = 13;
+  
+  //NOTE: only used for MESH_RESOURCE marker
+  string mesh_resource = 14;
+  bool mesh_use_embedded_materials = 15;
+}
+
+
+message MarkerArray {
+  repeated Marker markers = 1; // An array of Markers
+}
+

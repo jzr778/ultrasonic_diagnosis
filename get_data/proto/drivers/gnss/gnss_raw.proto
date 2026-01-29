@@ -1,0 +1,288 @@
+syntax = "proto3";
+
+import "common/geometry.proto";
+
+package deeproute.drivers.gnss;
+
+enum ReceiverStatus {
+  RECEIVER_STATUS_NONE = 0;
+  RECEIVER_STATUS_ERROR = 1;
+  RECEIVER_STATUS_TEMPERATURE_WARNING = 2;
+  RECEIVER_STATUS_VOLTAGE_SUPPLY_WARNING = 3;
+  RECEIVER_STATUS_ANTENNA_UNPOWERED = 4;
+  RECEIVER_STATUS_LNA_FAILURE = 5;
+  RECEIVER_STATUS_ANTENNA_OPEN = 6;
+  RECEIVER_STATUS_ANTENNA_SHORTED = 7;
+  RECEIVER_STATUS_CPU_OVERLOADED = 8;
+  RECEIVER_STATUS_COM1_BUFFER_OVERRUN = 9;
+  RECEIVER_STATUS_COM2_BUFFER_OVERRUN = 10;
+  RECEIVER_STATUS_COM3_BUFFER_OVERRUN = 11;
+  RECEIVER_STATUS_LINK_OVERLOAD = 12;
+  RECEIVER_STATUS_AUX_TRANSMIT_OVERRUN = 13;
+  RECEIVER_STATUS_AGC_OUT_OF_RANGE = 14;
+  RECEIVER_STATUS_INS_RESET = 15;
+  RECEIVER_STATUS_ALMANAC_INVALID = 16;
+  RECEIVER_STATUS_POSITION_SOLUTION_INVALID = 17;
+  RECEIVER_STATUS_POSITION_NOT_FIXED = 18;
+  RECEIVER_STATUS_CLOCK_STEERING_DISABLED = 19;
+  RECEIVER_STATUS_CLOCK_MODEL_INVALID = 20;
+  RECEIVER_STATUS_EXTERNAL_OSCILLATOR_LOCKED = 21;
+  RECEIVER_STATUS_SOFTWARE_RESOURCE_WARNING = 22;
+  RECEIVER_STATUS_AUXILIARY3_EVENT = 23;
+  RECEIVER_STATUS_AUXILIARY2_EVENT = 24;
+  RECEIVER_STATUS_AUXILIARY1_EVENT = 25; 
+}
+
+enum SolutionStatus {
+  SOLUTION_STATUS_SOLUTION_COMPUTED = 0;          // solution computed
+  SOLUTION_STATUS_INSUFFICIENT_OBSERVATIONS = 1;  // insufficient observations
+  SOLUTION_STATUS_NO_CONVERGENCE = 2;             // no convergence
+  SOLUTION_STATUS_SINGULARITY_AT_PARAMETERS_MATRIX =
+      3;  // singularity at parameters matrix
+  SOLUTION_STATUS_COVARIANCE_TRACE_EXCEEDS_MAXIMUM =
+      4;  // covariance trace exceeds maximum (trace > 1000 m)
+  SOLUTION_STATUS_TEST_DISTANCE_EXCEEDED =
+      5;  // test distance exceeded (max of 3 rejections if distance > 10 km)
+  SOLUTION_STATUS_COLD_START = 6;  // not yet converged from cold start
+  SOLUTION_STATUS_VELOCITY_OR_HEIGHT_LIMIT_EXCEEDED =
+      7;  // height or velocity limits exceeded
+  SOLUTION_STATUS_VARIANCE_EXCEEDS_LIMITS = 8;  // variance exceeds limits
+  SOLUTION_STATUS_RESIDUALS_TOO_LARGE = 9;      // residuals are too large
+  SOLUTION_STATUS_INTEGRITY_WARNING =
+      13;                        // large residuals make position questionable
+  SOLUTION_STATUS_PENDING = 18;  // receiver computes its position and
+                                 // determines if the fixed position is valid
+  SOLUTION_STATUS_INVALID_FIX = 19;  // the fixed position entered using the fix
+                                     // position command is invalid
+  SOLUTION_STATUS_UNAUTHORIZED = 20;  // position type is unauthorized
+  SOLUTION_STATUS_INVALID_RATE =
+      22;  // selected logging rate is not supported for this solution type
+}
+
+enum PositionVelocityType {
+  POSITION_TYPE_NONE = 0;
+  POSITION_TYPE_FIXED = 1;
+  POSITION_TYPE_FIXEDHEIGHT = 2;
+  POSITION_TYPE_FLOATCONV = 4;
+  POSITION_TYPE_WIDELANE = 5;
+  POSITION_TYPE_NARROWLANE = 6;
+  POSITION_TYPE_DOPPLER_VELOCITY = 8;
+  POSITION_TYPE_SINGLE = 16;
+  POSITION_TYPE_PSRDIFF = 17;
+  POSITION_TYPE_WAAS = 18;
+  POSITION_TYPE_PROPAGATED = 19;
+  POSITION_TYPE_OMNISTAR = 20;
+  POSITION_TYPE_L1_FLOAT = 32;
+  POSITION_TYPE_IONOFREE_FLOAT = 33;
+  POSITION_TYPE_NARROW_FLOAT = 34;
+  POSITION_TYPE_L1_INT = 48;
+  POSITION_TYPE_WIDE_INT = 49;
+  POSITION_TYPE_NARROW_INT = 50;
+  POSITION_TYPE_RTK_DIRECT_INS =
+      51;  // RTK filter is directly initialized from the INS filter.
+  POSITION_TYPE_INS_SBAS = 52;
+  POSITION_TYPE_INS_PSRSP = 53;
+  POSITION_TYPE_INS_PSRDIFF = 54;
+  POSITION_TYPE_INS_RTKFLOAT = 55;
+  POSITION_TYPE_INS_RTKFIXED = 56;
+  POSITION_TYPE_INS_OMNISTAR = 57;
+  POSITION_TYPE_INS_OMNISTAR_HP = 58;
+  POSITION_TYPE_INS_OMNISTAR_XP = 59;
+  POSITION_TYPE_OMNISTAR_HP = 64;
+  POSITION_TYPE_OMNISTAR_XP = 65;
+  POSITION_TYPE_PPP_CONVERGING = 68;
+  POSITION_TYPE_PPP = 69;
+  POSITION_TYPE_INS_PPP_CONVERGING = 73;
+  POSITION_TYPE_INS_PPP = 74;
+}
+
+enum InsRawStatus {
+  INS_STATUS_INACTIVE = 0;
+  INS_STATUS_ALIGNING = 1;
+  INS_STATUS_HIGH_VARIANCE = 2;
+  INS_STATUS_SOLUTION_GOOD = 3;
+  INS_STATUS_SOLUTION_FREE = 6;
+  INS_STATUS_ALIGNMENT_COMPLETE = 7;
+  INS_STATUS_DETERMINING_ORIENTATION = 8;
+  INS_STATUS_WAITING_INITIAL_POS = 9;
+  INS_STATUS_UNCONVERGE_DR = 10;
+  INS_STATUS_GNSS_LOST = 11;
+  INS_STATUS_ABNORMAL_STATE = 12;
+}
+
+message ShortHeader {
+  int64 measurement_time = 1;
+  uint32 message_id = 2;
+}
+
+enum ReferenceCoordinateSystem {
+  WGS84 = 0;
+  GCJ02 = 1;
+  UNKNOWN = 2;
+}
+
+message LongHeader {
+  int64 measurement_time = 1;
+  uint32 message_id = 2;
+  uint32 message_type = 3;
+  uint32 port_address = 4;
+  uint32 sequence = 5;
+  uint32 idle_time = 6;
+  uint32 time_status = 7;
+  ReceiverStatus receiver_status = 8;
+  uint32 reserved = 9;
+  uint32 receiver_software_version = 10;
+}
+
+// rostopic /sensors/gnss/raw_gnss_position
+message GnssPosition {
+  LongHeader header = 1;
+  SolutionStatus solution_status = 2;
+  PositionVelocityType position_type = 3;
+  double latitude = 4;            // in degrees
+  double longitude = 5;           // in degrees
+  double height = 6;              // height above mean sea level in meters
+  float undulation = 7;           // undulation = height_wgs84 - height_msl
+  uint32 datum_id = 8;            // datum id number
+  float std_latitude = 9;         // latitude standard deviation (m)
+  float std_longitude = 10;       // longitude standard deviation (m)
+  float std_height = 11;          // height standard deviation (m)
+  string base_station_id = 12;    // base station id
+  float differential_age = 13;    // differential position age (sec)
+  float solution_age = 14;        // solution age (sec)
+  uint32 number_satellites = 15;  // number of satellites tracked
+  uint32 number_solution_used_satellites =
+      16;  // number of satellites used in solution
+  uint32 number_solution_used_satellites_on_L1_B1_E1_signals =
+      17;  // number of L1/E1/B1 satellites used in solution
+  uint32 number_solution_used_satellites_on_multi_freq_signals =
+      18;  // number of multi-frequency satellites used in solution
+  uint32 reserved = 19;
+  uint32 extended_solution_status =
+      20;  // extended solution status - OEMV and greater only
+  uint32 signals_mask_Galileo_and_BeiDou = 21;
+  uint32 signals_mask_Gps_and_Glonass = 22;
+  ReferenceCoordinateSystem reference_coordinate_system = 23;
+}
+
+// rostopic /sensors/gnss/raw_gnss_velocity
+message GnssVelocity {
+  LongHeader header = 1;
+  SolutionStatus solution_status = 2;
+  PositionVelocityType velocity_type = 3;
+  float measure_latency =
+      4;  // measure of the latency of the velocity time tag in seconds
+  float differential_age = 5;    // differential age in seconds
+  double horizontal_speed = 6;   // horizontal speed in m/s
+  double track_over_ground = 7;  // direction of travel in degrees
+  double vertical_speed = 8;     // vertical speed in m/s
+  float reserved = 9;
+}
+
+// rostopic /sensors/gnss/raw_dual_antenna_heading
+message DualAntennaHeading {
+  LongHeader header = 1;
+  SolutionStatus solution_status = 2;
+  PositionVelocityType position_type = 3;
+  float baseline_length = 4;
+  float heading = 5;
+  float pitch = 6;
+  float reserved = 7;
+  float std_heading = 8;
+  float std_pitch = 9;
+  string station_id = 10;
+  uint32 num_satellites_tracked = 11;
+  uint32 num_satellites_solution = 12;
+  uint32 num_satellites_above_mask_angle = 13;
+  uint32 num_satellites_above_mask_angle_on_L2 = 14;
+  uint32 solution_source = 15;
+  uint32 extended_solution_status = 16;
+  uint32 signals_mask_Galileo_and_BeiDou = 17;
+  uint32 signals_mask_Gps_and_Glonass = 18;
+}
+
+// rostopic /sensors/gnss/raw_ins_pva_x
+message InsPvaX {
+  LongHeader header = 1;
+  InsRawStatus status = 2;  // status of the INS system
+  PositionVelocityType type = 3;
+  double latitude = 4;        // in degrees
+  double longitude = 5;       // in degrees
+  double height_msl = 6;      // height above mean sea level in meters
+  float undulation = 7;       // undulation = height_wgs84 - height_msl
+  double north_velocity = 8;  // velocity in a northerly direction (m/s)
+  double east_velocity = 9;   // velocity in an easterly direction (m/s)
+  double up_velocity = 10;    // velocity in an up direction
+  double roll = 11;           // right handed rotation around y-axis (degrees)
+  double pitch = 12;          // right handed rotation around x-axis (degrees)
+  double azimuth = 13;        // left handed rotation around z-axis (degrees)
+  float latitude_std = 14;    // latitude standard deviation (m)
+  float longitude_std = 15;   // longitude standard deviation (m)
+  float height_std = 16;      // height standard deviation (m)
+  float north_velocity_std = 17;
+  float east_velocity_std = 18;
+  float up_velocity_std = 19;
+  float roll_std = 20;
+  float pitch_std = 21;
+  float azimuth_std = 22;
+  uint32 ext_status = 23;
+  uint32 time_since_update = 24;  // in sec
+}
+
+// rostopic /sensors/gnss/raw_ins_pva_s
+message InsPvaS {
+  ShortHeader header = 1;
+  uint32 gps_week = 2;
+  double gps_seconds = 3;  // Seconds of week.
+  double latitude = 4;     // in degrees
+  double longitude = 5;    // in degrees
+  double height = 6;
+  double north_velocity = 7;  // velocity in a northerly direction (m/s)
+  double east_velocity = 8;   // velocity in an easterly direction (m/s)
+  double up_velocity = 9;     // velocity in an up direction
+  double roll = 10;           // right handed rotation around y-axis (degrees)
+  double pitch = 11;          // right handed rotation around x-axis (degrees)
+  double azimuth = 12;        // left handed rotation around z-axis (degrees)
+  InsRawStatus status = 13;      // status of the INS system
+}
+
+// rostopic /sensors/gnss/raw_short_raw_imu
+message ShortRawImu {
+  ShortHeader header = 1;
+  uint32 gps_week = 2;
+  double gps_seconds = 3;  // Seconds of week.
+  uint32 imu_status =
+      4;  // Status of the IMU. The content varies with IMU type.
+  // IMU reference frame. Scale factors varies with IMU type.
+  int32 z_acce = 5;
+  int32 y_acce = 6;
+  int32 x_acce = 7;
+  int32 z_gyro = 8;
+  int32 y_gyro = 9;
+  int32 x_gyro = 10;
+  float temperature = 11;  // unit: Celsius
+  uint32 imu_gyro_status = 12;
+  uint32 imu_acce_status = 13;
+}
+
+message InuInternalState {
+  ShortHeader header = 1;
+  deeproute.common.Vector3 attitude_error = 2;
+  deeproute.common.Vector3 velocity_error = 3;
+  deeproute.common.Vector3 position_error = 4;
+  deeproute.common.Vector3 gyro_bias_error = 5;
+  deeproute.common.Vector3 acce_bias_error = 6;
+  deeproute.common.Vector3 gyro_bias = 7;
+  deeproute.common.Vector3 acce_bias = 8;
+  float wheel_radius_error = 9;
+}
+
+message InuInternalStateStd {
+  ShortHeader header = 1;
+  deeproute.common.Vector3 attitude_std = 2;
+  deeproute.common.Vector3 velocity_std = 3;
+  deeproute.common.Vector3 position_std = 4;
+  deeproute.common.Vector3 gyro_bias_std = 5;
+  deeproute.common.Vector3 acce_bias_std = 6;
+  float wheel_radius_std = 7;
+}

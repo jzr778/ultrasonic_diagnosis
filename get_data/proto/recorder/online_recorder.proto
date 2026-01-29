@@ -1,0 +1,35 @@
+syntax = "proto2";
+
+import "recorder/record_stats.proto";
+import "recorder/record_buffer_stats.proto";
+
+package deeproute.recorder;
+
+message OnlineRecorderStats {
+  /**
+   @~english stats of pending triggers
+   @~chinese 正在进行中trigger的统计数据
+   **/
+  repeated RecordStats pending = 1;
+
+  /**
+   @~english stats of internal buffer
+   @~chinese 内部消息缓存的统计数据
+   **/
+  repeated RecordBufferStats buffers = 2;
+}
+
+message OnlineRecorderStatus {
+  /**
+   @~english version of recorder2
+   @~chinese recorder2的版本
+   **/
+  optional string version = 1;
+
+  /**
+   @~english internal stats
+   @~chinese 内部统计数据
+   **/
+  optional OnlineRecorderStats stats = 2;
+}
+

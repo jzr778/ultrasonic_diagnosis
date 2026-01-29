@@ -1,0 +1,14 @@
+syntax = "proto2";
+
+package deeproute.dem;
+
+enum ProcessState {
+  START = 0;
+  SHUTDOWN = 1;
+  RESTART = 2;
+}
+
+message ExecutionProcessState {
+  optional string execution_name = 1; // node_name in driver/config/dem/xxx.jsonnet
+  optional ProcessState process_state = 2;
+}

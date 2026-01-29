@@ -1,0 +1,116 @@
+syntax = "proto2";
+
+package deeproute.drivers.inu;
+import "common/geometry.proto";
+
+message Vector3d {
+  optional double x = 1;
+  optional double y = 2;
+  optional double z = 3;
+}
+
+message Matrix3d {
+  optional Vector3d c0 = 1;
+  optional Vector3d c1 = 2;
+  optional Vector3d c2 = 3;
+}
+
+message CalibrationImu {
+  optional Vector3d gyro_zero_bias = 1;
+  optional Vector3d acce_zero_bias = 2;
+
+  optional Matrix3d gyro_coupling_error = 3;
+  optional Matrix3d acce_coupling_error = 4;
+
+  optional Matrix3d imu_misalign_error = 8;
+  optional string serial_number = 9;
+  optional deeproute.common.Vector3 install_angle_error = 10;
+  optional bool is_static_imu_calibrated = 11;
+  optional bool is_dynamic_imu_calibrated = 12 [deprecated = true];
+  optional DynamicImuCalibStatus dynamic_imu_calib_status = 13;
+  optional int32 dynamic_imu_calib_failure_count = 14;
+}
+
+enum DynamicImuCalibStatus {
+  DYNAMIC_IMU_CALIB_UNCOMPLETED = 0;
+  DYNAMIC_IMU_CALIB_FAILED = 1;
+  DYNAMIC_IMU_CALIB_SUCCESS = 2;
+}
+
+message CalibrationGnss {
+  optional Vector3d level_arm_imu_to_gnss_antenna_1 = 1;
+
+  optional double misalignment_angle_imu_to_gnss = 2;
+  optional string antenna_serial_number = 3;
+}
+
+message CalibrationWheel {
+  optional Vector3d level_arm_imu_to_left_non_steering_wheel = 1;
+  optional Vector3d level_arm_imu_to_right_non_steering_wheel = 2;
+  optional string left_serial_number = 3;
+  optional string right_serial_number = 4;
+}
+
+message CalibrationLidar {
+  optional deeproute.common.Transformation3 transformation_lidar_to_imu = 1;
+}
+
+message Calibration {
+  optional CalibrationImu imu = 1;
+
+  optional CalibrationGnss gnss = 2;
+
+  optional CalibrationWheel wheel = 3;
+
+  optional CalibrationLidar lidar = 4;
+};
+
+message ConfigImu {
+  enum ImuType {
+    UNKNOWN = 0;
+    EPSON_G320 = 1;
+    EPSON_G365 = 2;
+    SCHA_634 = 3;
+  }
+
+  optional ImuType type = 1;
+  optional double gyro_scale_factor = 2;
+  optional double acce_scale_factor = 3;
+  optional double sample_interval = 4;
+  optional uint32 num_subsamples = 5;
+}
+
+message ConfigWheelSpeed {
+  optional double wheel_radius = 1;
+  optional double sample_interval = 2;
+  optional uint32 pulses_per_revolution = 3;
+  optional int32 max_pulses_sum = 4;
+  optional int32 min_pulses_sum = 5;
+}
+
+message ConfigGnss {
+  enum GnssType {
+    UNKNOWN = 0;
+    NOVATEL_718D = 1;
+    BYNAV_M1 = 2;
+    QUECTEL_LG69T = 3;
+  }
+
+  optional double gnss_position_sample_interval = 1;
+  optional double gnss_velocity_sample_interval = 2;
+  optional double gnss_heading_sample_interval = 3;
+  optional GnssType type = 4;
+}
+
+message ConfigLidar {
+  optional double sample_interval = 1;
+}
+
+message ConfigNavigationDevice {
+  optional ConfigImu config_imu = 1;
+  optional ConfigWheelSpeed config_wheel_speed = 2;
+  optional ConfigGnss config_gnss = 3;
+  optional ConfigLidar config_lidar = 4;
+  optional Calibration calibration = 5;
+  optional bool fixed_interval = 6 [default = true];
+}

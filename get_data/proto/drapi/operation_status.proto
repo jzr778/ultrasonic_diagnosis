@@ -1,0 +1,1303 @@
+syntax = "proto3";
+package dr.operationstatus;
+
+/************************业务相关的实时状态定义********************************/
+message OperationStatus {  // topic: /blc/operation_status
+  // common 1~10
+  uint64 timestamp = 1;  // ms
+  // status 11
+  ACCStatusInfo acc_status = 11;
+  ICAStatusInfo ica_status = 12;
+  NCAStatusInfo nca_status = 13;
+  HMAStatusInfo hma_status = 14;
+  BSDStatusInfo bsd_status = 15;
+  LCAStatusInfo lca_status = 16;
+  DOWStatusInfo dow_status = 17;
+  RCTAStatusInfo rcta_status = 18;
+  RCWStatusInfo rcw_status = 19;
+  LDWStatusInfo ldw_status = 20;
+  RDPStatusInfo rdp_status = 21;
+  RCTBStatusInfo rctb_status = 22;
+  AVMStatusInfo avm_status = 23;
+  APAStatusInfo apa_status = 24;
+  VPARoutingStatusInfo vpa_routing_status = 25;
+  VPALearningStatusInfo vpa_learning_status = 26;
+  PDCStatusInfo pdc_status = 27;
+  ELKStatusInfo elk_status = 28;
+  RPAStatusInfo rpa_status = 29;
+  TJPStatusInfo tjp_status = 30;
+  RADSStatusInfo rads_status = 31;
+  SentryModeInfo sentry_mode_info = 32;
+  ILCStatusInfo ilc_status = 33;
+  TSRStatusInfo tsr_status = 34;
+  DWStatusInfo dw_status = 35;
+  DVRStatusInfo dvr_status = 36;
+  // internal use
+  ActivedFeatures actived_features = 100;
+}
+
+/*****************operation_status业务相关状态引用的结构体定义*****************/
+/*ACC*/
+enum ACCStatus {
+  ACC_OFF = 0;
+  ACC_PASSIVE = 1;
+  ACC_STANDBY = 2;
+  ACC_NORMAL = 3;
+  ACC_STAND_ACTIVE = 4;
+  ACC_STAND_WAIT = 5;
+  ACC_OVERRIDE = 6;
+  ACC_FAULT = 7;
+  ACC_BOM = 8;
+}
+
+/*ICA*/
+enum ICAStatus {
+  ICA_OFF = 0;
+  ICA_FAILURE = 1;
+  ICA_PASSIVE = 2;
+  ICA_STANDBY = 3;
+  ICA_NORMAL = 4;
+  ICA_LATERAL_CONTROL_EXIT = 5;
+  ICA_FORBIDDEN = 6;
+  ICA_DRIVER_TAKEOFF = 7;
+  ICA_LOW_RISK_FAILURE = 8;
+  ICA_MRM = 9;
+}
+
+enum ILCStatus {
+  ILC_OFF = 0;
+  ILC_FAULT = 1;
+  ILC_PASSIVE = 2;
+  ILC_STANDBY = 3;
+  ILC_ACTIVE = 4;
+}
+
+/*NCA*/
+enum NCAStatus {
+  NCA_OFF = 0;
+  NCA_PASSIVE = 1;
+  NCA_STANDBY = 2;
+  NCA_NORMAL = 3;
+  NCA_COUNT_DOWN1 = 4;
+  NCA_COUNT_DOWN2 = 5;
+  NCA_MRM = 6;
+  NCA_LATEM_EXIT = 7;
+  NCA_FORBIDDEN = 8;
+  NCA_FAULT = 9;
+}
+
+// HMA
+enum HMAStatus {
+  HMA_OFF = 0;
+  HMA_FAILURE = 1;
+  HMA_PASSIVE = 2;
+  HMA_LOW_BEAM = 3;
+  HMA_HIGH_BEAM = 4;
+  HMA_SUPPRESSION = 5;
+  HMA_NO_SUPPRESSION = 6;
+  HMA_LOW_PRIORITY = 7;
+  HMA_HIGH_PRIORITY = 8;
+}
+
+// AVM
+
+enum AVMStatus {
+  STATUS_UNKNOWN = 0;
+  STATUS_TURNING_MODE = 1;      // AVM 开启： 转向模式
+  STATUS_NORMAL_MODE = 2;       // AVM 开启： 一般模式
+  STATUS_GEAR_R_MODE = 3;       // AVM 开启：R 档模式
+  STATUS_GEAR_R_TO_D_MODE = 4;  // AVM开启: R到D档模式
+  STATUS_PDC_MODE = 5;          // AVM开启: pdc触发
+  STATUS_OFF = 6;
+  STATUS_ERROR = 7;
+  STATUS_STANDBY = 8;
+  STATUS_SUSPEND = 9;
+  STATUS_FAILED = 10;
+  STATUS_ACTIVE = 11;
+  STATUS_INACTIVE = 12;
+  STATUS_ON = 13;
+  STATUS_WORKING = 14;
+  STATUS_GWM = 15;
+  STATUS_CALIBRATION = 16;
+  STATUS_CALIBRATION_FINISHED = 17;
+  STATUS_CALIBRATION_FAILED = 18;
+}
+
+enum RPAStatus {
+  RPA_OFF = 0;
+  RPA_STANDBY = 1;
+  RPA_PARKING_IN = 2;
+  RPA_PARKING_OUT = 3;
+  RPA_STRAIGHT_IN_OUT = 4;
+  RPA_STRAIGHT_IN_OUT_ACTIVE = 5;
+  RPA_STRAIGHT_IN_OUT_SUSPEND = 6;
+  RPA_PARKING_ACTIVE = 7;
+  RPA_PARKING_SUSPEND = 8;
+  RPA_COMPLETED = 9;
+  RPA_FAILURE = 10;
+
+  RPA_PRE_STRAIGHT_IN_OUT_ACTIVE = 11;
+  RPA_PARKING_IN_OUT_ACTIVE_EPB_ERROR = 12;
+  RPA_STRAIGHT_IN_OUT_ACTIVE_EPB_ERROR = 13;
+
+  RPA_SYSTEM_FAILURE = 14;   // 系统故障
+  RPA_FAILURE_DISABLE = 15;  // 关联系统故障
+}
+
+message DeviceCheckInfo {
+  enum DeviceInfo {
+    DEVICE_UNKNOW = 0;
+    DRIVER_SEATBELT_NOT_BUCKLED = 1;  //主驾安全带未系
+    EPB_PARKED = 2;                   //电子手刹拉起
+    GEAR_NOT_IN_D = 3;                //档位不在D档位
+    DOOR_OPENED = 4;                  //四门两盖开启
+    BRAKE_APPLIED = 5;                //刹车踩下
+    WIPER_HIGH = 6;                   // 雨刮高速
+    CRUISE_CANCEL_PRESSED = 7;        //拨杆前拨
+    THROTTLE_OVERRIDE = 8;            // 油门接管，使用: 泊车
+    ACTUAL_ANGLE_OVER_THRESHOLD = 9;  //>120 方向盘转角过大
+    LEFT_TURN_SIGNAL_ON = 10;         //左转向灯开启
+    RIGHT_TURN_SIGNAL_ON = 11;        //右转向灯开启
+    NO_TURN_SIGNAL = 12;
+    GEER_IN_R = 13;                     //档位在R档位
+    GEER_IN_D = 14;                     //档位在D档位
+    GEER_IN_N = 15;                     //档位在N档位
+    GEER_IN_P = 16;                     //档位在P档位
+    GEAR_OVERRIDE = 17;                 // 档位接管, 使用：泊车
+    STEERING_WHEEL_OVERRIDE = 18;       // 方向盘接管, 使用：泊车
+    TRUNK_OPENED = 19;                  // 后备箱打开, 使用：泊车
+    REAR_VIEW_MIRROR_CLOSED = 20;       // 后视镜折叠,使用：泊车
+    STEER_OVERRIDE = 21;                //方向盘接管
+    STEER_WHEEL_SPEED_TO_HIGH = 22;     //方向盘转速过快
+    DOUBLE_FLASH_ON = 23;               //双闪打开
+    FOG_LIGHTS_ON = 24;                 //雾灯打开
+    HOOD_OPENED = 25;                   // 引擎盖开启
+    EPS_TORSIONTORQUE_INVALID = 26;     // 扭矩invalid
+    HOD_HANDOFF_MONITOR_INVALID = 27;   // hod invalid
+    DRIVER_DOOR_OPENED = 28;            // 主驾门打开
+    GEAR_NOT_IN_P = 29;                 // 档位不在P档位
+    BLUE_TOOTH_LOST = 30;               // 蓝牙中断
+    BREAK_OVERRIDE = 31;                // 刹车接管
+    FUEL_CAP_OPENED = 32;               // 油门盖打开
+    CHARGEING_CAP_OPENED = 33;          // 充电盖打开
+    CAMERA_ERROR = 34;                  // 相机异常
+    NO_DISK_SPACE = 35;                 // 磁盘空间不足
+    BATTERY_LOW = 36;                   // 电池电量低
+    PASSEN_DOOR_OPENED = 37;            // 副驾驶车门打开
+    LR_DOOR_OPENED = 38;                // 左后车门打开
+    RR_DOOR_OPENED = 39;                // 右后车门打开
+    SAS_STATUS_ABNORMAL = 40;           // 方向盘转向传感器异常
+    IP_ERROR = 41;                      // 仪表故障
+    AIRB_CRUSH = 42;                    // 安全气囊弹出
+    BRAKE_LIGHT_FAIL = 43;              // 刹车灯故障
+    DRVRQ_SHFT_ERROR = 44;              // 激活开关按键故障
+    INR_MALFCT_ERROR = 45;              // 车距调节开关故障
+    CCACC_SWT_ERROR = 46;               // 巡航车速调节开关故障
+    WIDE_FOV_FRONT_CAMERA_BLUR = 47;    //前宽视相机遮挡
+    NARROW_FOV_FRONT_CAMERA_BLUR = 48;  //前窄视相机遮挡
+    LEFT_FRONT_CAMERA_BLUR = 49;        //左前相机
+    RIGHT_FRONT_CAMERA_BLUR = 50;       //右前相机
+    LIFT_REAR_CAMERA_BLUR = 51;         //左后相机
+    RIGHT_REAR_CAMERA_BLUR = 52;        //右后相机
+    REAR_CAMERA_BLUR = 53;              //后视相机
+    AROUND_VIEW_CAMERA_BLUR = 54;       //环视相机
+    SLOPE_EXCEED_LIMIT = 55;            //坡度 > 15%
+    DRV_MOD_NOT_SUPPORT = 56;           //驾驶模式不满足
+    D_GEAR_TIME_LIMIT = 57;             //挂D档后未超过3秒
+    SLOPE_EXCEED_LIMIT_SYS_UNAVAILABLE = 58;  //启动前，坡度 > 15%
+    SLOPE_EXCEED_LIMIT_SYS_EXIT = 59;         //启动后，坡度 > 15%
+    SLOPE_EXCEED_LIMIT_PLEASE_LEAVE_THE_RAMP =
+        60;  //启动后搜车位界面，坡度 > 15%
+    DRV_MOD_NOT_SUPPORT_SYS_UNAVAILABLE = 61;  //启动前，驾驶模式不满足
+    DRV_MOD_NOT_SUPPORT_SYS_EXIT = 62;  //启动后，驾驶模式不满足
+    CAR_NOT_READY_SYS_UNAVAILABLE =
+        63;  //启动前，整车未上高压（ready）或发动机未启动
+    CAR_NOT_READY_SYS_EXIT = 64;  //启动后，整车未上高压（ready）或发动机未启动
+    USS_FAILURE_SYS_AVAILABLE = 65;
+    USS_FAILURE_SYS_EXIT = 66;
+    AVM_NOT_CALIBRATED_SYS_AVAILABLE = 67;
+    AVM_NOT_CALIBRATED_SYS_EXIT = 68;
+    CAMERA_FAILURE_SYS_AVAILABLE = 69;
+    CAMERA_FAILURE_SYS_EXIT = 70;
+    CAMERA_DIRTY_SYS_AVAILABLE = 71;
+    CAMERA_DIRTY_SYS_EXIT = 72;
+    CAMERA_BLOCKED_SYS_AVAILABLE = 73;
+    CAMERA_BLOCKED_SYS_EXIT = 74;
+    TIRE_PRESSURE_TOO_LOW_SYS_AVAILABLE = 75;
+    TIRE_PRESSURE_TOO_LOW_SYS_EXIT = 76;
+    BRAKE_NOT_APPLIED = 77;
+  }
+  repeated DeviceInfo device_info = 1;
+}
+
+message BusinessCheckInfo {
+  enum Status {
+    // common
+    STATUS_UNKNOW = 0;
+    ICA_ACTIVATED = 1;                   // ICA功能激活
+    NCA_ACTIVATED = 2;                   // NCA功能激活
+    AEB_ACTIVATED = 3;                   // AEB功能激活
+    APA_ON = 4;                          //泊车开启
+    ESC_OFF = 5;                         // ESC关闭
+    ABS_ACTIVED = 6;                     // ABS激活
+    HDC_ACTIVED = 7;                     // HDC激活
+    TCS_ACTIVED = 8;                     // TCS激活
+    VDC_ACTIVED = 9;                     // VDC激活
+    VCU_NOT_READY = 10;                  // VCU未就绪
+    CDP_ACTIVED = 11;                    // CDP激活
+    AVH_ACTIVED = 12;                    // AVH激活
+    ESC_ACTIVED = 13;                    // ESC激活
+    VCU_LIMPHOME_TCM = 14;               // VCU处于跛行模式
+    EPS_NOT_READEY = 15;                 // EPS未就绪
+    ESP_ACTIVED = 16;                    // ESP激活
+    DTC_ACTIVED = 17;                    // DTC激活
+    EBP_ACTIVED = 18;                    // EBP 激活
+    EBD_ACTIVED = 19;                    // EBD 激活
+    ACC_ACTIVED = 20;                    // ACC功能激活
+    ODD_UNAVLIABLE = 21;                 //不在ODD范围内
+    ESC_SYSTEM_FAILED = 22;              // ESC 系统故障
+    EPS_SYSTEM_FAILED = 23;              // EPS 系统故障
+    VCU_SYSTEM_FAILED = 24;              // VCU 系统故障
+    EPB_SYSTEM_FAILED = 25;              // EPB 系统故障
+    LDW_ACTIVATED = 26;                  // LDW激活
+    RDP_ACTIVATED = 27;                  // RDP激活
+    APA_ACTIVED = 28;                    // APA激活
+    VPA_ACTIVED = 29;                    // VPA激活
+    CURRENT_LANE_TOO_WIDE = 30;          // 当前车道宽度太宽
+    LONGITUDINAL_CONTROL_TIMEOUT = 31;   // 纵向控制超时
+    ELK_ACTIVED = 32;                    // ELK激活
+    ESC_HANDSHAKE_FAILED = 33;           // ESC 握手失败
+    VCU_NO_RESPONSE_P_GEAR_SWITCH = 34;  // VCU 不响应P档
+    ESC_ERROR = 35;                      // ESC 错误
+    VLC_ABNORMAL = 36;                   // VLC异常
+    CDD_ABNORMAL = 37;                   // CDD异常
+    LOCALIZATION_ERROR = 38;             // 定位异常比如 INU 错误
+    FRAME_RATIO_ERROR = 39;              // 出现数据帧率为0 异常
+    STARTER_REPORT_ERROR = 40;           // starter 上报异常事件
+    CONTROL_REPORT_ERROR = 41;           // control 上报异常事件
+    ACC_IN_FAULT = 42;                   // acc故障
+    ACC_IN_OFF = 43;                     // acc处于关闭状态
+    ICA_IN_FAULT = 44;                   // ica处于故障状态
+    ICA_FORBIDDEN = 45;                  // ica处于forbidden状态
+    NCA_IN_FAULT = 46;                   // nca处于故障状态
+    SAFETY_FATAL_EVENT = 47;  // safety 上报FATAL事件（自身系统故障）
+    RADS_ACTIVED = 48;        // RADS激活
+    IN_CALIBRATION_MODE = 49;  // 处于标定模式
+    IN_UPGRADING_MODE = 50;    // 处于升级模式
+    OTHER_STATE_MACHINE_ACTIVED = 51;
+    MSR_ACTIVED = 52;              // msr 发动机阻力矩控制功能激活
+    ESP_OFF = 53;                  // ESP 关闭
+    CURRENT_LANE_TOO_NARROW = 54;  // 当前车道宽度太狭窄
+    PARKING_ACTIVATING = 55;
+    ESP_FAULT = 56;                  //制动系统故障
+    ABS_FUALT = 57;                  // ABS系统故障
+    EPS_LKA_ANGDLVD_STS_ERROR = 58;  //转向系统故障
+    EBD_FAULT = 59;                  // EBD故障
+    VCU_ACC_COM_IF_ERROR = 60;       // VCU通讯故障
+    VCU_ERROR = 61;                  // VCU故障
+    AIRB_FAIL = 62;                  // 安全气囊模块故障
+    TURN_LMP_FAIL = 63;              // 危险警告灯故障
+    PTC_ACTIVED = 64;
+    BTC_ACTIVED = 65;
+    BTC_ACTIVE_RA = 66;
+    PTC_ACTIVE_RA = 67;
+    MSR_ACTIVE_RA = 68;
+    IN_TRAILERMODE = 69;
+    DRIVING_MODE_ABLNORMAL = 70;            // 驾驶模式未处于正常状态
+    SAFETY_RELATED_FATAL_EVENT = 71;        // safety 上报关联系统故障
+    PLANNING_FAILED_EVENT = 72;             // planning 上报失败
+    FCTB_ACTIVED = 73;                      // FCTB 激活
+    RCTB_ACTIVED = 74;                      // RCTB 激活
+    SECURITY_ACTIVED_SYS_UNAVAILABLE = 75;  // 主被动安全激活
+    SECURITY_ACTIVED_SYS_EXIT = 76;         // 主被动安全激活
+    RPA_ACTIVED = 77;
+    SAFETY_FATAL_SYS_UNAVAILABLE = 78;
+    SAFETY_RELATED_FATAL_SYS_UNAVAILABLE = 79;
+    DST_ACTIVED = 80;     // DST 激活
+    AVM_VEDIO_LOST = 81;  // 未收到AVM视频数据
+    SAFETY_INHIBIT = 82;  // Safety 安全策略导致状态机抑制(非Fail 状态)
+
+    // las from 4000+
+    TOO_SLOW_SPEED = 4000;                   //车速过高
+    TOO_FAST_SPEED = 4001;                   //车速过低
+    HIGH_YAW_RATE = 4002;                    //车辆横摆角速度过高
+    MISSING_LEFT_LANE_LINE = 4003;           //左边车道线丢失
+    MISSING_RIGHT_LANE_LINE = 4004;          //右边车道线丢失
+    OVER_WIDE_LANE = 4005;                   //车道过宽
+    OVER_NARROW_LANE = 4006;                 //车道过窄
+    EXCESSIVE_CURVATURE_LANE = 4007;         //曲率不满足要求
+    HEAVY_BRAKE_PRESSURE = 4008;             // 重踩刹车
+    EXCESSIVE_STEERING_LEFT_TORQUE = 4009;   // 左侧方向盘扭矩过大
+    EXCESSIVE_STEERING_RIGHT_TORQUE = 4010;  // 右侧方向盘扭矩过大
+    EXCESSIVE_STEERING_ANGLE = 4011;         // 方向盘转角过大
+    EXCESSIVE_STEERING_ANGLE_RATE = 4012;    // 方向盘转角速率过大
+    HIGH_ACC_PEDAL_RATE = 4013;         // > 70%/s  // 油门踏板速率过高
+    EXCESSIVE_WARNING_DURATION = 4014;  // 报警间隔时间过长
+    TOO_SHORT_WARNING_INTERVAL = 4015;  // 报警间隔时间过短
+    FRONT_WHEEL_EXCEED_WARNING_LINE = 4016;
+    LANE_CLOSE = 4017;                // 本车道因车道合并而消失
+    LDW_DRIVING_ON_LINE = 4018;       // 骑线行驶
+    RDP_DRIVING_ON_LINE = 4019;       // 骑线行驶
+    ELK_DRIVING_ON_LINE = 4020;       // 骑线行驶
+    LDW_WARNING_EXCEED_TIME = 4021;   // 超过最长报警时长
+    LSS_ACTIVE_NUDGING_LEFT = 4022;   // Plannign 右侧 NUDGE 抑制
+    LSS_ACTIVE_NUDGING_RIGHT = 4023;  // Plannign 右侧 NUDGE 抑制
+
+    // ICA from 4300
+    ANGLE_DEVIATION_OVER_THRESHOLD =
+        4300;  //车辆航向角和车道中心线方向偏差大于45度
+    LATERAL_DISTANCE_OVER_THRESHOLD =
+        4301;  //自车车身外沿与车道内沿边线横向距离<10cm
+    MISSING_LEFT_RIGHT_LANE_LINE = 4302;         //没有左右感知车道线
+    IN_SHOULDER_LANE = 4303;                     //处于应急车道
+    LATEM_EXIT_TIME_OUT = 4304;                  //横向临退超时
+    DMS_NOT_ACTIVE = 4305;                       // dms未开启
+    ICA_ON_CROSSROADS_NON_STRAIGHT_LANE = 4306;  //十字路口左右转
+    CURRENT_LANE_TRAFFIC_LIGHT_ABNORMAL = 4307;  //当前车道红绿识别异常
+    CROSS_LINE = 4308;                           //闯红灯
+    EOP_NO_GAP = 4309;                           // eop规划失败
+
+    // ILC from 4400
+    LANE_CHANGE_SWITCH_OFF = 4400;               //拨杆变道开关关闭
+    DRIVER_TAKE_OFF = 4401;                      //驾驶员不在环
+    ICA_IN_LATERAL_CONTROL_EXIT = 4402;          // ICA临退
+    ACC_IN_BOM = 4403;                           // ACC bom缓退
+    ICA_NOT_ACTIVE = 4404;                       // ica未激活
+    LANE_LINE_IS_SOLID = 4405;                   //车道线为实线
+    TARGET_LANE_TOO_NARROW = 4406;               //目标车道狭窄
+    TARGET_LANE_IS_SHOULDER_LANE = 4407;         //紧急车道
+    TARGET_LANE_NON_MOTOR_VEHICLE_LANES = 4408;  //非机动车道
+    TARGET_LANE_REVERSE = 4409;                  //逆向车道
+    TARGET_LANE_CLOSE = 4410;                    //汇入车道
+    ILC_IN_FAULT = 4411;                         // ilc故障
+    LANE_CHANGE_WAIT_TIME_OUT = 4412;            //变道等待超时
+    LANE_LINE_CURB = 4413;  // 变道侧车道线抑制（道路边缘）
+
+    // NCA from 4500
+    NO_NAVIGATION_INFO = 4500;       //没有导航信息
+    NAVIGATION_ABNORMAL = 4501;      //导航异常
+    OUT_ODD_ROAD = 4502;             //驶出odd范围
+    NAVIGATION_ID_NOT_MATCH = 4503;  //导航状态id和当前导航id不匹配
+    WILL_OUT_ODD_ROAD = 4504;        //即将驶出odd范围
+    GNSS_NOT_GOOD = 4505;            // gnss信号不好
+    AMAP_NOT_IN_NAVIGATION = 4506;   // amap模式下不在导航状态
+    AMPA_NAVIGATION_YAWED = 4507;    // amap模式下偏航
+    AMAP_NAVIGATION_SIGNAL_LOST = 4508;  // amap模式下高德导航信号丢失
+    TURN_ARROUND_FAILED = 4509;          //掉头失败
+    NAVIGATION_ARRIVE_DESTINATION = 4510;       //到达终点
+    NAVIGATION_ARRIVE_TOLL = 4511;              //到达收费站
+    NAVIGATION_ARRIVE_REST_AREA = 4512;         //到达服务区
+    ICA_IN_COUNTDOWN2 = 4513;                   // ICA处于二级脱手状态
+    ICA_IN_MRM = 4514;                          // ICA处于最小风险状态
+    NAVIGATION_ARRIVE_DESTINATION_SOON = 4515;  //距离终点较近
+    DOWN_TO_ICA_IS_CLICK = 4516;                //用户点击了降级到ICA
+    AMAP_NAVIGATION_ID_NOT_MATCH =
+        4517;  // amap模式下导航信息中path id与预览path id不匹配
+    AMAP_LOR_NOT_MATCH =
+        4518;  // amap模式下amap导航路线id与lor的导航路线id不匹配
+    ROADCLASS_NOT_MATCH = 4519;  // 道路类型与用户设置不匹配
+
+    // TJP from 4600
+    NO_FRONT_VEHICLE_DETECTED = 4600;  // 前车时距不满足要求
+    CAMERA_SMEAR = 4601;               // 传感器被遮挡
+    INVALID_CURVE_RADIUS = 4602;       // 弯道半径不满足要求
+    INVALID_VEHICLE_HEADING = 4603;  // 车辆航向和车道中心线方向偏差过大
+    INVALID_LATERAL_REMAINING_DISTANCE =
+        4604;  // 车身外沿与车道内沿边线横向距离不满足要求
+    LANE_LINE_MISSING = 4605;   // 双侧车道线丢失
+    INVALID_LANE_WIDTH = 4606;  // 车道宽度不满足要求
+
+    // HMA from 5000
+    DRIVER_REQUEST = 5000;
+    DRIVER_REQUEST_LOW_BEAM = 5001;
+    AUTO_LAMP_OFF = 5002;
+    DELAYED_TRANSITION_DETECTED = 5003;
+    IN_TUNNEL = 5004;      // 在隧道
+    IN_CROSSING = 5005;    // 在路口
+    WEATHER_RAIN = 5006;   // 雨天
+    WEATHER_FOGGY = 5007;  // 雾天
+
+    // avm from 7000+
+    AVM_MANUALLY_OPENED = 7002;
+    AVM_MANUALLY_CLOSED = 7003;
+    AVM_FAILED = 7004;
+    AVM_ACTIVED_BY_PDC = 7005;
+    AVM_OPEN_BY_TURN_DISABLED = 7006;
+    // APA from 7500+
+    APA_MANUALLY_OPENED = 7501;         //  standby->parking{int,out}
+    APA_MANUALLY_EXIT = 7502;           // parking{int,out}->statndby
+    APA_MANUALLY_START_PARKIN = 7503;   // 用户点击开始泊入
+    APA_MANUALLY_STOP_PARKIN = 7504;    // 点击停止泊入
+    APA_MANUALLY_START_PARKOUT = 7505;  // 用户点击开始泊入
+    APA_MANUALLY_STOP_PARKOUT = 7506;   // 点击停止泊出
+    APA_ROUTE_PLANNING_FAILED = 7507;   // 路径规划失败
+    APA_STANDBYAREA_LIMITED = 7508;     // 车位受限
+    APA_INTERRUPPTED_TOOMUCH = 7509;    // 泊车中断次数过多
+    APA_CAR_MOVED_TOOMUCH_TIME = 7510;  // 泊车车辆移动次数过多
+    APA_PARKING_SPEED_TOOHIGH = 7511;   // 泊车激活车速过高
+    APA_CAR_BLOCKED = 7512;             // 车辆受阻
+    APA_PARKING_SUCCESS = 7513;         // 泊车成功
+    APA_PARKING_FAILED = 7514;          // 泊车失败
+    APA_PARKING_TIMEOUT = 7515;         // 泊车总时长超时
+    APA_GEAR_SWITCH_TOOMUCH = 7516;     // 揉库次数过多
+    APA_ACTIVE_BY_VPA = 7517;           // VPA 激活APA
+    APA_HW_NOT_AVALIABLE = 7518;        // APA 功能异常
+    APA_HW_ACTIVATE_FAILED = 7519;      // APA 激活失败
+    APA_SET_PERCEPTION_PARKINGMODE_FAILED = 7520;  // 感知切换为泊车模式失败
+    APA_SET_LOCALIZATION_PARKINGMODE_FAILED = 7521;  //定位切换为泊车模式失败
+    APA_PARKINGSPACE_INVALID = 7522;                 // 车位不满足要求
+    APA_VPA_ROUTING_PARKING_SUCCESS =
+        7523;  // 从VPA巡航进 APA 泊车成功(用于vpa模式app显示)
+    APA_VPA_ROUTING_PARKING_FAILED =
+        7524;  // 从VPA 巡航进 APA 泊车失败(用于vpa模式app显示 )
+    APA_CAR_BLOCK_DISAPPERED = 7525;  // 障碍物阻挡消失
+    APA_VPA_LEARNING_PARKING_SUCCESS =
+        7526;  // 从VPA学习进 APA 泊车成功(用于vpa模式app显示)
+    APA_VPA_LEARNING_PARKING_FAILED =
+        7527;  // 从VPA学习进 APA 泊车失败(用于vpa模式app显示)
+    APA_PAUSE_TIMEOUT = 7528;  // 暂停超时
+    /****** APA 中断原因 *****************/
+    APA_DISABLED = 7529;               // APA 功能被禁用
+    APA_CANBUS_REPORT_PASSIVE = 7530;  // Canbus 广播线控状态机
+    APA_SPEED_IS_TOO_HIGH_NEED_23KM_H = 7531;
+    APA_SPEED_IS_TOO_HIGH_SYS_UNAVAILABLE = 7532;
+    APA_SPEED_IS_TOO_HIGH_SYS_EXITS = 7533;
+    APA_CAR_MOVED_IN_OUTPARKING = 7534;  // 进入泊出之后车辆移动
+    APA_USER_EXIT = 7535;
+    APA_BLOCK_BY_DYNAMIC_CAR = 7536;
+    APA_BLOCK_BY_DYNAMIC_PEDESTRIAN = 7537;
+    APA_BLOCK_BY_STATIC_OBS = 7538;
+    SLOPE_EXCEED_LIMIT_SYS_UNAVAILABLE = 7539;       //坡度 > 15%
+    APA_DRV_MOD_NOT_SUPPORT_SYS_UNAVAILABLE = 7540;  //驾驶模式不满足
+    APA_PAUSED_BY_USER = 7541;
+    APA_PARKOUT_NO_VALID_DIR = 7542;  //无有效方向
+    APA_VEHICLE_BLOCKED = 7543;
+    APA_PARKING_IN_FINISHED = 7544;
+    APA_PARKING_OUT_FINISHED = 7545;
+    APA_LONGITUDINAL_ERROR = 7546;
+    APA_LATERAL_ERROR = 7547;
+    APA_RESUME_CONFIRM_TIMEOUT = 7548;  // 暂停恢复超时
+    APA_TO_STANDBY_BY_RPA_STRAIGHT_INOUT = 7549;
+    APA_LONGITUDINAL_ERROR_SYS_UNAVAIABLE = 7550;
+    APA_LATERAL_ERROR_SYS_UNAVAIABLE = 7551;
+    // VPA from 8000+
+    VPA_APP_ACTIVE_ROUTING = 8001;
+    VPA_APP_EXIT_ROUTING = 8002;
+    VPA_APP_START_ROUTING = 8003;
+    VPA_APP_STOP_ROUTING = 8004;
+    VPA_APP_ACTIVE_LEARNING = 8005;
+    VPA_APP_EXIT_LEARNING = 8006;
+    VPA_APP_START_LEARNING = 8007;
+    VPA_APP_END_LEARNING = 8008;
+    VPA_APP_CANCEL_LEARNING = 8009;
+    VPA_MAP_MATCHED = 8010;                   // 地图匹配
+    VPA_MAP_MISMATCH = 8011;                  // 地图不匹配
+    VPA_LEARNING_FAILED = 8012;               // 建图失败
+    VPA_LEARNING_SUCCESS = 8013;              // 建图成功
+    GNSS_SIGNAL_LOSS = 8014;                  // GNSS 信号丢失
+    GNSS_SINGAL_OK = 8015;                    // GNSS 信号存在
+    VPA_LOCALIZATION_ERROR = 8016;            // Localization 异常
+    VPA_NOTIFY_OVERRIDE_TIMEOUT = 8017;       // 提示接管超时
+    VPA_ROUTING_END = 8018;                   // VPA 到达终点
+    VPA_ROUTING_START_PARKIN_TIMEOUT = 8019;  // 到达终点开始泊车超时
+    VPA_ROUTING_BLOCKED = 8020;               // 巡航无法通过
+    VPA_NO_MAP =
+        8021;  // learning_standby状态下发出此字段表明首次建图，弹出新提示框
+    VPA_ROUTING_END_NO_PARKING_SPACE = 8022;  // 巡航到达终点没有可泊车位
+    VPA_LEARNING_TOO_LONG = 8023;             // 学习超过 3000m
+    VPA_LEARNING_SPEED_TOO_HIGH = 8024;       // 学习车速 > 30
+    VPA_ROUTING_SPEED_TOO_HIGH = 8025;        // 巡航车速 > 20
+    VPA_SYSTEM_ERROR_DETECTED = 8030;         // vpa learning active -> passive
+    VPA_ROUTING_COLLIDE_OVERRIDE = 8031;  // VPA退出，即将碰撞，提示接管
+    VPA_CANBUS_REPORT_PASSIVE = 8032;  // Canbus 广播线控状态机
+    VPA_NOT_FIRST_ROUTING = 8033;  //非首次巡航，则不弹出弹窗确认
+    VPA_LEARNING_USER_EXIT = 8034;
+    VPA_ROUTING_USER_EXIT = 8035;
+    VPA_ROUTING_BLOCKED_TIMEOUT_EXIT = 8036;
+    VPA_ROUTING_STATIC_BLOCKED_TIMEOUT_EXIT = 8037;   //静态障碍物 5秒
+    VPA_ROUTING_DYNAMIC_BLOCKED_TIMEOUT_EXIT = 8038;  //动态障碍物 30秒
+    VPA_TURN_OFF = 8039;
+    VPA_LOCALIZATION_NOT_READY = 8040;
+    VPA_ROUTING_DVR_MOD_NOT_SUPPORT = 8041;  //驾驶模式不满足
+    VPA_LOCALIZATION_IS_MATCHING = 8042;
+    VPA_LOCALIZATION_UNSUCCESSFUL = 8043;
+    VPA_DRIVING_REFLINE_CURVATURE_EXCEED =
+        8044;  // 无法经过的大角度场景主动退出
+    VPA_ROUTING_CONTROL_DRIVING_MODE_TIMEOUT =
+        8045;  // 下发ICA请求后，control driving_mode != 3 超时
+
+    // RPA 9000-9499
+    RPA_WAIT_TIMEOUT = 9001;          // RPA 等待超时
+    PARKING_SPACE_UNSELECTED = 9002;  // 车位没选定
+    RPA_OUTSIDE_PARKINGSPACE = 9003;  // 当前不在车位内
+    RPA_NO_PARKOUT_DIRECTION = 9004;
+    RPA_LOST_HEARTBEAT = 9005;
+    RPA_STRAIGHT_IN_OUT_BLOCK_BY_SIDE_OBSTACLE =
+        9006;                          // 直进直出侧边障碍物阻挡
+    RPA_STRAIGHT_IN_OUT_DONE = 9007;   // 直进直出单次达到最大距离
+    RPA_STRAIGHT_IN_OUT_BLOCK = 9008;  // 直进直出非侧边障碍物阻挡
+    RPA_STRAIGHT_IN_OUT_USER_SUSPEND = 9009;  //用户松开暂停
+    RPA_STRAIGHT_INOUT_NO_VALID_DIR = 9010;   //无有效方向
+    RPA_PARKING_SYSTEM_FAILURE = 9011;        // 驻车系统故障
+    RPA_EPB_ERR_STSTE_TIMEOUT = 9012;
+
+    // RADS 9500-9999
+    RADS_SUSPEND_TIMEOUT = 9500;         //暂停时间超过60s
+    RADS_RESUME_CONFIRM_TIMEOUT = 9501;  //暂停恢复后继续确认时间超过30s
+    RADS_ACTIVE_TOTAL_TIMEOUT = 9502;  // active 状态下超过10min
+    RADS_CAR_BLOCKED = 9503;           // RADS 车辆受阻
+    RADS_NO_SAVE_DISTANCE = 9504;      //无有效记忆路径
+    RADS_USER_EXIT = 9505;
+    RADS_SPEED_IS_TOO_HIGH_SYS_UNAVAILABLE = 9506;
+    RADS_PLANNING_ABORT = 9507;
+    RADS_PARKING_FINISHED = 9508;
+
+    // SENTRY MODE 10000-10099
+    SENTRY_MODE_VEHICLE_CRASH = 10001;   // 哨兵碰撞
+    SENTRY_MODE_VEHICLE_THEFT = 10002;   // 哨兵盗窃
+    SENTRY_MODE_VEHICLE_DANGER = 10003;  // 哨兵疑似危险（逗留）
+    SENTRY_MODE_SWITCH_TIMEOUT = 10004;  // 哨兵模式切换超时
+    SENTRY_MODE_TIME_END = 10005;  // 哨兵模式开启达到设定的结束时间
+    SENTRY_MODE_OTHER_MODE_ON = 10006;  // 哨兵模式其他模式切换成功
+    SENTRY_MODE_MCD_NOT_SUPPORT = 10007;  // 哨兵模式MCD不支持
+
+    // DW 10100-10199
+    FRONT_VEHICLE_RELATIVE_SPEED_HIGH = 10100;  // 前车与自车相对速度过大
+    FRONT_VEHICLE_SPEED_OVER_THRESHOLD = 10101;  // 前车与自车速度夹角过大
+    POWER_OUT = 10102;                           // 整车无动力输出
+    HIGH_ACTUAL_PEDAL = 10103;  // 油门踏板开度过高ActualPedal
+    INHIBIT_POLICY = 10104;     // safety输出抑制策略
+    ERRO_POLICY = 10105;        // safety输出错误策略
+  }
+  repeated Status status = 1;
+}
+
+message VehicleStatusCheckInfo {
+  enum Status {
+    STATUS_UNKNOW = 0;
+    VEHICLE_SLIP = 1;                       // 溜车
+    VEHICLE_SPEED_OVER_THRESHOLD = 2;       // 车速过快
+    CURVE_RADIUS_LESS_THAN_THRESHOLD = 3;   // <125m
+    LATERAL_ACCELERATION_TO_HIGH = 4;       // 侧向加速度过高
+    VEHICLE_SPEED_TO_LOW = 5;               //车速过低
+    NOT_STANDSTILL = 6;                     //车辆非静止
+    LONGITUDINAL_ACCELERATION_TO_HIGH = 7;  // 纵向加速度过高
+    NOT_FORWARD = 8;                        // 车辆不处于前进状态
+  }
+  repeated Status status = 1;
+}
+
+message AmbientEnvCheckInfo {
+  enum Status {
+    STATUS_UNKNOW = 0;
+    AMBIENT_BRIGHTNESS_TO_HIGH = 1;  //外部环境光线太亮
+    HAS_VEHICLE_AHEAD = 2;           //前方有车
+  }
+  repeated Status status = 1;
+}
+
+message FaultInfo {
+  int32 safety_policy = 1;  // safety安全策略
+  repeated FaultEventInfo event_info = 2;
+}
+
+message FaultEventInfo {
+  int32 event_id = 1;
+  string alert_info = 2;
+  string suggestion_prompt = 3;
+  int32 module = 4;
+}
+
+message ReasonInfo {
+  DeviceCheckInfo device_info = 1;
+  BusinessCheckInfo business_info = 2;
+  VehicleStatusCheckInfo vehicle_status_info = 3;
+  AmbientEnvCheckInfo env_info = 4;
+  FaultInfo fault_info = 5;
+}
+
+// HMA
+message HMAPassiveReason {
+  DeviceCheckInfo device_check_info = 1;
+  BusinessCheckInfo business_check_info = 2;
+  VehicleStatusCheckInfo vehicle_status_check_info = 3;
+}
+
+message HMALowBeamReason {
+  DeviceCheckInfo device_check_info = 1;
+  BusinessCheckInfo business_check_info = 2;
+  VehicleStatusCheckInfo vehicle_status_check_info = 3;
+  AmbientEnvCheckInfo env_check_info = 4;
+}
+
+message HMAStatusInfo {
+  HMAStatus status = 1;
+  oneof reason {
+    HMAPassiveReason passive_reason = 2;
+    HMALowBeamReason low_beam_reason = 3;
+  }
+}
+
+// BSD
+enum WarningLevel {
+  NO_WARNING = 0;
+  WARNING_LEVEL1 = 1;
+  WARNING_LEVEL2 = 2;
+}
+
+enum BSDStatus {
+  BSD_OFF = 0;
+  BSD_FAILURE = 1;
+  BSD_PASSIVE = 2;
+  BSD_STANDBY = 3;
+  BSD_ACTIVE = 4;
+}
+
+message BSDActiveReason {
+  bool left_warning = 1;
+  bool right_warning = 2;
+  repeated int32 obj_id = 3;
+  repeated float left_ttc = 4;
+  repeated float right_ttc = 5;
+  WarningLevel left_warning_level = 6;
+  WarningLevel right_warning_level = 7;
+}
+
+message BSDStatusInfo {
+  BSDStatus status = 1;
+  oneof reason {
+    BSDActiveReason active_reason = 2;
+  }
+}
+
+// LCA
+enum LCAStatus {
+  LCA_OFF = 0;
+  LCA_FAILURE = 1;
+  LCA_PASSIVE = 2;
+  LCA_STANDBY = 3;
+  LCA_ACTIVE = 4;
+}
+
+message LCAActiveReason {
+  bool left_warning = 1;
+  bool right_warning = 2;
+  repeated int32 obj_id = 3;
+  repeated float left_ttc = 4;
+  repeated float right_ttc = 5;
+  WarningLevel left_warning_level = 6;
+  WarningLevel right_warning_level = 7;
+}
+
+message LCAStatusInfo {
+  LCAStatus status = 1;
+  oneof reason {
+    LCAActiveReason active_reason = 2;
+  }
+}
+
+// DOW
+enum DOWStatus {
+  DOW_OFF = 0;
+  DOW_FAILURE = 1;
+  DOW_PASSIVE = 2;
+  DOW_STANDBY = 3;
+  DOW_ACTIVE = 4;
+}
+
+message DOWActiveReason {
+  bool left_warning = 1;
+  bool right_warning = 2;
+  repeated int32 obj_id = 3;
+  repeated float left_ttc = 4;
+  repeated float right_ttc = 5;
+  WarningLevel front_left_door_warning_level = 6;
+  WarningLevel front_right_door_warning_level = 7;
+  WarningLevel rear_left_door_warning_level = 8;
+  WarningLevel rear_right_door_warning_level = 9;
+}
+
+message DOWStatusInfo {
+  DOWStatus status = 1;
+  oneof reason {
+    DOWActiveReason active_reason = 2;
+  }
+}
+
+// RCTA
+enum RCTAStatus {
+  RCTA_OFF = 0;
+  RCTA_FAILURE = 1;
+  RCTA_PASSIVE = 2;
+  RCTA_STANDBY = 3;
+  RCTA_ACTIVE = 4;
+}
+
+message RCTAActiveReason {
+  bool left_warning = 1;
+  bool right_warning = 2;
+  repeated int32 obj_id = 3;
+  repeated float left_ttc = 4;
+  repeated float right_ttc = 5;
+}
+
+message RCTAStatusInfo {
+  RCTAStatus status = 1;
+  oneof reason {
+    RCTAActiveReason active_reason = 2;
+  }
+}
+
+// RCW
+enum RCWStatus {
+  RCW_OFF = 0;
+  RCW_FAILURE = 1;
+  RCW_PASSIVE = 2;
+  RCW_STANDBY = 3;
+  RCW_ACTIVE = 4;
+}
+
+message RCWActiveReason {
+  bool rcw_warning = 1;
+  repeated int32 obj_id = 2;
+  repeated float ttc = 3;
+}
+
+message RCWStatusInfo {
+  RCWStatus status = 1;
+  oneof reason {
+    RCWActiveReason active_reason = 2;
+  }
+}
+
+// RCTB
+enum RCTBStatus {
+  RCTB_OFF = 0;
+  RCTB_FAILURE = 1;
+  RCTB_PASSIVE = 2;
+  RCTB_STANDBY = 3;
+  RCTB_ACTIVE = 4;
+}
+
+message RCTBActiveReason {
+  bool left_warning = 1;
+  bool right_warning = 2;
+  repeated int32 obj_id = 3;
+  repeated float left_ttc = 4;
+  repeated float right_ttc = 5;
+}
+
+message RCTBStatusInfo {
+  RCTBStatus status = 1;
+  oneof reason {
+    RCTBActiveReason active_reason = 2;
+  }
+}
+
+message APAStatusChangeReason {
+  DeviceCheckInfo device_check_info = 1;
+  BusinessCheckInfo business_check_info = 2;
+}
+
+message ACCPassiveReason {
+  DeviceCheckInfo device_check_info = 1;
+  BusinessCheckInfo business_check_info = 2;
+  VehicleStatusCheckInfo vehicle_status_check_info = 3;
+  FaultInfo fault_info = 4;
+}
+
+/*ACC实时状态*/
+message ACCStatusInfo {
+  ACCStatus status = 1;
+  oneof reason {
+    ACCPassiveReason passive_reason = 2;
+    FailureReason failure_reason = 3;
+  }
+}
+
+message AVMActiveReason {
+  VehicleStatusCheckInfo vehicle_status_check_info = 1;
+  BusinessCheckInfo business_check_info = 2;
+}
+
+message AVMOffReason {
+  VehicleStatusCheckInfo vehicle_status_check_info = 1;
+  BusinessCheckInfo business_check_info = 2;
+}
+
+message AVMFailedReason {
+}
+
+message AVMChangeReason {
+  VehicleStatusCheckInfo vehicle_status_check_info = 1;
+  BusinessCheckInfo business_check_info = 2;
+  DeviceCheckInfo device_check_info = 3;
+}
+
+/*AVM 实时状态*/
+message AVMStatusInfo {
+  AVMStatus status = 1;
+  oneof reason {
+    AVMOffReason off_reason = 2;
+    AVMActiveReason active_reason = 3;
+    AVMFailedReason failed_reason = 4;
+  }
+  enum AVMStyle {
+    UNKNOWN = 0;
+    FULL_SCREEN = 1;  // 全屏
+    FLOATING = 2;     // 浮窗
+  }
+  AVMStyle driving_avm_style = 5;
+}
+
+message ICAFailureReason {
+}
+
+message ICAPassiveReason {
+  DeviceCheckInfo device_check_info = 1;
+  BusinessCheckInfo business_check_info = 2;
+  VehicleStatusCheckInfo vehicle_status_check_info = 3;
+  FaultInfo fault_info = 4;
+}
+
+/*ICA实时状态*/
+message ICAStatusInfo {
+  ICAStatus status = 1;
+  oneof reason {
+    ICAPassiveReason passive_reason = 2;
+  }
+  bool auto_upgrade = 3;  //可自动升级标志状态
+}
+
+/*ILC实时状态*/
+message ILCStatusInfo {
+  ILCStatus status = 1;         // 总的状态
+  ILCStatus left = 2;           // 左状态
+  ILCStatus right = 3;          // 右状态
+  ReasonInfo reason = 4;        // 记录ILC_OFF/ILC_FAULT的状态原因
+  ReasonInfo left_reason = 5;   // 左状态ILC_PASSIVE原因
+  ReasonInfo right_reason = 6;  // 右状态ILC_PASSIVE原因
+}
+
+message NCAPassiveReason {
+  DeviceCheckInfo device_check_info = 1;
+  BusinessCheckInfo business_check_info = 2;
+  VehicleStatusCheckInfo vehicle_status_check_info = 3;
+  FaultInfo fault_info = 4;
+}
+
+/*NCA实时状态*/
+message NCAStatusInfo {
+  NCAStatus status = 1;
+  oneof reason {
+    NCAPassiveReason passive_reason = 2;
+  }
+}
+
+enum APAStatus {
+  APA_OFF = 0;
+  APA_STANDBY = 1;
+  APA_PARKING_SEARCHING = 2;
+  // Parking
+  APA_PARKING_IN = 3;      // 选择泊入界面
+  APA_PARKING_OUT = 4;     // 选择泊出界面
+  APA_PARKING_ACTIVE = 5;  // 泊车ACTIVE
+  APA_PARKING_PAUSED = 6;  // 泊车中断
+  // FINISH
+  APA_PARKING_FINISHED = 7;
+  APA_SYSTEM_FAILURE = 8;    // 系统故障
+  APA_PARKING_FAILURE = 9;   // 泊车失败
+  APA_FAILURE_DISABLE = 10;  // 关联系统故障
+  APA_PRE_OUTPARKING =
+      11;  // 流程修改，泊出前置状态，有泊出方向才进泊出，没有转泊入
+
+  APA_PRE_PARKINACTIVE = 20;       // 内部使用
+  APA_PRE_PARKINGOUT_ACTIVE = 21;  // 内部使用
+  APA_PRE_PARKINGACTIVE_FROM_STANDBY = 22;
+  APA_ACTIVE = 23;  // 对应状态机泊车激活(active+active pause)
+  APA_RPA_EPB_ERROR = 24;
+}
+
+message CommonStatusFailReason {
+  BusinessCheckInfo business_check_info = 1;
+  DeviceCheckInfo device_check_info = 2;
+  VehicleStatusCheckInfo vehicle_status_check_info = 3;
+}
+
+message APAStatusReason {
+  BusinessCheckInfo business_check_info = 1;
+  DeviceCheckInfo device_check_info = 2;
+  VehicleStatusCheckInfo vehicle_status_check_info = 3;
+}
+
+message SentryModeStatusReason {
+  BusinessCheckInfo business_check_info = 1;
+  DeviceCheckInfo device_check_info = 2;
+  VehicleStatusCheckInfo vehicle_status_check_info = 3;
+}
+
+message APAStatusInfo {
+  APAStatus status = 1;
+  APAStatusReason reason = 2;
+
+  // internal use
+  bool is_low_speed = 10;
+}
+
+message VPAStatusReason {
+  BusinessCheckInfo business_check_info = 1;
+  DeviceCheckInfo device_check_info = 2;
+  VehicleStatusCheckInfo vehicle_status_check_info = 3;
+}
+
+message VPARoutingStatusInfo {
+  VPAStatus status = 1;
+  VPAStatusReason reason = 2;
+}
+
+message VPALearningStatusInfo {
+  VPAStatus status = 1;
+  VPAStatusReason reason = 2;
+}
+
+enum VPAStatus {
+  VPA_STATUS_UNKNOWN = 0;
+  // state for learning
+  VPA_MAP_LARNING_PASSIVE = 1;
+  VPA_MAP_LEARNING_STANDBY = 2;
+  VPA_MAP_LEARNING_LEARNING = 3;
+  VPA_MAP_LEARNING_COMPLETED = 4;
+  VPA_MAP_LEARNING_FAILURE = 5;
+  VPA_MAP_LEARNING_OFF = 6;
+  VPA_MAP_LEARNING_PARKING = 7;
+
+  // state for vpa routing
+  VPA_ROUTING_PASSIVE = 8;
+  VPA_ROUTING_STANDBY = 9;
+  VPA_ROUTING_ACTIVE = 10;
+  VPA_ROUTING_SEARCHING = 11;
+  VPA_ROUTING_FAILURE = 12;
+  VPA_ROUTING_FINISHED = 13;
+  VPA_ROUTING_OFF = 14;
+  VPA_ROUTING_PARKING = 15;
+  VPA_ROUTING_SYSTEM_FAILURE = 16;  // 系统故障
+  VPA_ROUTING_MRM = 17;
+  VPA_ROUTING_FAILURE_DISABLE = 18;  // 关联系统故障
+  VPA_ROUTING_PREACTIVE =
+      19;  // 巡航可能踩着刹车进，产品要求松开刹车之后才进之前流程
+
+  // 20-40 VPA LEARNING
+  VPA_MAP_LEARNING_PARKING_ACTIVE = 21;
+  VPA_MAP_LEARNING_PARKING_PAUSED = 22;
+  VPA_MAP_LEARNING_PARKING_FINISHED = 23;
+  VPA_MAP_LEARNING_PARKING_FAILURE = 24;
+  VPA_MAP_END_LEARNING = 25;
+  VPA_MAP_LEARNING_SYSTEM_FAILURE = 26;  // 系统故障
+  VPA_MAP_LEARNING_SAVING_MAP = 27;
+  VPA_MAP_GUIDANCE = 28;
+  VPA_MAP_LEARNING_FAILURE_DISABLE = 29;  // 关联系统故障
+
+  // 40-60 VPA ROUTING
+  VPA_ROUTING_PARKING_ACTIVE = 41;
+  VPA_ROUTING_PARKING_PAUSED = 42;
+  VPA_ROUTING_PARKING_FINISHED = 43;
+  VPA_ROUTING_PARKING_FAILURE = 44;
+  VPA_ROUTING_BLOCKED = 45;
+}
+
+message RPAStatusReason {
+  BusinessCheckInfo business_check_info = 1;
+  DeviceCheckInfo device_check_info = 2;
+  VehicleStatusCheckInfo vehicle_status_check_info = 3;
+}
+
+message RPAStatusInfo {
+  RPAStatus stauts = 1;
+  RPAStatusReason reason = 2;
+}
+
+enum LDWStatus {
+  LDW_OFF = 0;
+  LDW_PASSIVE = 1;
+  LDW_STANDBY = 2;
+  LDW_LEFT_ACTIVE = 3;
+  LDW_RIGHT_ACTIVE = 4;
+  LDW_FAILURE = 5;
+}
+
+message LDWPassiveReason {
+  DeviceCheckInfo device_check_info = 1;
+  BusinessCheckInfo business_check_info = 2;
+  VehicleStatusCheckInfo vehicle_status_check_info = 3;
+}
+
+message LDWStatusInfo {
+  LDWStatus status = 1;
+  oneof reason {
+    LDWPassiveReason passive_reason = 2;
+  }
+}
+
+enum RDPStatus {
+  RDP_OFF = 0;
+  RDP_PASSIVE = 1;
+  RDP_STANDBY = 2;
+  RDP_LEFT_ACTIVE = 3;
+  RDP_RIGHT_ACTIVE = 4;
+  RDP_FAILURE = 5;
+}
+
+message RDPPassiveReason {
+  DeviceCheckInfo device_check_info = 1;
+  BusinessCheckInfo business_check_info = 2;
+  VehicleStatusCheckInfo vehicle_status_check_info = 3;
+}
+
+message RDPStatusInfo {
+  RDPStatus status = 1;
+  oneof reason {
+    RDPPassiveReason passive_reason = 2;
+  }
+}
+
+message PDCStatusInfo {
+  PDCStatus status = 1;
+  oneof reason {
+    PDCStatusReason pdc_active_reason = 2;
+    PDCStatusReason pdc_standby_reason = 3;
+    PDCStatusReason pdc_failed_reason = 4;
+  }
+}
+
+message PDCStatusReason {
+  BusinessCheckInfo business_check_info = 1;
+  DeviceCheckInfo device_check_info = 2;
+  VehicleStatusCheckInfo vehicle_status_check_info = 3;
+}
+
+enum PDCStatus {
+  PDC_OFF = 0;
+  PDC_FAILURE = 1;
+  PDC_STANDBY = 2;
+  PDC_FRONT_AND_REAR_ACTIVE = 3;
+  PDC_FRONT_ACTIVE = 4;
+}
+
+// TJP
+enum TJPStatus {
+  TJP_OFF = 0;
+  TJP_FAILURE = 1;
+  TJP_STANDBY = 2;
+  TJP_PASSIVE = 3;
+  TJP_NORMAL = 4;
+  TJP_COUNT_DOWN = 5;
+  TJP_MRM = 6;
+  TJP_FORBIDDEN = 7;
+}
+
+message TJPStatusReason {
+  BusinessCheckInfo business_check_info = 1;
+  DeviceCheckInfo device_check_info = 2;
+  VehicleStatusCheckInfo vehicle_status_check_info = 3;
+}
+
+message TJPStatusInfo {
+  TJPStatus status = 1;
+  TJPStatusReason reason = 2;
+}
+
+// RADS
+enum RADSStatus {
+  RADS_OFF = 0;
+  RADS_FAILED = 1;  // 系统故障
+  RADS_STANDBY = 2;
+  RADS_DISABLE = 3;  // 关联系统故障
+  RADS_SEARCH = 4;
+  RADS_SEARCH_SUSPEND = 5;
+  RADS_ACTIVE = 6;
+  RADS_ACTIVE_SUSPEND = 7;
+  RADS_RESUME_CONFIRM = 8;
+  RADS_FINISH = 9;
+  RADS_PARKING_FAILURE = 10;
+}
+
+message RADSStatusReason {
+  BusinessCheckInfo business_check_info = 1;
+  DeviceCheckInfo device_check_info = 2;
+  VehicleStatusCheckInfo vehicle_status_check_info = 3;
+}
+
+message RADSStatusInfo {
+  RADSStatus status = 1;
+  RADSStatusReason reason = 2;
+}
+
+enum DVRStatus {
+  DVR_STANDBY = 0;
+  DVR_ACTIVE = 1;
+  DVR_CONNECT_FAILED = 2;
+  DVR_INTERNAL_FAILED = 3;
+}
+
+message DVRStatusReason {
+  BusinessCheckInfo business_check_info = 1;
+  DeviceCheckInfo device_check_info = 2;
+  VehicleStatusCheckInfo vehicle_status_check_info = 3;
+}
+
+message DVRStatusInfo {
+  DVRStatus status = 1;
+  DVRStatusReason reason = 2;
+}
+
+enum SentryModeStatus {
+  SENTINEL_STATUS_UNKNOWN = 0;
+  SENTINEL_STATUS_OFF = 1;
+  SENTINEL_STATUS_STARTING = 2 [deprecated = true];
+  SENTINEL_STATUS_FAILED = 3 [deprecated = true];
+  SENTINEL_STATUS_WORKING = 4;
+  SENTINEL_STATUS_WARNING = 5;
+  SENTINEL_STATUS_STANDBY = 6;
+  SENTINEL_STATUS_PASSIVE = 7;
+}
+
+message SentryModeInfo {
+  SentryModeStatus status = 1;
+  SentryModeStatusReason reason = 2;
+}
+
+/*************failure reason**************/
+enum Module {
+  UNKNOWN = 0;
+  SENSOR_LIDAR = 1;
+  SENSOR_USS = 2;
+  SENSOR_INS = 3;
+  SENSOR_RADAR = 4;
+  MAP_ENGINE = 5;
+  LOCK_ON_ROAD = 6;
+  INS_ONLINE = 7;
+  LOCALIZATION = 8;
+  PERCEPTION = 9;
+  PLANNING = 10;
+  CANBUS = 11;
+  BLC = 12;
+  SAFETY = 13;
+  STARTER = 14;
+}
+
+message StartFailedReason {
+  repeated Module start_failed_module = 101;
+}
+
+message CrushReason {
+  repeated Module crush_module = 101;
+}
+
+message FailureReason {
+  StartFailedReason start_failed_reason = 101;
+  CrushReason crush_reason = 102;
+}
+
+enum Feature {
+  UNKNOWN_FEATURE = 0;
+  ACC = 1;
+  ICA = 2;
+  NCA = 3;
+  LDW = 4;
+  RDP = 5;
+  HMA = 6;
+  BSD = 7;
+  LCA = 8;
+  DOW = 9;
+  RCTA = 10;
+  RCW = 11;
+  RCTB = 12;
+  AVM = 13;
+  APA = 14;
+  VPA_ROUTING = 15;
+  VPA_LEARNING = 16;
+  PDC = 17;
+  AEB = 18;
+  ELK = 19;
+  RADS = 20;
+  MEB = 21;
+  FCTA = 22;
+  FCTB = 23;
+  FCW = 24;
+  ESA = 25;
+  TSR = 26;
+  RPA = 27;
+  ILC = 28;
+  HUT = 1001;
+  VIZ = 1002;
+}
+
+message ActivedFeatures {
+  repeated Feature features = 1;
+}
+
+enum ELKStatus {
+  ELK_OFF = 0;
+  ELK_PASSIVE = 1;
+  ELK_STANDBY = 2;
+  ELK_LEFT_ACTIVE = 3;
+  ELK_RIGHT_ACTIVE = 4;
+  ELK_FAILURE = 5;
+}
+
+message ELKPassiveReason {
+  DeviceCheckInfo device_check_info = 1;
+  BusinessCheckInfo business_check_info = 2;
+  VehicleStatusCheckInfo vehicle_status_check_info = 3;
+}
+
+message ELKStatusInfo {
+  ELKStatus status = 1;
+  oneof reason {
+    ELKPassiveReason passive_reason = 2;
+  }
+}
+
+// TSR
+enum TSRStatus {
+  TSR_OFF = 0;
+  TSR_STANDBY = 1;
+  TSR_FUSION = 2;
+  TSR_NAVIGATION = 3;
+  TSR_FAILURE = 4;
+}
+
+message TSRStatusInfo {
+  TSRStatus status = 1;
+}
+
+enum SLWStatus {
+  SLW_OFF = 0;
+  SLW_PASSIVE = 1;
+  SLW_ACTIVE = 2;
+  SLW_HOLD = 3;
+}
+
+enum NSLSStatus { NSLS_ON = 0; }
+
+enum DWStatus {
+  DW_OFF = 0;
+  DW_FAILURE = 1;
+  DW_PASSIVE = 2;
+  DW_STANDBY = 3;
+  DW_ACTIVE = 4;
+}
+
+message DWStatusInfo {
+  DWStatus status = 1;
+  ReasonInfo reason = 2;
+  DWFrontCarInfo active_info = 3;
+}
+
+message DWFrontCarInfo {
+  int32 obj_id = 1;
+  double time_gap = 2;
+  double distance = 3;  // m
+  double snvty = 4;
+  int64 duration = 5;  // ms
+}

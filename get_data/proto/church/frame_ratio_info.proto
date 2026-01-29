@@ -1,0 +1,14 @@
+syntax = "proto2";
+
+package deeproute.church;
+
+message FrameRatioInfos {
+  // topic name
+  repeated string topic = 1;
+  // current frame ratio
+  repeated double frame_ratio = 2;
+  // current byte ratio of OnboardMessage (Byte/s)
+  repeated double byte_ratio = 3;
+  // pid of module
+  optional int32 pid = 4;
+}

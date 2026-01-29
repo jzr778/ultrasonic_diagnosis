@@ -1,0 +1,219 @@
+syntax = "proto2";
+
+package deeproute.drivers.gnss;
+
+import "common/header.proto";
+import "common/geometry.proto";
+
+message InsStat {
+  optional deeproute.common.Header header = 1;
+  optional uint32 ins_status = 2;
+  optional uint32 pos_type = 3;
+}
+
+// Solution from an inertial navigation system (INS) read from sensors. 
+message SensorsIns {
+  optional deeproute.common.Header header = 1;
+
+  // INS solution type.
+  enum Type {
+    // Do NOT use.
+    // Invalid solution due to insufficient observations, no initial GNSS, ...
+    INVALID = 0;
+
+    // Use with caution. The solution may be unavailable or unreliable. Usually
+    // the solution is a result with very large uncertainty, possibly due to
+    // aligning, insufficient vehicle dynamics, algorithm initialization stage
+    // ...
+    CONVERGING = 1;
+
+    // Safe to use. The INS has fully converged.
+    GOOD = 2;
+
+    // Discarded type. 
+    MAP_COLLECTION = 3;
+
+    // dead reckoning by history pose file
+    UNCONVERGE_DR = 4;
+
+    // do not get gnss measurement for long time
+    GNSS_LOST = 5;
+
+    // abnormal state 
+    ABNORMAL_STATE = 6;
+
+  }
+  optional Type type = 2;
+
+  // The time of position measurement, in us.
+  optional sfixed64 measurement_time = 3;
+
+  // Inertial navigation device type.
+  enum DeviceType {
+      PP7 = 0;
+      // asensing aka. daoyuan
+      // Note: Angular velocity and linear acceleration will have greater
+      // noise in daoyuan device.
+      INS570D = 1; 
+  }
+  optional DeviceType device_type = 4;
+
+  // Longitude, latitude & height (WGS84).
+  // lon/lat are in degrees while height is in meters.
+  oneof PositionLLH{
+    deeproute.common.PointLLH vehicle_frame_position_llh = 5;
+    deeproute.common.PointLLH imu_frame_position_llh = 6;
+  }
+
+  // 3-by-3 covariance matrix in east/north/up frame, in m^2.
+  repeated float position_covariance = 7 [ packed = true ];
+
+  // Roll/Pitch/Azimuth in degrees.
+  // Roll, right-handed rotation from local level around y-axis in degrees.
+  // Pitch, right-handed rotation from local level around x-axis in degrees.
+  // Azimuth, left-handed rotation around z-axis in degrees clockwise from true north.
+  // Note: this definition is same as the z-x-y NovAtel euler angles.
+  optional deeproute.common.Point3D roll_pitch_azimuth = 8;
+  
+  // 3-by-3 covariance matrix in east/north/up frame, in deg^2.
+  repeated float euler_angles_covariance = 9 [ packed = true ];
+
+  // Linear velocity in east/north/up frame, in meters per second.
+  oneof LinearVelocityEnu{
+    deeproute.common.Point3D vehicle_frame_linear_velocity_enu = 10;
+    deeproute.common.Point3D imu_frame_linear_velocity_enu = 11;
+  }
+
+  // 3-by-3 covariance matrix in east/north/up frame, in m^2/s^2.
+  repeated float linear_velocity_covariance = 12 [ packed = true ];
+
+  // Angular velocity around forward/left/up axes, in radians per second.
+  optional deeproute.common.Point3D angular_velocity_flu = 13;
+
+  // Acceleration in forward/left/up frame, in meters per square second.
+  optional deeproute.common.Point3D linear_acceleration_flu = 14;
+
+  optional int32 satellite_number = 15;
+
+  enum ReferenceCoordinateSystem {
+    WGS84 = 0;
+    GCJ02 = 1;
+  }
+  
+  optional ReferenceCoordinateSystem reference_coodinate_system = 16 [default = WGS84];
+}
+
+// Solution from an inertial navigation system (INS) for the vehicle. It is the
+// output from the localization module, which combines IMU measuremnts with all
+// other available sensors (GNSS, wheel speed, lidar, etc).
+message Ins {
+  optional deeproute.common.Header header = 1;
+
+  // The time of position measurement, in us.
+  optional sfixed64 measurement_time = 2;
+
+  // INS solution type.
+  enum Type {
+    // Do NOT use.
+    // Invalid solution due to insufficient observations, no initial GNSS, ...
+    INVALID = 0;
+
+    // Use with caution. The solution may be unavailable or unreliable. Usually
+    // the solution is a result with very large uncertainty, possibly due to
+    // aligning, insufficient vehicle dynamics, algorithm initialization stage
+    // ...
+    CONVERGING = 1;
+
+    // Safe to use. The INS has fully converged.
+    GOOD = 2;
+
+    // Discarded type. 
+    MAP_COLLECTION = 3;
+  }
+  optional Type type = 3;
+
+  // Longitude, latitude & height (WGS84).
+  // lon/lat are in degrees while height is in meters.
+  optional deeproute.common.PointLLH position_llh = 4;
+
+  // The mercator projected 3D point of `position_llh`, whose height is the
+  // WGS84 height. in meters.
+  optional deeproute.common.Point3D position = 5;
+
+  // Roll/pitch/yaw, which is the intrisic z-y-x eular angles that rotates world
+  // frame to vehicle frame (or map points in vehicle coordinates to world
+  // coordinates), in radians.
+  // Note: this definition is different from the z-x-y NovAtel euler angles.
+  optional deeproute.common.Point3D euler_angles = 6;
+
+  // Linear velocity in east/north/up frame, in meters per second.
+  optional deeproute.common.Point3D linear_velocity_enu = 7;
+
+  // Linear velocity in forward/left/up frame, in meters per second.
+  optional deeproute.common.Point3D linear_velocity_flu = 8;
+
+  // Angular velocity around forward/left/up axes, in radians per second.
+  optional deeproute.common.Point3D angular_velocity_flu = 9;
+
+  // Angular velocity around east/north/up axes, in radians per second.
+  optional deeproute.common.Point3D angular_velocity_enu = 10;
+
+  // Acceleration in forward/left/up frame, in meters per square second.
+  optional deeproute.common.Point3D linear_acceleration_flu = 11;
+
+  // 3-by-3 covariance matrix in east/north/up frame, in m^2.
+  //@C_Mark@9@;
+  repeated float position_covariance = 12 [ packed = true ];
+
+  // 3-by-3 covariance matrix in east/north/up frame, in rad^2.
+  //@C_Mark@9@;
+  repeated float euler_angles_covariance = 13 [ packed = true ];
+
+  // 3-by-3 covariance matrix in east/north/up frame, in m^2/s^2.
+  //@C_Mark@9@;
+  repeated float linear_velocity_covariance = 14 [ packed = true ];
+
+  // 3-by-3 covariance matrix in east/north/up frame, in rad^2/s^2.
+  //@C_Mark@9@;
+  repeated float angular_velocity_covariance = 15 [ packed = true ];
+
+  // 3-by-3 covariance matrix in east/north/up frame, in m^2/s^4.
+  //@C_Mark@9@;
+  repeated float linear_acceleration_covariance = 16 [ packed = true ];
+
+  // A future measurement predicted by the INS system. The physical meaning and
+  // units of its fields are exactly the same as current measurement.
+  message PredictedFutureMeasurement {
+    // Predict time.
+    optional sfixed64 predict_time = 1;
+
+    // Pose.
+    optional deeproute.common.Point3D position = 2;
+    optional deeproute.common.Point3D euler_angles = 3;
+
+    // Velocity, angular velocity and acceleration.
+    optional deeproute.common.Point3D linear_velocity_flu = 4;
+    optional deeproute.common.Point3D angular_velocity_flu = 5;
+    optional deeproute.common.Point3D linear_acceleration_flu = 6;
+
+    // Covariances.
+    //@C_Mark@9@;
+    repeated float position_covariance = 7 [ packed = true ];
+    //@C_Mark@9@;
+    repeated float euler_angles_covariance = 8 [ packed = true ];
+    //@C_Mark@9@;
+    repeated float linear_velocity_covariance = 9 [ packed = true ];
+    //@C_Mark@9@;
+    repeated float angular_velocity_covariance = 10 [ packed = true ];
+    //@C_Mark@9@;
+    repeated float linear_acceleration_covariance = 11 [ packed = true ];
+  };
+
+  // `predicted_future_measurements` contains 10 consecutive predictions with
+  // 20ms interval, starting from `measurement_time` + 20ms.
+  //@C_Mark@10@;
+  repeated PredictedFutureMeasurement predicted_future_measurements = 17;
+
+  // When collecting maps, the state type is not considered.
+  optional bool map_collection = 18;
+}

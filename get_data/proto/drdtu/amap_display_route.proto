@@ -1,0 +1,27 @@
+//@F_Mark@ignore@;
+syntax = "proto3";
+
+package dr.blc.amap;
+
+import "map/amap_drive_route_planning.proto";
+import "common/geometry.proto";
+import "drapi/business_info.proto";
+import "drapi/command.proto";
+
+// topic : /blc/amap_display_route
+message AmapDisplayRoute {
+  uint64 timestamp_ms = 1;                    // 时间戳ms
+  deeproute.common.PointLLH start_point = 2;  // 路线起始点
+  deeproute.common.PointLLH end_point = 3;    // 路线结束点
+
+  repeated AmapDisplayRoutePair route_pairs = 4;  // 匹配路线结果
+  dr.command.MapEngineCode map_engine_code =
+      100;  // map规划结果,当规划结果为非SUCCESS的取值时,本消息不会携带除时间戳/错误message之外的其余内容信息
+  string map_engine_err_msg =
+      101;  // map规划失败的错误message,当map_engine_code为SUCCESS时，此字段为空
+}
+
+message AmapDisplayRoutePair {
+  deeproute.map.AmapPath amap_route = 1;  // 高德路线信息,保证点集坐标有赋值
+  dr.business_info.Path matched_route = 2;  // sd routing匹配异端图的路线
+}

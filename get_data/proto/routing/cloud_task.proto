@@ -1,0 +1,14 @@
+syntax = "proto2";
+
+package deeproute.cloud_task;
+ 
+message ImageCollectEvent {
+  // Image hz control parameter. At least need to define one of them.
+  optional double min_move_dist_meter = 3;
+  optional int64 min_interval_time_us = 4;
+  optional int32 max_report_num = 5;
+
+  // Optional parameters
+  optional double link_offset_start = 6; // Use 0 if not set.
+  optional double link_offset_end = 7;   // Use link length if not set.
+}

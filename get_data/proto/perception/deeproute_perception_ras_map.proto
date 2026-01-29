@@ -1,0 +1,370 @@
+syntax = "proto2";
+
+package deeproute.perception;
+
+import "perception/deeproute_perception_obstacle.proto";
+import "common/geometry.proto";
+
+message LaneBoundary {
+  optional bool virtual = 1;
+  optional int32 id = 2;
+  enum Color {
+    NONE = 0;
+    YELLOW = 1;
+    WHITE = 2;
+    GREEN = 3;
+  };
+  enum Shape {
+    UNKNOWN = 0;
+    SOLID = 1;
+    DASH = 2;
+    DOUBLE_SOLID = 3;
+    DOUBLE_DASH = 4;
+    DOUBLE_LDASH_RSOLID = 5;  // from left to right
+    DOUBLE_LSOLID_RDASH = 6;  // from right to left
+    SHORT_THICK_DOTTED = 7;
+    PARKING_LINE = 8;
+  };
+  optional Color lane_boundary_color = 3;
+  optional Shape lane_boundary_shape = 4;
+  // 'boundary' represente the keypoints of the line.
+  optional common.Polyline boundary = 5;
+  optional bool is_stable = 6 [default = true];
+
+  optional float confidence = 7;
+
+  repeated Color point_boundary_colors = 8;
+  repeated Shape point_boundary_shapes = 9;
+
+  optional bool is_left = 10 [default = false];
+  optional bool is_right = 11 [default = false];
+  repeated float curve_coefficients = 12;
+  optional float width = 13;
+
+  optional int32 tracking_count = 14;
+}
+
+message LaneInstance {
+  optional int32 lane_id = 1;
+  optional float instance_score = 2;
+  optional float passable_score = 3;
+  optional common.Polyline points = 4;  // world coordinate
+}
+
+message TopoInfo {
+  enum Type {
+    INVALID = 0;
+    SPLIT = 1;
+    MERGE = 2;
+  }
+  optional Type type = 1;
+  optional common.Point3D point = 2;  // world coordinate
+}
+
+message Lane {
+  optional bool virtual = 1;
+  optional int32 id = 2;
+  optional int32 left_boundary_id = 3;
+  optional int32 right_boundary_id = 4;
+  optional common.Polyline centerline = 5;
+
+  // topology
+  repeated int32 predecessor_id = 6;
+  repeated int32 successor_id = 7;
+  optional int32 left_neighbor_id = 8;
+  optional bool is_left_neighbor_reverse = 9;
+  optional int32 right_neighbor_id = 10;
+  optional bool is_right_neighbor_reverse = 11;
+  optional bool is_ego_lane = 12 [default = false];
+
+  optional float confidence = 13;
+
+  // attribute
+  enum Attribute {
+    NONE = 0;
+    NORMAL = 1;
+    CLOSE = 2;
+    FORK = 3;
+    MERGE = 4;
+    SHOULDER = 5;
+    BIKELANE = 6;
+    UPHILL = 7;  // Temp use for VPA multi levels, don't use in other scenarios
+    DOWNHILL = 8;
+    BUS_LANE = 9;
+    TIDAL_LANE = 10;
+    LEFT_TURN_WAITING_AREA = 11;
+    DECELERATION_LANE = 12;
+  };
+  optional Attribute attribute = 14;
+
+  // road instance id [-1] means can not find corresponding road
+  optional int32 road_instance_id = 15;
+
+  optional int32 lane_left_id = 16;
+  optional int32 lane_right_id = 17;
+  repeated int32 lane_left_id_list = 18;
+  repeated int32 lane_right_id_list = 19;
+
+  optional int32 layer = 20 [default = 0];
+
+  enum Topology {
+    LANE_UNKNOWN = 0;
+    LANE_START = 1;
+    LANE_CONTINUE = 2;
+    LANE_END = 3;
+    LANE_SPLIT = 4;
+    LANE_MERGE = 5;
+    LANE_CLOSE = 6;
+  };
+  optional Topology start_topo_type = 21;
+  optional Topology end_topo_type = 22;
+
+  enum NeighborType {
+    NORMAL_NEIGHBOR = 0;
+    SPLIT_NEIGHBOR = 1;
+    MERGE_NEIGHBOR = 2;
+  };
+  optional NeighborType left_neighbor_type = 23;
+  optional NeighborType right_neighbor_type = 24;
+
+  repeated float lane_width_list = 25;
+
+  repeated int32 left_neighbor_id_list = 26;
+  repeated int32 right_neighbor_id_list = 27;
+
+  optional float passable_confidence = 28;
+
+  repeated int32 associate_stopline_id_list = 29;
+  repeated float associate_stopline_s_begin_list = 30;
+  optional bool is_instance = 31;
+  optional TopoInfo left_topo = 32;
+  optional TopoInfo right_topo = 33;
+  repeated float left_width_list = 34;
+  repeated float right_width_list = 35;
+}
+
+message RoadEdge {
+  optional int32 id = 1;
+  optional common.Polyline polyline = 2;
+}
+
+message Area {
+  optional int32 id = 1;
+  optional common.Polygon polygon = 2;
+  enum Type {
+    UNKNOWN = 0;
+    CROSSWALK = 1;
+    TOLL_STATION = 2;
+    CLEAR_ZONE = 3;
+  }
+  optional Type type = 3;
+}
+
+message StopLine {
+  optional int32 id = 1;
+  optional common.Polyline polyline = 2;
+  repeated int32 overlap_id = 3;
+  enum Type {
+    TL = 0;
+    HOLD = 1;
+    STOP = 2;
+    YIELD = 3;
+    UNKNOWN = 4;
+  }
+  optional Type type = 4;
+}
+
+message PerceptionInfo {
+  optional string sensor_name = 1;
+  optional BBox2D img_bbox = 2;
+}
+
+message MapElement {
+  optional int32 id = 1;
+  enum Type {
+    UNKNOWN = 0;
+    TRAFFIC_LIGHT = 1;
+    TRAFFIC_SIGN = 2;
+    POLE = 3;
+    LANE_MARKER_STRAIGHT = 4;
+    LANE_MARKER_TURN_LEFT = 5;
+    LANE_MARKER_TURN_RIGHT = 6;
+    LANE_MARKER_STRAIGHT_LEFT = 7;
+    LANE_MARKER_STRAIGHT_RIGHT = 8;
+    LANE_MARKER_UTURN = 9;
+    LANE_MARKER_LEFT_UTURN = 10;
+    LANE_MARKER_STRAIGHT_UTURN = 11;
+    LANE_MARKER_LEFT_RIGHT = 12;
+    LANE_TEXT = 13;
+    GROUND_SPEED_LIMIT = 14;
+    TRAFFIC_SIGN_SPEED_LIMIT = 15;
+  }
+  optional Type type = 2;
+  optional common.Point3D position = 3;
+  optional PerceptionInfo perception_info = 4;
+  optional string text_string = 5;
+  optional float theta = 6;
+}
+
+message ParkingSpace {
+  // line parkspace id: [1, 10000], space parkspace id: [10001. 20000]
+  optional int32 id = 1;
+  // direct point for planning algo.
+  optional common.Point3D direct_point = 2;
+  optional common.Point3D direct_point_out = 3;
+  // we define the TOP-LEFT as the first point, and move around clockwise with
+  // 2-3-4 vertex point.
+  repeated common.Point3D parking_space_vertex = 4;
+  // Parking space center-point.
+  optional common.Point3D parking_space_center_pt = 5;
+  optional bool is_empty = 6;
+  enum ShapeType {
+    UNKNOWN = 0;
+    VERTICAL = 1;          // rectangle
+    PARALLEL = 2;          // rectangle
+    SLANTED = 3;           // parallelogram, the angle is not 90 degree
+    VERTICAL_SLANTED = 4;  // rectangle
+  }
+  enum BoundaryType {
+    INVALID = 0;
+    SINGLE = 1;             // single boundary
+    BILATERAL = 2;          // bilateral boundary
+  }
+  enum SourceType {
+    VISION = 0;
+    SPACE = 1;
+    FUSION = 2;  // line parkspace and space parkspace fusion
+    USER_DEFINED = 3;
+    HD_MAP = 4;
+    SLAM_MAP = 5;
+  }
+  enum EmptyType {
+    OTHER_REASON = 0;
+    OTHERS_STATIC = 1;
+    OTHERS_MOTION = 2;
+    WALL = 3;
+    CHOCK = 4;
+    LOCK_ON = 5;
+    FENCE = 6;
+    BIGCAR = 7;
+    CAR = 8;
+    CONE = 9;
+    HUMAN = 10;
+    BICYCLE = 11;
+    TRICYCLE = 12;
+    CURB = 13;
+    LESS_SPACE = 14;
+    TURN = 15;
+    JOINT_EGO = 16;
+  }
+  optional ShapeType shape_type = 7;
+  optional BoundaryType boundary_type = 14;
+  optional SourceType source_type = 8;
+  repeated EmptyType empty_type = 9;  // will be set value when is_empty is false
+  optional double heading = 10;
+  // parkspace points for visualization
+  repeated common.Point3D parking_space_vertex_vis = 11;
+  optional common.Point3D parking_space_center_pt_vis = 12;
+  optional int32 layer = 13 [default = 0];
+}
+
+message Road {
+  // sensing coordinate, generally equivalent to vehicle center [not vehicle
+  // coordinate!]
+  optional float min_x = 1;
+  optional float max_x = 2;
+  optional float min_y = 3;
+  optional float max_y = 4;
+  optional int32 width = 5;
+  optional int32 height = 6;
+
+  // roadmask indices
+  repeated uint32 indices = 7;
+  // orientation corresponding to each index
+  // 0-2*pi, -1 means in junction
+  repeated float orientation = 8;
+
+  // instance id for road instance
+  // [-1 when orientation != -1 or -2， means invalid]
+  repeated int32 instance_ids = 9;
+
+  // normal lane confidence map
+  // 0~255, 255 for confident, 0 for not confident
+  optional bytes lane_confidence_map = 10;
+}
+
+message RoadPolygon {
+  optional int32 id = 1;
+  enum Type {
+    UNKNOWN = 0;
+    ROAD = 1;
+    JUNCTION = 2;
+    DIVERSION = 3;
+    NODIR_ROADMASK = 4;
+    BOTHDIR_ROADMASK = 5;
+  }
+  optional Type type = 2;
+  optional common.Polygon polygon = 3;
+  optional bool is_outer = 4;
+}
+
+message RoadCenter {
+  optional int32 id = 1;
+  optional common.Polyline centerline = 2;
+}
+
+message MPPInfo {
+  optional string name = 1;
+  optional uint64 timestamp = 2;
+
+  // pose from mp to global
+  optional common.Point3D position = 3;
+  optional common.Point3D roll_pitch_yaw = 4;
+}
+
+message RASMap {
+  repeated Lane lanes = 1;
+  repeated LaneBoundary boundary = 2;
+  repeated Area area = 3;
+  repeated RoadEdge edge = 4;
+  repeated StopLine stop_line = 5;
+  repeated MapElement map_element = 6;
+  optional uint64 time_measurement = 7;
+  repeated ParkingSpace parking_space = 8;
+  optional Road road = 9;
+
+  // from sensing to global
+  // translation: x y z
+  optional common.Point3D adc_position = 10;
+  // Roll Pitch Yaw
+  optional common.Point3D adc_rotation = 11;
+
+  // when true, means perception will output the binding
+  // between perception road and sd road link
+  optional bool has_road_link_binding = 12;
+  // map road instance id to sd road link id
+  map<int32, uint64> road_to_sd_links = 13;
+
+  // ego lane curvature near ego position
+  optional float ego_lane_curvature = 14;
+
+  repeated RoadPolygon road_polygons = 15;
+
+  optional float ego_lane_width = 16;
+
+  repeated RoadCenter road_centers = 17;
+
+  // mpp_state contains (valid_tag, x, y, yaw, x_std, y_std, yaw_std)
+  // (x, y, yaw) use to transfrom mp coordinate to ego coordinate
+  repeated float mpp_state = 18;
+  optional MPPInfo mpp_info = 19;
+
+  optional bool has_stopline_association = 20;
+  repeated LaneInstance lane_instances = 21;
+
+  optional float heading_angle = 22; // rad
+}
+
+message Extrinsic {
+  optional deeproute.common.Transformation3 vehicle_to_rasmap = 1;
+}

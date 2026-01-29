@@ -1,0 +1,35 @@
+syntax = "proto2";
+
+package dr.vhr;
+
+/**
+Vehicle History Records Protocol Design Document:
+https://rqk9rsooi4.feishu.cn/wiki/Iu2zwJ9LyiaQ0ykX43AcQCg2nbc
+
+----------------------------
+| Magic (char[8] 8 bytes)  |
+| Version (uint32 4 bytes) |
+| Header (byte[] n bytes)  | TLV type=0x00
+| Event (byte[] n bytes)   | TLV type=0x01
+| Event (byte[] n bytes)   |
+| Event (byte[] n bytes)   |
+| Event (byte[] n bytes)   |
+|      ...                 |
+----------------------------
+ */
+
+
+//TLV格式类型
+enum VhrType {
+  HEADER = 0x00; //0x00
+  EVENT = 0x01; //0x01
+}
+
+
+//VHR Header
+message VhrHeader {
+  optional string trip_name = 1; // 关联 trip
+  optional string car_id = 2; // 关联 car_id，元戎内部车辆唯一标识 YR_XX_XXXXXX
+  optional string driver_version = 3; // driver 版本信息 deeproute-driver-dev-v3-27-0-rc3-release-1102176-dev_3.27.0_arm64.deb
+  optional string oem_car_id = 4; // 外部厂商的 car_id,例如加密后的VIN码
+}

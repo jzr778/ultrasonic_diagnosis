@@ -1,0 +1,33 @@
+syntax = "proto2";
+
+package deeproute.hdmap;
+
+import "common/geometry.proto";
+
+// Adjacent lanes in the same direction and converging at a certain position in front
+// can be classified to a same RoadSection. Reverse lanes cannot appear between adjacent lanes.
+// "Adjacent" inlcude the following situations:
+// 1.Lanes share a common boundary.
+// 2.The lane is separated by green belt, open space, forbidden area, etc， except for the reverse lane.
+message RoadSection {
+  optional int32 id = 1;
+  optional int32 left_boundary_id = 2;
+  optional int32 right_boundary_id = 3;
+  optional string name = 4;
+  repeated int32 lane_ids = 5;
+  // All road section can be driving into (or from).
+  repeated int32 predecessor_ids = 6;
+  repeated int32 successor_ids = 7; 
+  repeated int32 road_ids = 8;
+  optional common.Polygon polygon = 9;
+}
+
+// A Road include several RoadSection.
+message Road {
+  optional int32 id = 1;
+  repeated int32 road_section_ids = 2;
+  repeated int32 junction_ids = 3;
+  optional string name = 4;
+  optional common.Polygon polygon = 5;
+}
+

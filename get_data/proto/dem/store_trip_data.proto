@@ -1,0 +1,13 @@
+syntax = "proto2";
+
+package deeproute.dem;
+
+// dem -> viz  topic: /em/store_trip_data_request
+message StoreTripDataRequest {
+    optional bool can_store_trip_data = 1; // false: 不能落盘（没有插入外接盘或者无权限写入）
+}
+
+// viz -> dem  topic: /em/store_trip_data_response
+message StoreTripDataResponse {
+    optional bool skip_store_trip_data = 2; // true: 跳过数据落盘
+}

@@ -1,0 +1,624 @@
+syntax = "proto3";
+
+import "semantic_map/map_standby_area.proto";
+import "app/deeproute_app_base.proto";
+import "app/deeproute_app_data.proto";
+import "common/geometry.proto";
+
+package deeproute.app.command;
+
+enum SearchLogic {
+  AND = 0;
+  OR = 1;
+}
+
+message TagFilter {
+  repeated deeproute.app.base.Tag tags = 1;
+  SearchLogic search_logic = 2;
+}
+
+message CMDRP {
+  deeproute.app.base.ErrorCode error_code = 1;
+  repeated deeproute.app.base.Payload payload = 2;
+}
+
+// sent  to app, and should be executed immediately
+message TaskCMD {
+  deeproute.app.base.Operator operator = 1;
+  repeated deeproute.app.base.AddressPoint points = 21;
+  int32 target_point_index = 3;
+}
+
+message SkipQrcodeCMD {
+  deeproute.app.base.Operator operator = 1;
+}
+
+// start or continue runing
+message StartRunningCMD {
+  deeproute.app.base.Operator operator = 1;
+  string task_id = 2;
+}
+
+// will skip passenger identification
+message StartJourneyCMD {
+  deeproute.app.base.Operator operator = 1;
+  string task_id = 2;
+}
+
+// pull over and wait
+message PullOverCMD {
+  deeproute.app.base.Operator operator = 1;
+  string task_id = 2;
+}
+
+enum CancelType {
+  UNKNOWN_TYPE = 0;
+  OTHER_REASON = 1;
+  PASSENGER_REQUEST_WITHOUT_REASON = 2;
+  VEHICLE_BREAKDOWN = 3;
+  DISAGREE_AGREEMENT = 4;
+  ARRIVING_DESTINATION = 5;
+  DEVELOPER_MODE = 6;
+  HIPILOT_SOS = 7;
+  REJECT_TASK = 8;       //目前仅适用于巡游
+  TERMINATION_TASK = 9;  //目前仅适用于巡游
+}
+
+message CancelTaskCMD {
+  deeproute.app.base.Operator operator = 1;
+  string task_id = 2;
+  CancelType type = 3;
+}
+
+// pull over and end the journey
+message StopTaskCMD {
+  deeproute.app.base.Operator operator = 1;
+  string task_id = 2;
+}
+
+message RequestTaskCMD {
+  deeproute.app.base.Operator operator = 1;
+  enum Type {
+    UNKNOWN = 0;
+    ANY = 1;
+    CRUISE_TASK = 2;
+    GO_GARAGE_TASK = 3;
+  }
+  Type type = 2;
+}
+
+message ConfirmArriveCMD {
+  deeproute.app.base.Operator operator = 1;
+  deeproute.app.base.PointType type = 2;
+}
+
+message ConfirmPassengerCMD {
+  deeproute.app.base.Operator operator = 1;
+  string tail_number = 2;
+}
+
+message OnlineCMD {
+  deeproute.app.base.Operator operator = 1;
+  deeproute.app.data.Online online_op = 2;
+  deeproute.app.data.WorkType work_type = 3;
+  deeproute.app.data.OnlineFlag online_flag = 4;
+}
+
+message SetParameterCMD {
+  message KeyLogin {
+    string env_id = 1;
+    deeproute.app.data.Scenario scenario = 2;
+    bool force_login = 3;
+  }
+  enum SpeedLimitType {
+    RELATIVE_TO_MAP_SPEED_LIMIT = 0;
+    ABSOLUTE_SPEED_LIMIT_LIMIT = 1;
+  }
+  message SpeedLimit {
+    double speed = 1;  // unit m/s
+    SpeedLimitType type = 2;
+  }
+  message FollowDistance {
+    double distance = 1;  // unit m
+  }
+  message NodParameter {
+    SpeedLimit speed_limit = 1;
+    FollowDistance follow_distance = 2;
+  }
+  deeproute.app.base.Operator operator = 1;
+  oneof parameter {
+    deeproute.app.data.DrivingMode driving_mode = 2;
+    deeproute.app.data.Login login = 3;
+    deeproute.app.data.Language language = 4;
+    KeyLogin key_login = 5;
+    NodParameter nod_parameter = 6;
+  }
+}
+
+message TurnDirectionCMD {
+  deeproute.app.base.Operator operator = 1;
+  enum Direction {
+    UNKONWN = 0;
+    LEFT = 1;
+    RIGHT = 2;
+  }
+  Direction direction = 2;
+  string task_id = 3;
+}
+
+message RunILCCMD {
+  deeproute.app.base.Operator operator = 1;
+  deeproute.app.data.LaneChangeState lane_change = 2;
+}
+
+// get dtu version
+message ModuleVersionQueryCMD {
+  deeproute.app.base.Operator operator = 1;
+}
+message ModuleVersionQueryCMDRP {
+  string version = 1;
+}
+
+message GetRecommendPointsCMD {
+  deeproute.app.base.Operator operator = 1;
+  deeproute.app.base.Position center_point = 2;
+  int32 radius = 3;
+}
+message GetRecommendPointsCMDRP {
+  string area = 1;
+  repeated deeproute.app.base.AddressPoint points = 2;
+}
+
+message GetRecommendRoutesCMD {
+  deeproute.app.base.Operator operator = 1;
+  TagFilter tag_filter = 2;
+  uint32 page = 3;
+  uint32 page_size = 4;
+  string keyword = 5;  // fuzzy matching
+  string area = 6;
+}
+
+message GetRecommendRoutesCMDRP {
+  string area = 1;
+  repeated deeproute.app.base.RecommendRoute routes = 2;
+  uint32 total = 3;
+}
+
+message GetAreaListCMD {
+  deeproute.app.base.Operator operator = 1;
+}
+
+message GetAreaListCMDRP {
+  repeated deeproute.app.base.AreaDescription area_list = 1;
+  bool exist_current_area = 2;
+  deeproute.app.base.AreaDescription current_area =
+      3;  // not set if exist_current_area=false
+}
+
+message GetRoutesHistoryCMD {
+  deeproute.app.base.Operator operator = 1;
+  string area = 2;
+  string keyword = 3;
+}
+
+message GetRoutesHistoryCMDRP {
+  repeated deeproute.app.base.RecommendRoute routes = 1;
+}
+
+message GetPoiPointsHistoryCMD {
+  deeproute.app.base.Operator operator = 1;
+  string area = 2;
+}
+
+message GetPoiPointsHistoryCMDRP {
+  repeated deeproute.app.base.PoiPoint points = 1;
+}
+
+message UpdatePoiPointHistoryCMD {
+  deeproute.app.base.Operator operator = 1;
+  deeproute.app.base.PoiPoint point = 2;
+  string area = 3;
+}
+
+message DeleteRouteHistoryCMD {
+  deeproute.app.base.Operator operator = 1;
+  string route_id = 2;
+  string area = 3;
+}
+
+message DeletePoiPointHistoryCMD {
+  deeproute.app.base.Operator operator = 1;
+  string point_id = 2;
+  string area = 3;
+}
+
+message GetFittingRouteCMD {
+  deeproute.app.base.Operator operator = 1;
+  repeated deeproute.app.base.AddressPoint point = 2;
+}
+message GetFittingRouteCMDRP {
+  repeated deeproute.app.base.AddressPoint point = 1;
+}
+
+message RunTracingPointsCMD {
+  deeproute.app.base.Operator operator = 1;
+  repeated deeproute.app.base.AddressPoint point = 2;
+  string task_id = 3;
+}
+
+enum RecommendStatus {
+  STATUS_UPDATE = 0;
+  STATUS_DELETE = 1;
+}
+
+message RecommendPoint {
+  string id = 1;
+  double longitude = 2;
+  double latitude = 3;
+  string name = 4;
+  string area = 5;
+  string city_code = 6;
+  string poi_id = 7;
+  RecommendStatus status = 8;
+  bool is_cruise = 9;
+  string external_id = 10;
+  bool is_for_vip = 11;
+  string name_eng = 12;
+  string address = 13;
+  double distance = 14;
+  repeated deeproute.app.base.Tag tags = 15;
+}
+
+message GetFrequentSitesCMD {
+  deeproute.app.base.Operator operator = 1;
+  string keyword = 2;  //为空时两种点都返回，不为空时只返回recommend_points
+  TagFilter tag_filter = 3;
+  uint32 page = 4;
+  uint32 page_size = 5;
+}
+
+message GetFrequentSitesCMDRP {
+  repeated RecommendPoint freq_points = 1;  //当前用户常用站点
+  repeated RecommendPoint recommend_points = 2;  //推荐站点列表（按热度排序）
+  uint32 total = 3;
+}
+
+message RoutingOption {
+  int32 cost = 1;
+}
+
+message SpecifiedRouteTaskCMD {
+  deeproute.app.base.Operator operator = 1;
+  deeproute.app.base.RecommendRoute route = 2;
+  uint32 index = 3;
+  RoutingOption option = 4;
+  int32 path_id = 5;
+}
+
+message SinglePointTaskCMD {
+  deeproute.app.base.Operator operator = 1;
+  RecommendPoint point = 2;
+  RoutingOption option = 3;
+  int32 path_id = 4;
+}
+
+message SetDrivingModeCMD {
+  enum Mode {
+    MODE_NOT_DEFINED = 0;
+    MANUAL = 1;
+    AUTO = 2;
+  }
+  deeproute.app.base.Operator operator = 1;
+  Mode mode = 2;
+}
+
+message GetPassingPointsCMD {
+  deeproute.app.base.Operator operator = 1;
+  string task_id = 2;
+  deeproute.app.base.CoorSys coor_sys = 3;
+}
+
+enum RoadType {
+  UNKNOW_TYPE = 0;
+  HIGWAY = 1;
+  URBAN_EXPRESSWAY = 2;
+  OTHER = 99;
+}
+
+message RoadSegmentInfo {
+  RoadType road_class = 1;
+  repeated deeproute.app.base.Position pos = 2;
+}
+
+message GetPassingPointsCMDRP {
+  repeated deeproute.app.base.Position pos = 1;
+  string end_name = 2;
+  string end_name_en = 3;
+  string version = 4;
+  RoadSegmentInfo segment_info = 5;
+}
+
+message StartLoadingCMD {
+  deeproute.app.base.Operator operator = 1;
+}
+message StartLoadingCMDRP {
+}
+
+message FinishLoadingCMD {
+  deeproute.app.base.Operator operator = 1;
+}
+message FinishLoadingCMDRP {
+}
+
+message EnterGarageCMD {
+  deeproute.app.base.Operator operator = 1;
+  repeated deeproute.hdmap.StandbyArea areas = 2;
+  enum Type {
+    CREATE = 0;
+    UPDATE = 1;
+  }
+  Type type = 3;
+}
+
+message GetHDPositionCMD {
+  deeproute.app.base.Operator operator = 1;
+  deeproute.app.base.Position pos = 2;
+  deeproute.app.base.CoorSys type = 3;
+  deeproute.app.base.CoorSys output_type = 4;
+}
+
+message GetHDPositionCMDRP {
+  deeproute.app.base.Position hd_pos = 1;
+  deeproute.app.base.CoorSys output_type = 2;
+}
+
+message CheckPathCMD {
+  deeproute.app.base.Operator operator = 1;
+  repeated deeproute.app.base.Position pos = 2;
+  deeproute.app.base.CoorSys input_type = 3;
+  deeproute.app.base.CoorSys output_type = 4;
+  RoutingOption option = 5;
+}
+message CheckPathCMDRP {
+  repeated deeproute.app.base.Position route = 1;
+  int32 recommend_point_index_in_route = 2;  //[default = -1]
+  double distance = 3;
+  double duration = 4;
+}
+
+// similar to CheckPathCMD
+message GetPathCMD {
+  deeproute.app.base.Operator operator = 1;
+  repeated deeproute.app.base.Position pos = 2;
+  deeproute.app.base.CoorSys input_type = 3;
+  deeproute.app.base.CoorSys output_type = 4;
+  RoutingOption option = 5;
+  int32 max_path_num = 6;  // Valid range: 1-3
+}
+
+message Path {
+  int32 path_id = 1;
+  string name = 2;
+  string name_eng = 3;
+  repeated deeproute.app.base.AddressPoint points = 4;
+  double duration = 5;
+  double distance = 6;
+  int32 recommend_point_index_in_route = 7;  //[default = 0]
+  int32 traffic_lights_num = 8;
+  repeated RoadSegmentInfo segment_info = 9;
+}
+message GetPathCMDRP {
+  repeated Path paths = 1;
+}
+
+message UpdateRecommendRoutesCMD {
+  deeproute.app.base.Operator operator = 1;
+  repeated deeproute.app.base.RecommendRoute routes = 2;
+  string area = 3;
+  bool save_to_history = 4;
+  bool save_to_cloud = 5;
+}
+
+message SetNaviCoorSysCMD {
+  deeproute.app.base.Operator operator = 1;
+  deeproute.app.base.CoorSys type = 2;
+}
+
+// 矩形
+message RotatedRect {
+  deeproute.app.base.Position2D center = 1;
+  deeproute.app.base.Position2D size = 2;
+  float angle = 3;
+}
+
+//单个object像素点坐标集合
+message ImagePixelCoordinates {
+  string id = 1;
+  repeated RotatedRect rotated_rects = 2;
+  repeated deeproute.app.base.Position2D polygon_points = 3;
+  repeated deeproute.app.base.Position2D polyline_points = 4;
+}
+
+message TransformedObject {
+  string id = 1;
+  repeated deeproute.hdmap.StandbyArea areas = 2;
+  deeproute.common.Polygon polygon = 3;
+  deeproute.common.Polyline polyline = 4;
+}
+
+message RequestImagePixelToHdPosCMD {
+  repeated ImagePixelCoordinates coordinates = 1;
+}
+
+message RequestImagePixelToHdPosCMDRP {
+  repeated TransformedObject objects = 1;
+}
+
+message StartRecordingCMD {
+  deeproute.app.base.Operator operator = 1;
+}
+message StopRecordingCMD {
+  deeproute.app.base.Operator operator = 1;
+}
+
+message RecordRouteCMD {
+  enum OperationType {
+    START = 0;     //开始路线记忆
+    CANCEL = 1;    //取消
+    COMPLETE = 2;  //完成
+  }
+  OperationType operation_type = 1;
+}
+
+//开始记忆泊车
+message ExcuteVPARouteCMD {
+  deeproute.app.base.Operator operator = 1;
+  deeproute.hdmap.StandbyArea areas = 2;  // 不需要填
+}
+
+// ExcuteVPARouteCMD 的DTU 回复 为 DTUInfo, DTUInfo::payload 为
+// CMDRP，CMDRP::payload 为 deeproute.hdmap.StandbyArea 给到vis
+
+message OutGarageCMD {
+  deeproute.app.base.Operator operator = 1;
+  deeproute.app.base.Direction direction = 2;
+}
+
+message GetRecommendOutGarageDirectionCMD {
+}
+message GetRecommendOutGarageDirectionCMDRP {
+  deeproute.app.base.Direction direction = 1;
+}
+
+message ChangeViewCMD {
+  float angle = 1;
+  bool enable_3d = 2;
+}
+
+message ChangeCarModelCMD {
+  enum CarModel {
+    MODEL_2D = 0;
+    MODEL_3D = 1;
+  }
+  CarModel model = 1;
+  bool transparant_base = 2;
+}
+
+message EnableBirdEyeViewCMD {
+  bool enable = 1;
+}
+
+message EnableAroundViewCMD {
+  bool enable = 1;
+}
+
+message EnableAvmCMD {
+  EnableBirdEyeViewCMD enable_bird_eye_view = 1;
+  EnableAroundViewCMD enable_around_view = 2;
+}
+
+enum CommandType {
+  COMMAND_TYPE_UNKNOW = 0;
+  OPEN_UNMOVABLE = 1;
+  CLOSE_UNMOVABLE = 2;
+}
+
+enum StaticObstacleType {
+  STATIC_TYPE_UNKNOW = 0;
+  OPEN_STATICOBSTACLE = 1;
+  CLOSE_STATICOBSTACLE = 2;
+}
+
+enum DynamicObstacleType {
+  DYNAMIC_TYPE_UNKNOW = 0;
+  OPEN_DYNAMICOBSTACLE = 1;
+  CLOSE_DYNAMICOBSTACLE = 2;
+}
+
+enum SonarType {
+  SONAR_TYPE_UNKNOW = 0;
+  OPEN_SONAR = 1;
+  CLOSE_SONAR = 2;
+}
+
+enum SDLaneType {
+  SDLANE_TYPE_UNKNOW = 0;
+  OPEN_SDLANE = 1;
+  CLOSE_SDLANE = 2;
+}
+
+enum EnteryLaneType {
+  ENTRY_LANE_TYPE_UNKNOW = 0;
+  OPEN_ENTRY_LANE = 1;
+  CLOSE_ENTRY_LANE = 2;
+}
+
+enum PerceptionFollowVirtualLaneType {
+  PERCEPTION_FOLLOW_LANE_TYPE_UNKNOW = 0;
+  OPEN_PERCEPTION_FOLLOW_LANE = 1;
+  CLOSE_PERCEPTION_FOLLOW_LANE = 2;
+}
+
+enum PNCFollowVirtualLaneType {
+  PNC_FOLLOW_LANE_TYPE_UNKNOW = 0;
+  OPEN_PNC_FOLLOW_LANE = 1;
+  CLOSE_PNC_FOLLOW_LANE = 2;
+}
+
+message PlanningCfgCMD {
+  deeproute.app.base.Operator operator = 1;
+  CommandType command_type = 2;
+  StaticObstacleType static_obstacle_type = 3;
+  DynamicObstacleType dynamic_obstacle_type = 4;
+  SonarType sonar_type = 5;
+  SDLaneType sdlane_type = 6;
+  EnteryLaneType entry_lane_type = 7;
+  PerceptionFollowVirtualLaneType perception_follow_virtual_lane_type = 8;
+  PNCFollowVirtualLaneType pnc_follow_virtual_lane_type = 9;
+}
+
+message AutomaticDrivingModeCMD {
+  deeproute.app.data.AutomaticDrivingMode mode = 1;
+}
+
+message SoftwareVersionInfo {
+  string name = 1;
+  string version = 2;
+}
+
+message SoftwareVersionInfoCMD {
+  repeated SoftwareVersionInfo info = 1;
+}
+
+message TraceReversingTaskCMD {
+  enum TraceReversingTaskType {
+    UNKNOWN_TYPE = 0;
+    CREATE = 1;
+    RESUME = 2;
+    CANCEL = 3;
+  }
+  deeproute.app.base.Operator operator = 1;
+  TraceReversingTaskType type = 2;
+}
+
+message GetCustomerServiceInfoCMD {
+  deeproute.app.base.Operator operator = 1;
+  string task_id = 2;
+}
+message GetCustomerServiceInfoCMDRP {
+  // 电话号码
+  string phone_number = 1;
+  // 电话客服服务时间（开始-结束）
+  string begin_svc_time = 2;
+  string end_svc_time = 3;
+}
+
+message VpaTypeSwitchCMD {
+  deeproute.app.base.Operator operator = 1;
+  deeproute.app.data.VpaType vpa_type = 2;
+}
+
+message UpdateOfflineDataCMD {
+  deeproute.app.base.Operator operator = 1;
+  string area = 2;
+}

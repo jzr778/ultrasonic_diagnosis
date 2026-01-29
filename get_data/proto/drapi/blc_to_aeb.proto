@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package dr.blc;
+
+enum PolicyResult {
+  NORMAL = 0;
+  INHIBIT = 1;
+  ERROR = 2;
+}
+
+// topic : /blc/policy_result_to_aeb
+message PolicyResultsToAeb {
+  int32 msg_id = 1;
+  uint64 timestamp = 2; // ms
+  PolicyResult aeb_result = 3;
+  PolicyResult esa_result = 4;
+  PolicyResult meb_result = 5;
+  PolicyResult fcw_result = 6;
+  PolicyResult fctb_result = 7;
+  PolicyResult fcta_result = 8;
+  PolicyResult rctb_result = 9;
+  PolicyResult abp_result = 10;
+  PolicyResult awb_result = 11;
+  PolicyResult aba_result = 12;
+}

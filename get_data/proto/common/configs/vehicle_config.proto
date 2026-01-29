@@ -1,0 +1,233 @@
+syntax = "proto2";
+
+package deeproute.common;
+import "common/pair.proto";
+
+import "common/header.proto";
+import "common/geometry.proto";
+
+message Transform {
+  optional bytes source_frame = 1;  // Also known as "frame_id."
+
+  optional bytes target_frame = 2;  // Also known as "child_frame_id."
+
+  // Position of target in the source frame.
+  optional Point3D translation = 3;
+
+  // Activate rotation from the source frame to the target frame.
+  optional Quaternion rotation = 4;
+}
+
+message Extrinsics {
+  repeated Transform tansforms = 1;
+}
+
+// Vehicle parameters shared among several modules.
+// By default, all are measured with the SI units (meters, meters per second,
+// etc.).
+
+enum VehicleBrand {
+  LINCOLN_MKZ = 0;
+  GEM = 1;
+  LEXUS = 2;
+  TRANSIT = 3;
+  GE3 = 4;
+  WEY = 5;
+  ZHONGYUN = 6;
+  CH = 7;
+  E70 = 8;
+  FMS = 9;
+  MKZ = 10;
+  GE11 = 11;
+  DF_X69B = 12;
+  CAU = 13;
+  KLQ = 14;
+  H97 = 15;
+  AION = 16;
+  LAVIDA = 17;
+  ISUZU_CHA = 18;
+  MAR = 19;
+  ISUZU_USA = 20;
+  M5 = 21;
+  ID4 = 22;
+  M7 = 23;
+  BYD_HAN = 24;
+  BYD_HAN_ICV = 25;
+  BYD_HAN_ICV_ONE = 26;
+  SMART = 27;
+  GWM = 28;
+  M7_SOFT_FILM2 = 29;
+}
+
+message VehicleID {
+  optional string vin = 1;
+  optional string plate = 2;
+  optional string other_unique_id = 3;
+}
+
+message SteerRatioTable {
+  message SteerRatioPair {
+    // unit deg
+    optional double steer_angle = 1;
+    optional double steer_ratio = 2;
+  }
+  // @C_Mark@32@
+  repeated SteerRatioPair steer_ratio_pair = 1;
+}
+
+message VehicleParam {
+  optional VehicleBrand brand = 1;
+  // Car center point is car reference point, i.e., center of rear axle.
+  optional VehicleID vehicle_id = 2;
+  optional double front_edge_to_center = 3 [default = nan];
+  optional double back_edge_to_center = 4 [default = nan];
+  optional double left_edge_to_center = 5 [default = nan];
+  optional double right_edge_to_center = 6 [default = nan];
+
+  optional double length = 7 [default = nan];
+  optional double width = 8 [default = nan];
+  optional double height = 9 [default = nan];
+
+  optional double max_acceleration = 11 [default = nan];
+  optional double max_deceleration = 12 [default = nan];
+
+  // The following items are used to compute trajectory constraints in
+  // planning/control/canbus,
+  // vehicle max steer angle
+  optional double max_steer_angle = 13 [default = nan];
+  // ratio between the turn of steering wheel and the turn of wheels
+  optional double steer_ratio = 16 [default = nan];
+  // the distance between the front and back wheels; Note: halved for
+  // four-wheel-steering (4WS) vehicle for now.
+  optional double wheel_base = 17 [default = nan];
+  // Tire effective rolling radius (vertical distance between the wheel center
+  // and the ground).
+  optional double wheel_rolling_radius = 18 [default = nan];
+
+  // for localization use from 22 to 24
+  // distance from rear left wheel center to rear right wheel center, in meters
+  optional float rear_axis_length = 22 [default = nan];
+  // rear left wheel radius, in meters. If wheel speed is in km/h, the wheel
+  // radius always 2.7777
+  optional float rear_left_radius = 23 [default = nan];
+  // rear right wheel radius, in meters. If wheel speed is in km/h, the wheel
+  // radius always 2.7777
+  optional float rear_right_radius = 24 [default = nan];
+
+  // For four-wheel-steering (4WS) vehicle only, length from rear axis to center
+  optional float rear_axis_to_center = 25 [default = nan];
+
+  // Deprecated fields for history vehicle config version
+  optional double max_steer_angle_rate = 26 [deprecated = true];
+  optional double min_steer_angle_rate = 27 [deprecated = true];
+  optional double brake_deadzone = 28 [deprecated = true];
+  optional double throttle_deadzone = 29 [deprecated = true];
+  optional double pitch_offset = 30 [deprecated = true];
+  optional double min_turn_radius = 31 [deprecated = true];
+  optional double max_abs_speed_when_stopped = 32 [deprecated = true];
+  optional double rear_axle_length = 33 [deprecated = true];
+
+  enum VehicleType {
+    UNKNOWN = 0;
+    PASSENGER_CAR = 1;
+    LIGHT_TRUCK = 2;
+    HEAVY_TRUCK = 3;
+    FREIGHT_TRUCK = 4;
+    BUS = 5;
+  }
+  optional VehicleType vehicle_type = 34;
+  // mass = front_wheel_mass + rear_wheel_mass
+  optional double mass = 35;
+  optional double front_wheel_mass = 36;
+  optional double rear_wheel_mass = 37;
+  optional double front_axis_dis_to_mass_center = 38;
+  optional double rear_axis_dis_to_mass_center = 39;
+  // left is positive adn right is negative, unit(deg)
+  optional double steer_angle_offset = 40 [default = 0.0];
+  optional SteerRatioTable steer_ratio_table = 41;
+  optional SteerRatioTable reverse_steer_ratio_table = 42;
+  optional double mirror_width = 43 [default = 0.0];
+}
+
+message SensorsParameters {
+  optional Vector3 vehicle_to_imu_translation = 1;
+  optional Vector3 vehicle_to_sensing_translation = 2;
+}
+
+message VehicleConfig {
+  optional deeproute.common.Header header = 1;
+  optional VehicleParam vehicle_param = 2;
+  optional Extrinsics extrinsics = 3;
+  optional SensorsParameters sensors_parameters = 4;
+}
+
+message PncVehicleParam {
+  optional double stitch_time_offset = 1;              // [s]
+  optional double max_lateral_acceleration = 2;        // [m/s^2]
+  optional double max_lateral_jerk = 3;                // [m/s^3]
+  optional double max_steer_angle_rate = 4 [deprecated = true];            // steering wheel [deg/s]
+  optional double max_steer_angle_rate_low_speed = 5 [deprecated = true];  // steering wheel [deg/s]
+  optional double max_steer_acceleration = 6;    // steering wheel [deg/s^2]
+  optional double max_yaw_rate = 7;              // vehicle yaw rate [rad/s]
+  optional double reinit_lateral_threshold = 8;  // [m]
+  optional double reinit_longitudinal_threshold = 9;        // [m]
+  optional double reinit_lateral_threshold_low_speed = 10;  // [m]
+  optional double reinit_low_speed = 11;                    // [m/s]
+  optional int32 lat_iter_delay = 12
+      [default = 3];  // used for scene_tester of planning
+  optional double lat_cutoff_freq = 13
+      [default = 0.8435212];  // [Hz] used for scene_tester of planning
+  optional double init_steer_thres_finish_deg = 14 [default = 2.0];  // [deg]
+  optional double init_max_steer_acceleration_ratio = 15 [default = 0.4];
+  optional double init_steer_thres_finish_deg_hpi = 16
+      [default = 5.0];             // [deg]
+  optional double max_speed = 17;  // [m/s]
+  optional uint32 lon_iter_delay = 18 [default = 5];
+  optional double lon_cutoff_freq = 19 [default = 1.0];
+  optional ModelParam model_param = 20;
+  optional double max_rear_angle = 21 [default = 0.0];
+  optional double max_rear_angle_rate = 22 [default = 0.0];
+  optional int32 lat_rear_iter_delay = 23 [default = 3];
+  optional double lat_rear_cutoff_freq = 24 [default = 0.8435212];
+  optional double ego_stop_thres = 25 [default = 0.1];
+  optional double reinit_heading_thres_stop = 26 [default = 5.0];  //[deg]
+  optional double reinit_lateral_thres_stop = 27 [default = 0.1];
+  optional double reinit_lon_thres_stop = 28 [default = 1.0];
+  repeated Pair vx_stwl_rate_deg_pts = 29;
+  optional double max_steer_angle_rate_osp = 30 [default = 360.0];
+
+  // active-safety pnc vehicle param from 100-150
+  optional double ess_lat_iter_delay = 100 [default = 14];
+
+  message ModelParam {
+    optional double distance_center_to_front_alxe = 1;  // [m]
+    optional double distance_center_to_rear_alxe = 2;   // [m]
+    optional double front_cornering_stiffness = 3;      // [N/rad]
+    optional double rear_cornering_stiffness = 4;       // [N/rad]
+    optional double vehicle_mass = 5;                   // [kg]
+    optional double vehicle_moment_of_inertia = 6;      // [kg*m^2]
+
+    message AEBModelParam {
+      // AWB
+      message AWBLevelParam {
+        optional double awb_pressure_upslope_rate = 1;    // [bar/s]
+        optional double awb_pressure_peak = 2;            // [bar]
+        optional double awb_pressure_downslope_rate = 3;  // <0, [bar/s]
+        optional double acc_threshold = 4;                // <0, [m/s^2]
+      }
+      optional double awb_delay = 1;  // [s]
+      repeated AWBLevelParam awb_level_param = 2;
+      optional double tau_1st_order_pres_to_acc = 3;
+      optional double gain_1st_order_pres_to_acc = 4;
+
+      // AEB
+      optional double aeb_delay = 5;
+      optional double aeb_2nd_order_damping_ratio = 6;
+      optional double aeb_2nd_order_natural_freq = 7;     // wn, [rad/s]
+      optional double aeb_effective_speed_reduction = 8;  // [m/s]
+      optional double aeb_tau_1st_order_wind_down = 9;
+    }
+    optional AEBModelParam aeb_model_param = 7;
+    optional double stability_k = 8 [default = 0.0];
+  }
+}

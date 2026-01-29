@@ -1,0 +1,13 @@
+syntax = "proto2";
+
+package deeproute.hdmap;
+
+import "common/geometry.proto";
+import "semantic_map/map_overlap.proto";
+//RoadMask means non-drivable area
+message RoadMask {
+  optional int32 id = 1;
+  optional common.Polygon polygon = 2;
+  optional int32 layer = 3;
+  repeated Overlap overlaps = 4;
+}

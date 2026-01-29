@@ -1,0 +1,168 @@
+syntax = "proto2";
+package deeproute.control;
+
+import "canbus/chassis.proto";
+import "common/header.proto";
+import "common/vehicle_signal.proto";
+import "common/drive_state.proto";
+// import "common/pnc_point.proto";
+import "control/pad_msg.proto";
+
+enum TurnSignal {
+  TURN_NONE = 0;
+  TURN_LEFT = 1;
+  TURN_RIGHT = 2;
+}
+
+message LatencyStats {
+  optional double total_time_ms = 1;
+  repeated double controller_time_ms = 2;
+  optional bool total_time_exceeded = 3;
+}
+
+message AEBCommand {
+  message AEBMode {
+    enum Level {
+      NONE = 0;
+      LEVEL_1 = 1;
+      LEVEL_2 = 2;
+      LEVEL_3 = 3;
+      LEVEL_4 = 4;
+    }
+    optional bool enable = 1;
+    optional Level level = 2;
+    optional double request_value = 3;
+  }
+  optional AEBMode fcw = 1;
+  optional AEBMode aeb = 2;
+  optional AEBMode abp = 3;
+  optional AEBMode awb = 4;
+  optional AEBMode eba = 5;
+  optional AEBMode aba = 6;
+  optional AEBMode rctb = 8;
+  optional AEBMode meb = 9;
+  optional bool aeb_interface_enable = 7;
+}
+
+// next id : 27
+message ControlCommand {
+  optional deeproute.common.Header header = 1;
+  // target throttle in percentage [0, 100]
+  optional double throttle = 3;
+
+  // target brake in percentage [0, 100]
+  optional double brake = 4;
+
+  // target non-directional front steering rate in rad/s
+  optional double steering_rate = 6;
+
+  // target front steering angle in radian
+  optional double steering_target = 7;
+
+  // parking brake engage. true: engaged
+  optional bool parking_brake = 8;
+
+  // target speed, in m/s
+  optional double speed = 9;
+
+  // target acceleration in m`s^-2
+  optional double acceleration = 10;
+
+  optional bool high_beam = 11 [deprecated = true];
+  optional bool low_beam = 12 [deprecated = true];
+  optional bool left_turn = 13 [deprecated = true];
+  optional bool right_turn = 14 [deprecated = true];
+  optional bool horn = 15 [deprecated = true];
+
+  // model reset
+  optional bool reset_model = 16 [deprecated = true];
+  // engine on/off, true: engine on
+  optional bool engine_on_off = 17;
+  // completion percentage of trajectory planned in last cycle
+  optional double trajectory_fraction = 18;
+  optional deeproute.canbus.Chassis.DrivingMode driving_mode = 19;
+  optional deeproute.canbus.Chassis.GearPosition gear_location = 20;
+
+  optional TurnSignal turnsignal = 21 [deprecated = true];
+  optional deeproute.common.VehicleSignal signal = 23;
+  optional LatencyStats latency_stats = 24;
+  optional PadMessage pad_msg = 25 [deprecated = true];
+  optional deeproute.common.EngageAdvice engage_advice = 26;
+  optional bool is_in_safe_mode = 27 [default = false];
+  optional bool flag_reinit = 28 [default = false];
+  optional int32 reset_count = 29 [default = 0];
+  optional int32 node_abnormal_count = 30 [default = 0];
+  optional double time_cur = 31 [default = 0];
+  optional int64 timestamp = 32 [default = 0];  // micro sec
+  optional double torque = 33;
+  optional double physical_throttle_pedal_request = 34
+      [deprecated = true];  // 0.0 to 1.0
+  optional double physical_brake_pedal_request = 35
+      [deprecated = true];  // 0.0 to 1.0
+
+  // According to different vehicle,
+  // the meaning of this parameter is different,
+  // such as acceleration command, torque command and pedal command
+  optional double longitudinal_cmd = 36;
+  optional double torque_table_steer_deg =
+      37;  // [deg], for torque simulation usage only
+  optional double torque_table_steer_deg_rate =
+      38;  // [deg/s], for torque simulation usage only
+
+  // target non-directional rear steering rate in rad/s
+  optional double rear_steering_rate = 39;
+
+  // target rear steering angle in radian
+  optional double rear_steering_target = 40;
+
+  // perception timestamp of the executing trajectory [micro sec]
+  optional int64 trajectory_perception_timestamp = 41;
+  optional bool received_mode_request = 42;
+
+  // acceleration command considering external acceleration compensation
+  optional double acceleration_cmd = 43;
+  // Acceleration command output by longitudinal controller without
+  // considering external acceleration compensation
+  optional double acceleration_desire = 44;
+  optional bool use_apa = 45;
+  optional double longitudinal_cmd_distance = 46;
+  optional double lateral_cmd_rate = 47;
+  optional double lateral_cmd = 48;
+  optional AEBCommand aeb_command = 49 [deprecated = true];
+  optional double dynamic_jerk_limit_upper = 51 [default = 10];
+  optional double dynamic_jerk_limit_lower = 52 [default = -10];
+  optional bool decelerate_to_stop = 53 [default = false];
+  optional bool slope_decelerate_to_stop = 54 [default = false];
+  optional bool apa_emergency_brake = 55 [default = false];
+
+}
+
+// topic:esa/command
+message ESACommand {
+  optional deeproute.common.Header header = 1;
+
+  optional bool enable = 2;
+
+  // Acceleration command output by longitudinal controller without
+  // considering external acceleration compensation
+  optional double acceleration_desire = 3;
+
+  // target non-directional front steering rate in rad/s
+  optional double steering_rate = 4;
+
+  // target front steering angle in radian
+  optional double steering_target = 5;
+
+  optional deeproute.common.VehicleSignal signal = 6;
+
+  // for simulation
+  optional deeproute.canbus.Chassis.GearPosition gear_location = 7;
+
+  // TMP: for low-level control
+  optional double throttle = 101;
+  optional double brake = 102;
+  optional double longitudinal_cmd = 103;
+  optional double lateral_cmd_rate = 104;
+  optional double lateral_cmd = 105;
+  optional double torque = 106;
+}

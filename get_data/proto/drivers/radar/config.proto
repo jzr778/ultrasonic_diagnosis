@@ -1,0 +1,18 @@
+syntax = "proto2";
+
+package deeproute.drivers.radar;
+import "common/geometry.proto";
+
+message Config {
+  optional string frame_id = 1;
+  optional deeproute.common.Transformation3 sensor_to_radar = 2;
+}
+
+message RadarConfig {
+  enum Type {
+    CONTI_RADAR = 0;
+    HW_RADAR = 1;
+  }
+  repeated Config config = 1;
+  optional Type type = 2;
+}

@@ -1,0 +1,205 @@
+syntax = "proto2";
+
+package deeproute.gm.c01.ultrasonic;
+
+message UltrasonicObject {
+  optional uint64 timestamp = 1;
+  optional float distance = 2;
+  optional float echo_width = 3;
+  optional float echo_height = 4;
+  optional float confidence = 5;
+  optional float cross_distance_left = 6;
+  optional float left_echo_width = 7;
+  optional float left_echo_height = 8;
+  optional float left_echo_confidence = 9;
+  optional float cross_distance_right = 10;
+  optional float right_echo_width = 11;
+  optional float right_echo_height = 12;
+  optional float right_echo_confidence = 13;
+  optional uint32 id = 14;
+}
+
+message UltrasonicObstacle {
+  enum HeightType {
+    HEIGHT_TYPE_LOW = 0;
+    HEIGHT_TYPE_HIGHT = 1;
+    HEIGHT_TYPE_TRAVERSIBLE = 2;
+    HEIGHT_TYPE_UNKNOWN = 3;
+  }
+
+  enum ObstacleType {
+    OBSTACLE_TYPE_NONE = 0;
+    OBSTACLE_TYPE_POINT = 1;
+    OBSTACLE_TYPE_STRAIGHT0_CORNER = 2;
+    OBSTACLE_TYPE_STRAIGHT1_CORNER = 3;
+    OBSTACLE_TYPE_STRAIGHT2_CORNER = 4;
+    OBSTACLE_TYPE_RESERVED = 5;
+  }
+
+  optional uint64 timestamp = 1;
+  optional HeightType obstacle_height = 2;
+  optional float obstacle_height_prob = 3;
+  optional float point1_x = 4;
+  optional float point1_y = 5;
+  optional float point2_x = 6;
+  optional float point2_y = 7;
+  optional ObstacleType obstacle_type = 8;
+  optional float confidence = 9;
+  optional uint32 id = 10;
+}
+
+message UltrasonicParkingSlot {
+
+  enum DepthReference {
+    DEPTH_REFERENCE_NONE = 0;
+    DEPTH_REFERENCE_CURB = 1;
+    DEPTH_REFERENCE_WALL = 2;
+    DEPTH_REFERENCE_VIRTUAL = 3;
+    DEPTH_REFERENCE_LOW = 4;
+    DEPTH_REFERENCE_HIGH = 5;
+    DEPTH_REFERENCE_UNKNOWN = 6;
+    DEPTH_REFERENCE_RESERVED = 7;
+  }
+
+  enum SlotType {
+    SLOT_TYPE_LEFT_PARALLEL = 0;
+    SLOT_TYPE_RIGHT_PARALLEL = 1;
+    SLOT_TYPE_LEFT_CROSS = 2;
+    SLOT_TYPE_RIGHT_CROSS = 3;
+    SLOT_TYPE_RESERVED1 = 4;
+    SLOT_TYPE_RESERVED2 = 5;
+    SLOT_TYPE_RESERVED3 = 6;
+    SLOT_TYPE_INVALID = 7;
+  }
+
+  enum SlotStatus {
+    SLOT_STATUS_PS_NONE = 0;
+    SLOT_STATUS_PS_OK = 1;
+    SLOT_STATUS_RESERVED = 2;
+  }
+
+  enum ObjectType {
+    OBJECT_TYPE_NONE = 0;
+    OBJECT_TYPE_VIRTUAL = 1;
+    OBJECT_TYPE_REAL = 2;
+    OBJECT_TYPE_RESERVED = 3;
+  }
+
+  optional uint64 timestamp = 1;
+  optional uint32 id = 2; // Y
+  optional DepthReference depth_reference = 3; // Y  LatRefType
+  optional SlotType slot_type = 4; // Y
+  optional float depth = 5;  // Y
+
+  optional float obj1_start_pt_x = 6;
+  optional float obj1_start_pt_y = 7;
+  optional ObjectType obj1_start_pt_status = 8;
+  optional float obj1_end_pt_x = 9;
+  optional float obj1_end_pt_y = 10;
+  optional ObjectType obj1_end_pt_status = 11;
+
+  optional float obj2_start_pt_x = 12;
+  optional float obj2_start_pt_y = 13;
+  optional ObjectType obj2_start_pt_status = 14;
+  optional float obj2_end_pt_x = 15;
+  optional float obj2_end_pt_y = 16;
+  optional ObjectType obj2_end_pt_status = 17;
+
+  optional float slot_obj_start_pt_x = 18;
+  optional float slot_obj_start_pt_y = 19;
+  optional ObjectType slot_obj_start_pt_status = 20;
+  optional float slot_obj_end_pt_x = 21;
+  optional float slot_obj_end_pt_y = 22;
+  optional ObjectType slot_obj_end_pt_status = 23;
+
+  optional float length = 24; // Y
+  
+}
+
+message UltrasonicState {
+  enum FPASWorkSts{
+    FPAS_DISABLE = 0;
+    FPAS_ENABLE = 1;
+    FPAS_ACTIVE = 2;
+    FPAS_FAILED = 3;
+  }
+
+  enum RPASWorkSts{
+    RPAS_DISABLE = 0;
+    RPAS_ENABLE = 1;
+    RPAS_ACTIVE = 2;
+    RPAS_FAILED = 3;
+  }
+
+  enum APASysWorkSts{
+    APASys_DISABLE = 0;
+    APASys_ENABLE = 1;
+    APASys_ACTIVE = 2;
+    APASys_FAILED = 3;
+  }
+
+  enum PDCTimeStampStatus{
+    TIMEOUT = 0;
+    RESPONSE_A = 1;
+    SYNC_TO_GATEWAY = 2;
+    GLOBAL_TIME_BASE = 3;
+    TIMELEAP_FUTURE = 4;
+    TIMELEAP_PAST = 5;
+    RESPONSE_B = 6;
+    EXT_GENERAL_ERROR = 7;
+  }
+
+  optional FPASWorkSts fpas_worksts = 1;
+  optional RPASWorkSts rpas_worksts = 2;
+  optional APASysWorkSts apasys_worksts = 3;
+  optional PDCTimeStampStatus pdc_timestamp_status = 4;
+  // @C_Mark@26@;
+  repeated uint32 object_detect_area_list = 5; 
+  optional bool fpas_dispcmd = 6;
+  optional bool FPAS_FLCornrSnsrFailSts = 7;
+  optional bool FPAS_FLMiddlSnsrFailSts = 8;
+  optional bool FPAS_FRMiddlSnsrFailSts = 9;
+  optional bool FPAS_FRCornrSnsrFailSts = 10;
+  optional bool RPAS_RLCornrSnsrFailSts = 11;
+  optional bool RPAS_RLMiddlSnsrFailSts = 12;
+  optional bool RPAS_RRMiddlSnsrFailSts = 13;
+  optional bool RPAS_RRCornrSnsrFailSts = 14;
+}
+
+message UltrasonicObjectArray {
+  optional uint32 canid = 1;
+  // @C_Mark@12@;
+  repeated UltrasonicObject objects = 2;
+}
+
+message UltrasonicObstacleArray {
+  optional uint32 canid = 1;
+  // @C_Mark@4@;
+  repeated UltrasonicObstacle obstacles = 2;
+}
+
+message UltrasonicParkingSlotArray {
+  optional uint32 canid = 1;
+  // @C_Mark@2@;
+  repeated UltrasonicParkingSlot parking_slots = 2;
+}
+
+message UltrasonicStateArray {
+  optional uint32 canid = 1;
+  optional UltrasonicState uss_state = 2;
+}
+
+message UltrasonicHeader {
+  enum UltrasonicArrayType {
+    USS_OBJECT_ARRAY = 0;
+    USS_OBSTACLE_ARRAY = 1;
+    USS_PARKING_SLOT_ARRAY = 2;
+    USS_STATE_ARRAY = 3;
+  }
+
+  optional uint32 canframenum = 1;
+  //bitmap 2bit表示帧类型
+  optional uint64 bitmap = 2;
+  optional uint32 datalength = 3;
+  optional uint32 rolling_counter = 4;
+}

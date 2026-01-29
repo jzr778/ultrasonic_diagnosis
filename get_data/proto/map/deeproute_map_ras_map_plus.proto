@@ -1,0 +1,239 @@
+syntax = "proto2";
+
+package deeproute.map;
+
+import "common/geometry.proto";
+import "map/common_type.proto";
+import "routing/local_routing.proto";
+import "map/projection.proto";
+import "perception/deeproute_perception_ras_map.proto";
+
+enum RoadLevel {
+  UNKNOWN = 0;
+  HIGHWAY = 1;
+  STREET = 2;
+  PARK = 3;  // Roads located inside high-tech parks or industrial parks.
+}
+// Describes the shape or linking type of a road.
+// TODO(jingweixie): OFF_RAMP and ON_RAMP should also be road form type. Later
+// need to define all usefull road forms in this type. Also, it is better to
+// defined road form as feature of road element, not lane.
+enum RoadForm {
+  DEFAULT = 0;
+  ROUNDABOUT = 1;
+}
+
+message LaneRule {
+  enum VehicleType {
+    DEFAULT = 0;
+    LIGHT_TRUCK = 1;
+  }
+  message Rule {
+    oneof rule {
+      float max_speed = 1;  // Max speed limit in m/s.
+    }
+  }
+  optional VehicleType vehicle_type = 1;
+  optional Rule rule = 2;
+}
+
+// CrossTrafficLightInfos was SdRoadInfo before,
+// modify message name for compatibility
+message CrossTrafficLightInfos {
+  message CrossTrafficLightInfo {
+    optional string link_id = 1;
+    optional double distance_to_link = 2;
+    optional bool traffic_light = 3;
+
+    optional deeproute.common.PointLLH traffic_position_llh = 4;
+    optional deeproute.common.Point2D traffic_position_2d = 5;
+  }
+  repeated CrossTrafficLightInfo cross_traffic_light_infos = 1;
+  optional uint64 loc_measurement_time = 2;
+}
+
+message SDLevelMapInfo {
+  enum SdInfoType {
+    NAVIGATION = 0;
+    CRUISE = 1;
+  }
+
+  // sd map info type
+  optional SdInfoType sd_info_type = 100;
+  // LaneInfo provides extra info for lanes in RASMap. Currently only lanes on
+  // local routing path will have corresponding LaneInfo.
+  repeated DeeprouteHDLevelMapInfo.LaneInfo lane_info = 1;
+  // Complement lanes at the edge of RASMap. Some fileds will be unknown.
+  repeated perception.Lane complement_lanes = 2;
+  // Complement boundries at the edge of RASMap. Some fileds will be unknown.
+  repeated perception.LaneBoundary complement_boundries = 3;
+
+  // Traffic light info for planning.
+  optional CrossTrafficLightInfos sd_road_info = 4;
+}
+
+message DeeprouteHDLevelMapInfo {
+  message LaneInfo {
+    optional int32 id =
+        1;  // Id should be the same with matching lane in RASMap.
+    optional RoadLevel road_level = 2;  // Level of road this lane belongs to.
+    optional LaneType type = 3;
+    // Vehicle turning direction when drive from predecessor lane to this lane.
+    optional LaneTurn turn = 4;
+    repeated LaneRule lane_rules = 5;
+    // When two lane is neighbor but does not share boundary or have overlap,
+    // this two fields indicates their relationship.
+    optional int32 manually_set_left_neighbor_forward_lane_id = 6;
+    optional int32 manually_set_right_neighbor_forward_lane_id = 7;
+
+    optional RoadForm road_form = 8;
+    // Type of arrow painted on this lane that indicates turn type of vehicle
+    // when drive from current lane to its successors. Could be left &&
+    // straight, left && right, left && right && straight...
+    repeated LaneTurn actual_turn = 9;
+  }
+  enum Crossable {
+    PHYSICALLY_NOT = 0;
+    LEGALLY_NOT = 1;  // Legally not crossable but physically crossable.
+    RIGHT_TO_LEFT = 2;
+    LEFT_TO_RIGHT = 3;
+    BOTH = 4;
+    CAR_PHYSICALLY_NOT = 5;  // PHYSICALLY_NOT for car, but PHYSICALLY_YES for
+                             // pedestrian and two-wheel vehicle.
+  }
+  message BoundaryInfo {
+    optional int32 id =
+        1;  // Id should be the same with matching boundary in RASMap.
+    optional Crossable crossable = 2;
+  }
+  message TrafficLight {
+    // Center of traffic light box.
+    optional deeproute.common.Point3D location = 1;
+
+    // Defines all possibilities for a single light. It is a bitset since light
+    // shape can sometimes change.
+    // 1: straight arrow, 2: left arrow, 4: right arrow, 8: u turn left arrow.
+    // For example, if a light can be straight or u turn, the value should be 1
+    // + 8 = 9.
+    optional int32 shape = 2;
+
+    // Relate stop line ids.
+    repeated int32 stop_line_ids = 3;
+    optional int32 id = 4;
+  }
+  // A complementation of obstacles not provided in RASMap. Types not defined
+  // here but defined in RASMap: RoadEdge(curb).
+  message ComplementObstacle {
+    enum Type {
+      UNKNOWN = 0;
+      WHEEL_STOPPER = 1;
+      PEDESTRIAN_POLE = 2;
+      PHYSICAL_NOT_OBSTACLE = 3;
+    }
+    optional int32 id = 1;
+    oneof geometry {
+      common.Polyline polyline = 2;
+      common.Polygon polygon = 3;
+    }
+    optional Type type = 4;
+  }
+  // Layer info of elements. If layer of an element not defined here, layer is 0
+  // .
+  message LayerInfo {
+    optional int32 id = 1;
+    optional int32 layer = 2;
+  }
+
+  // All lanes in RASMap will have corresponding LaneInfo.
+  repeated LaneInfo lane_info = 1;
+  repeated TrafficLight traffic_lights = 2;
+  // All boundaries in RASMap will have corresponding BoundaryInfo.
+  repeated BoundaryInfo boundary_info = 3;
+  repeated ComplementObstacle complement_ground_obstacles = 4;
+  repeated LayerInfo layer_info = 5;
+}
+
+message MapObstacle {
+  optional int32 id = 1;  // obstacle ID.
+
+  // obstacle position in the world coordinate system.
+  optional common.Point3D position = 2;
+
+  optional double theta = 3;  // heading in the world coordinate system.
+  optional double theta_uncertainty = 4;  // heading uncertainty.
+
+  // Size of obstacle bounding box.
+  optional double length = 5;  // obstacle length.
+  optional double width = 6;   // obstacle width.
+  optional double height = 7;  // obstacle height.
+
+  optional common.Polygon polygon_area = 8;  // obstacle corner points.
+
+  // duration of an obstacle since detection in us.
+  optional int64 tracking_time = 9;
+
+  // detection score either from deeplearning module or map
+  optional double confidence_score = 10;
+
+  optional double timestamp = 14;  // GPS time in seconds.
+
+  enum SensorType {
+    PERCEPTION_LIDAR = 0;
+    PERCEPTION_CAMERA = 1;
+    PERCEPTION_RADAR = 2;
+    PERCEPTION_ULTRASONIC = 3;
+    PERCEPTION_FUSION = 4;
+    MAP = 5;
+    FUSION = 6;
+  };
+  optional SensorType sensor_type = 28
+      [default = PERCEPTION_LIDAR];  // obstacle sensor type
+
+  enum Type {
+    OTHERS_STATIC = 0;
+    WALL = 1;
+    CHOCK = 2;
+    LOCK_ON = 3;
+    LOCK_OFF = 4;
+    SPEEDBUMP = 5;
+    FENCE = 6;
+    BIGCAR = 7;
+    CAR = 8;
+    CONE = 9;
+    CURB = 10;
+    PILLAR = 11;
+  };
+  optional Type type = 31 [default = OTHERS_STATIC];
+
+  optional int32 layer = 32 [default = 0];
+}
+
+message MapObstacles {
+  optional uint64 time_measurement = 1;
+  repeated MapObstacle map_obstacles = 2;
+}
+
+message RASMapPlus {
+  // This id is used to match this message with other data. It has nothing to do
+  // with ids of elements in map.
+  optional int32 id = 3;
+
+  // The projection map engine inited
+  optional deeproute.map.ProjectionPoint projection = 5;
+
+  // RAS map is a local, single frame map from perception.
+  optional perception.RASMap ras_map = 1;
+
+  optional routing.LocalRouting local_routing = 2;
+
+  optional MapObstacles map_obstacles = 4;
+
+  // The followings are extra map info from global map.
+  //
+  // Road level extra map info.
+  optional SDLevelMapInfo sd_level_map_info = 11;
+  // Deeproute HD map level extra map info.
+  optional DeeprouteHDLevelMapInfo deeproute_hd_level_map_info = 41;
+  // cruise routing info
+  optional routing.LocalRouting cruise_routing = 6;
+}

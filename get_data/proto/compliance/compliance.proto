@@ -1,0 +1,9 @@
+syntax = "proto2";
+
+package deeproute.compliance;
+
+// church topic name: /channel/compliancer
+
+message Compliance {
+  optional bool is_sensitive = 1;
+}

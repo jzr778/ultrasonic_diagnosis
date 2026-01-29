@@ -1,0 +1,33 @@
+syntax = "proto2";
+
+import "common/geometry.proto";
+
+package deeproute.drivers.inu;
+
+
+message Config {
+
+  optional bool enable_calibration = 1;
+  // mutli-sensors-fusion
+  optional deeproute.common.Vector3 level_arm_imu_to_gnss_ant1 = 2;
+  optional double misalignment_angle_imu_to_gnss = 3;
+  optional deeproute.common.Vector3 misalignment_pry_angle_imu_to_vehicle = 4;
+  optional deeproute.common.Vector3 gyro_zero_bias = 5;
+  optional deeproute.common.Vector3 acce_zero_bias = 6;
+  optional deeproute.common.Vector3 init_gnss_imu_level_arm_variance = 7;
+  optional double init_gnss_heading_variance = 8;
+  //IMU
+  optional double gyro_scale_factor = 9;
+  optional double acce_scale_factor = 10;
+  optional Matrix3 gyro_coupling_error = 11;
+  optional Matrix3 acce_coupling_error = 12;
+  //Wheel
+  optional deeproute.common.Vector3 level_arm_imu_to_left_non_steering_wheel=13;
+  optional deeproute.common.Vector3 level_arm_imu_to_right_non_steering_wheel=14;
+}
+
+message Matrix3{
+  optional deeproute.common.Vector3 c0=1;
+  optional deeproute.common.Vector3 c1=2;
+  optional deeproute.common.Vector3 c2=3;
+}

@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+import "app/deeproute_app_base.proto";
+
+package deeproute.app.access;
+
+// app -> dtu
+message AppInfo {                                   // topic "/app/info"
+  string id = 1;                                    // optional
+  repeated deeproute.app.base.Payload payload = 2;  // message data
+  int64 timestamp = 3;
+}
+
+// dtu -> app
+message DTUInfo {                                   // topic "/dtu/info"
+  string id = 1;                                    // optional
+  repeated deeproute.app.base.Payload payload = 2;  // message data
+  int64 timestamp = 3;
+}
+
+// dtu -> app  real-time data
+message DTUStatus {  // topic "/dtu/status"
+  repeated deeproute.app.base.Payload payload = 1;
+}

@@ -1,0 +1,25 @@
+syntax = "proto2";
+
+package deeproute.dem;
+
+message DemReportEvent {
+  optional string module_name = 1;
+  optional string msg = 2;
+  optional string alert_info = 3;
+  optional string driver_version = 4;
+  optional string function_group_name = 5;
+
+  optional uint32 meta_override = 6;
+  optional string meta_driver = 7;
+  optional string meta_trip_name = 8;
+  optional uint64 meta_event_time = 9;
+
+  optional RecoveryMethod recovery_method = 10;
+}
+
+enum RecoveryMethod {
+  RECOVERY_IGNORE = 0;
+  RECOVERY_MODULE = 1;
+  RECOVERY_FG = 2;
+  RECOVERY_RESET = 3;
+}

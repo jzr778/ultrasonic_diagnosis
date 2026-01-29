@@ -1,0 +1,31 @@
+
+syntax = "proto2";
+
+package deeproute.map;
+
+import "map/common_type.proto";
+import "map/deeproute_map_ras_map_plus.proto";
+
+
+message VisLaneTurn {
+  optional LaneTurn turn_type = 1;
+  optional bool is_pass = 2;
+}
+
+message VisLaneInfo {
+  repeated VisLaneTurn turns = 1;
+  optional LaneType lane_type = 2;
+}
+message VisMap {
+  repeated VisLaneInfo lanes = 1;
+  optional int32 perception_lane_num = 2;
+  optional int32 sd_lane_num = 3;
+  optional int32 lane_index = 4;
+  optional int32 drive_in_freeway_count = 5;
+  optional int32 drive_out_freeway_count = 6;
+  // ras map 
+  optional RASMapPlus ras_map_plus = 7;
+
+  optional LaneTurn next_turn_type = 8;
+  optional double next_turn_remaining_s = 9;
+}

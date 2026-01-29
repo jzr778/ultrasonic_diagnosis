@@ -1,0 +1,15 @@
+syntax = "proto2";
+
+package deeproute.prediction;
+
+message Intention {
+  optional LaneChange lane_change = 1;
+  optional float abnormal_prob = 2; // For Vehicle Only
+  optional float crossing_prob = 3; // For Non-Vehicle Only
+}
+
+message LaneChange {  // as probability
+    optional float keep = 1;
+    optional float left = 2;
+    optional float right = 3;
+}

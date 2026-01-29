@@ -1,0 +1,16 @@
+syntax = "proto2";
+
+package deeproute.church;
+
+message ComponentProcTimeout {
+  // component name
+  optional string component_name = 1;
+  // proc execution count id (from 1)
+  optional uint32 proc_id = 2;
+  // proc start timestamp (ns)
+  optional uint64 proc_start_timestamp_ns = 3;
+  // proc duration time (ms)
+  optional uint64 proc_duration_ms = 4;
+  // expected proc duration time (ms)
+  optional uint64 expected_proc_duration_ms = 5;
+}

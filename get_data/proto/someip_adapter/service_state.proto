@@ -1,0 +1,20 @@
+syntax = "proto2";
+
+package deeproute.someip_adapter.gwm;
+
+message ServiceStates {
+  repeated ServiceState service_state = 1;
+}
+
+message ServiceState {
+  enum State {
+    STATE_UNUSED = 0;
+    STATE_OFFERED = 1;      // offer service done
+    STATE_OFFERFAILED = 2;  // offer service failed
+    STATE_STOPOFFER = 3;    // stop offer service
+    STATE_FINDING = 4;      // finding service
+    STATE_FINDED = 5;       // finded service
+  }
+  optional string service_name = 1;
+  optional State service_state = 2;
+}

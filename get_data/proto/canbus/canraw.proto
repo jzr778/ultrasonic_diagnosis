@@ -1,0 +1,32 @@
+syntax = "proto2";
+
+package deeproute.canbus;
+
+message CanRaw {
+  optional int64 timestamp_pub = 1;
+  optional int64 timestamp_meas = 2;
+  optional bool is_ext = 3;
+  optional bool is_canfd = 4;
+  optional int32 channel_id = 5;
+  optional int32 can_id = 6;
+  optional int32 len = 7;  // The valid byte length of data.
+  //@C_Mark@64@;
+  optional bytes data = 8;
+}
+
+// topic: /canbus/canraw_array
+message CanRawArray {
+  optional int64 timestamp_pub = 1; // us
+  optional int64 count = 2;
+  optional int32 len = 3;  // CanRaw actual quantity.
+  //@C_Mark@36@;
+  repeated CanRaw can_raw = 4;
+}
+
+message CanRawArray2K {
+  optional int64 timestamp_pub = 1; // us
+  optional int64 count = 2;
+  optional int32 len = 3;  // CanRaw actual quantity.
+  //@C_Mark@18@;
+  repeated CanRaw can_raw = 4;
+}

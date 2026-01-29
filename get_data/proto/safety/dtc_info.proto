@@ -1,0 +1,45 @@
+syntax = "proto2";
+
+package dr.safety.dtc;
+
+enum DTCGroupType {
+  ALL = 0;                                                                 // 所有组
+  EMISSIONS_SYSTEMS = 1;                                                   // 排放相关系统
+  POWERTRAIN = 2;                                                          // 动力组
+  CHASSIS = 3;                                                             // 底盘组
+  BODY = 4;                                                                // 车身组
+  NETWORK = 5;                                                             // 网络通信组
+}
+
+message DTCStatus {
+  optional bool test_failed = 1 [default = false];                         // 测试失败（Bit 0）
+  optional bool test_failed_this_operation = 2 [default = false];          // 当前操作周期测试失败（Bit 1）
+  optional bool pending_dtc = 3 [default = false];                         // 待定DTC（Bit 2）
+  optional bool confirmed_dtc = 4 [default = false];                       // 已确认DTC（Bit 3）
+  optional bool test_not_completed_since_last_clear = 5 [default = false]; // 自上次清除以来测试未完成（Bit 4）
+  optional bool test_failed_since_last_clear = 6 [default = false];        // 自上次清除以来测试失败（Bit 5）
+  optional bool test_not_completed_this_operation = 7 [default = false];   // 本操作周期测试未完成（Bit 6）
+  optional bool warning_indicator_requested = 8 [default = false];         // 警告指示灯请求（Bit 7）
+}
+
+message SnapShotData {
+  optional uint32 battery_voltage = 1;                                     // 电池电压，单位为伏特
+  optional uint32 vehcle_speed = 2;                                        // 故障发生时车速，单位为 km/h
+  optional uint32 odometer = 3;                                            // 故障发生时里程，单位为 km
+  optional int64 timestamp = 4;                                            // 故障发送时间，秒级
+  optional bool driver_ready = 5;                                          // 行程允许，0x01: ready flash/0x02: ready
+  optional uint32 battery_percentage = 6;                                  // 电池电量百分比
+}
+
+message ExtendedData {
+  optional uint32 failure_counter = 1;                                     // 故障发生计数器
+  optional uint32 failure_has_aged_count = 2;                              // 故障已老化计数器
+}
+
+message DTCInfo {
+  optional uint32 dtc_id = 1;                                              // 故障代码
+  optional DTCStatus status = 2;                                           // 状态信息
+  optional DTCGroupType group = 3 [default = ALL];                         // 类型分组
+  optional SnapShotData snapshot_data = 4;                                 // 快照数据
+  optional ExtendedData extended_data = 5;                                 // 附加数据
+}

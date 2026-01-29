@@ -1,0 +1,68 @@
+syntax = "proto2";
+
+package deeproute.church;
+
+enum Module {
+  UNKNOWN = 0;
+  SENSOR_LIDAR = 1;
+  SENSOR_USS = 2;
+  SENSOR_INS = 3;
+  SENSOR_RADAR = 4;
+  MAP_ENGINE = 5;
+  LOCK_ON_ROAD = 6;
+  INS_ONLINE = 7;
+  LOCALIZATION = 8;
+  PERCEPTION = 9;
+  PLANNING = 10;
+  CANBUS = 11;
+  BLC = 12;
+  SAFETY = 13;
+  STARTER = 14;
+  PERF_COLLECTOR = 15;
+  CHURCH = 16;
+  SENTRY = 17;
+  SENSOR_CAMERA = 18;
+  LOCAL_ROUTING = 19;
+  CONTROL = 20;
+  ROUTING = 21;
+  PARKING_ENTRY_DETECTION = 22;
+  RTK_POSE_FORWARD = 23;
+  AEB = 24;
+  PERCEP_AEB = 25;
+  LIDAR_MATCHING = 26;
+  ONBOARD_MAPS = 27;
+  DSM = 28;
+  DEM = 29;
+}
+
+// used for reporting event in church
+enum Event {
+  NORMAL = 0;
+
+  CHURCH_FRAME_RATIO_EVENT =
+      46000;  // info proto definition: FrameRatioInfo from
+  // common/proto/church/frame_ratio_info.proto
+
+  CHURCH_PROC_TIMEOUT_EVENT =
+      46001;  // info proto definition:  ComponentProcTimeout from
+              // common/proto/church/component_proc_timeout.proto
+
+  CHURCH_MAX_EVENT_NUM_EVENT = 46002;
+
+  CHURCH_MSG_TRANS_LOSS = 46003; // common/proto/church/trans_anomaly_events.proto
+  CHURCH_MSG_TRANS_LONG_TIME = 46004; // common/proto/church/trans_anomaly_events.proto
+  CHURCH_MSG_TRANS_SUSPEND = 46005; // common/proto/church/trans_anomaly_events.proto
+
+  EVENT_MAX_ID = 100000;
+}
+
+message EventInfo {
+  optional Module module = 1;
+  optional Event event = 2;
+  optional uint64 timestamp = 3;  // timestamp for nano-second
+  optional int32 sequence_num = 4;
+  oneof info {
+    string json_info = 5;
+    bytes serialized_proto_info = 6;
+  }
+}

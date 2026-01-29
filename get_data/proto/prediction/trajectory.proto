@@ -1,0 +1,37 @@
+syntax = "proto2";
+
+package deeproute.prediction;
+
+// locusPoint means point for prediction point at each timestamp
+message LocusPoint {
+  // point position x
+  optional double x = 1;
+  // point position y
+  optional double y = 2;
+  // point position z
+  optional double z = 3;
+  // linear velocity
+  optional double v = 4;  // in [m/s]
+  // linear acceleration
+  optional double a = 5;
+  // relative time from beginning of the trajectory
+  optional int64 relative_time = 6;
+  // heading of the object in bird eye view
+  optional double heading = 7;
+}
+
+message Trajectory {
+  optional double probability = 1;  // probability of this trajectory
+  repeated LocusPoint trajectory_point = 2;
+}
+
+message SpeedSeq {
+    optional int64 timestamp_us = 1;
+    optional double probability = 2;  
+    repeated SpeedPoint speed_point = 3;
+}
+
+message SpeedPoint {
+    optional double v = 1;  // in [m/s]
+    optional int64 relative_time = 2;
+}

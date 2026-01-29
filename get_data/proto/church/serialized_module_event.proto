@@ -1,0 +1,12 @@
+syntax = "proto2";
+
+package dr.common;
+
+message SerializedEventInfo {
+  optional bytes serialized_event_info = 1;
+}
+
+// topic: "/common/serialized_module_events"
+message SerializedModuleEvents {
+  repeated SerializedEventInfo serialized_event_infos = 1;
+}

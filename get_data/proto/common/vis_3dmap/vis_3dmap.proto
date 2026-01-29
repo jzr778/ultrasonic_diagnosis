@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package deeproute.common;
+
+message GetPathTimeStatistics {
+  uint32 mileage = 1; // 里程 单位米
+  uint32 amap_calc_time_ms = 2; // 高德算路耗时 单位毫秒
+  uint32 get_path_all_time_ms = 3; // 全链路耗时 单位毫秒
+}

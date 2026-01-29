@@ -1,0 +1,108 @@
+syntax = "proto3";
+
+package dr.blc;
+
+import "drapi/operation_status.proto";
+
+/**
+请注意:
+1. proto3 不能直接引用proto2的枚举,内部枚举类型直接用string打印enum名称
+*/
+
+// blc debug相关的信息
+// topic : /blc/debug_info
+message BlcDebugInfo {
+  NavigationNotify navigation = 1;      //导航相关信息
+  SpeedLimitInfo speed_limit_info = 2;  //限速相关信息
+}
+
+message SpeedLimitInfo {
+  bool use_model_speed = 1;  //是否使用模型限速
+}
+
+// blc接收map/hut导航相关信息的所有业务逻辑处理的关联数据
+message NavigationNotify {
+  uint64 timestamp_ms = 1;  // 时间戳
+  dr.operationstatus.NCAPassiveReason nca_passive_reason =
+      2;                               // nca抑制/失效状态时赋值
+  PreviewCommandInfo preview_cmd = 3;  // 预览接口(get path)
+  ExecuteCommandInfo execute_cmd = 4;  // 开始导航接口(start navigation)
+  RealTimeNavigationStatus realtime_navi = 5;  // hut实时导航状态接口
+  LockOnRoadStatus lor_status = 6;             // lock on road相关信息
+  OddInfo odd_info = 7;  // odd信息,受限于vis显示篇幅,暂不提供
+}
+
+// 预览接口相关信息
+message PreviewCommandInfo {
+  map<string, string> attrs = 1;
+  /* attrs信息记录如下:
+    CommandRequestId: request id
+    ResponseErrCode: 接口错误码
+    ResponseErrMsg: 接口错误信息
+    StartPreviewTime: 预览开始时间
+    EndPreviewTime: 预览结束时间
+    HasPreview: 是否预览过,仅用于判断是否发起过预览请求
+    IsAmapNavigation: 是否是高德(异端图)导航
+    PathCount: 预览路径的数量
+    PathIds:  预览路径的id
+    StartPoint: 下导航起点位置
+    EndPoint: 下导航终点位置
+    DynamicStaticOdd: dynamic odd开关
+    RoiOdd: roi odd开关
+    NeedRetry: 是否需要重试
+    IsHut: 是否是hut导航
+  */
+}
+
+// 开始导航接口相关信息
+message ExecuteCommandInfo {
+  map<string, string> attrs = 1;
+  /* attrs信息记录如下:
+    CommandRequestId : request id
+    ResponseErrCode : 接口错误码
+    ResponseErrMsg : 接口错误信息
+    StartExecuteTime : 开始导航开始时间
+    EndExecuteTime : 开始导航结束时间
+    HasExecute : 是否开始导航,仅用于判断是否发起过开始导航请求
+    PathId : 开始导航的路径id
+    StartPoint : 开始导航起点位置
+    EndPoint : 开始导航终点位置
+  */
+}
+
+message RealTimeNavigationStatus {
+  map<string, string> attrs = 1;
+  /*attrs信息记录如下:
+    UpdateTime :
+      实时导航状态时间戳(Gwm协议中并未提供,此时间为收到实时导航状态信息时的canbus时间戳,可用于判断是否丢失消息)
+    PathId : 导航路径ID
+    NavigationStatus : hut 导航状态
+    IsInited : 是否收到了第一帧消息
+    IsLost : 是否丢失实时导航消息
+  */
+}
+
+message LockOnRoadStatus {
+  map<string, string> attrs = 1;
+  /*attrs信息记录如下:
+    Status : lock on road导航状态
+    RequestId : lor 当前路线对应的request id
+    GnssType : gnss状态
+  */
+}
+
+message OddInfo {
+  map<string, string> attrs = 1;
+  /*attrs信息记录如下:
+    DestinationRemainM : 到分段终点的距离
+    OddType : odd数组中的第0个odd类型
+    DisToOddStart : 到odd起点的距离
+    DisToOddEnd : 到odd终点的距离
+    AreaType : AreaType : area数组中的第0个area类型
+    DisToAreaStart : 到area起点的距离
+    DisToAreaEnd : 到area终点的距离
+    CurRoadClass : 当前roadclass
+    NextRoadClass : 下一个roadclass
+    NextRoadClassRemainM : 到下一个roadclass的距离
+  */
+}

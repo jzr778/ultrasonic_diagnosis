@@ -1,0 +1,12 @@
+syntax = "proto2";
+
+package deeproute.canbus;
+
+message CanbusTorqueSpeedTable {
+  message CanbusTorqueSpeed{
+    optional  double speed = 1;
+    optional  double torque = 2;
+    optional  double hold_time = 3; 
+  }
+  repeated CanbusTorqueSpeed canbus_torque_speed = 1;
+}

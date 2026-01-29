@@ -1,0 +1,56 @@
+syntax = "proto2";
+
+package deeproute.drivers.lidar;
+
+enum Model {
+  UNKOWN = 0;
+
+  HDL64E_S2 = 1;
+  HDL64E_S3S = 2;
+  HDL64E_S3D = 3;
+
+  VLP_16 = 4;
+  VLP32C = 5;
+  HDL32E = 6;
+  VLS128 = 7;
+
+  PANDAR_40 = 8;
+  PANDAR_64 = 9;
+
+  RFANS_16 = 10;
+  RFANS_16_GPS = 11;
+  RFANS_32 = 12;
+  RS_16 = 13;
+
+  FPGA = 14;
+
+  RS_32 = 15;
+  RS_HELIOS = 16;
+  RS_BP = 17;
+  RS_80 = 18;
+  RS_128 = 19;
+
+  PANDAR_QT_32 = 20;
+  PANDAR_QT_64 = 21;
+  PANDAR_128 = 22;
+
+  RS_M1_SOLID = 23;
+  ZVS_30SB1_SOLID = 24;
+
+  PANDAR_64_FW = 25;
+
+  HS_AT128_SOLID = 26;
+  INNOVUSION_FALCON_SOLID = 27;
+  ZVS_XS_SOLID = 28;
+  HW_D3_SOLID = 29;
+  HS_OT128 = 30;
+
+  HS_ATX_BYD = 31;
+  HS_ATX_SOLID = 32;
+}
+
+enum Mode {
+  STRONGEST = 1;
+  LAST = 2;
+  DUAL = 3;
+}

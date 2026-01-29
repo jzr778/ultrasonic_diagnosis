@@ -1,0 +1,509 @@
+syntax = "proto3";
+
+import "semantic_map/map_standby_area.proto";
+import "app/deeproute_app_base.proto";
+import "devices/devices.proto";
+
+package deeproute.app.data;
+
+enum Receiver {
+  ALL = 0;
+  SAFETY_OPERATOR = 1;
+  PASSENGER = 2;
+}
+
+enum DrivingMode {
+  UNKNOWN_MODE = 0;
+  CASUAL_MODE = 1;
+  STANDARD_MODE = 2;
+  SPORT_MODE = 3;
+}
+
+enum LoginStatus {
+  UNKNOWN_STATUS = 0;
+  LOGGED = 1;
+  LOGGING_IN = 2;
+  LOGOUT = 3;
+  LOGGING_OUT = 4;
+}
+
+enum WorkType {
+  UNKNOWN_TYPE = 0;
+  TEST_CAR = 1;
+  OPERATION_CAR = 2;
+}
+
+enum Online {
+  UNVALID = 0;
+  ONLINE = 1;
+  OFFLINE = 2;
+}
+
+enum Scenario {
+  UNKNOWN_SCENARIO = 0;
+  ANY_SCENARIO = 1;
+  OPERATION = 2;
+  AIRPORT_PATROL = 3;
+  PORT_FREIGHT = 4;
+  FORMATION = 5;
+  TEST = 6;
+}
+
+enum OnlineFlag {
+  ORDER_ALLOWED = 0;
+  ORDER_DISALLOWED = 1;
+}
+
+message CommentTagInfo {
+  string tag_id = 1;
+  string cn_tag = 2;
+  string en_tag = 3;
+}
+
+message Language {
+  enum Type {
+    UNKNOWN = 0;
+    CHINESE = 1;
+    ENGLISH = 2;
+  }
+  Type type = 1;
+}
+
+message Login {
+  string url = 1;
+  int32 port = 2;
+  string license_number = 3;
+  string passwd = 4;
+  string vin = 5;
+  string car_id = 6;
+  Scenario scenario = 7;
+  bool force_login = 8;
+}
+
+enum PassengerTagType {
+  UNKNOWN_PASSENGETAG = 0;
+  DISABLED = 1;
+}
+
+enum TaskType {
+  UNKNOWN_TASK = 0;
+  OPERATION_TASK = 1;
+  SPECIFIED_ROUTE_TASK = 2;
+  APP_SPECIFIED_ROUTE_TASK = 3;
+  SINGLE_POINT_TASK = 4;
+}
+
+message RouteInfo {
+  string route_id = 1;
+  string route_name_cn = 2;
+  string route_name_en = 3;
+  int32 start_index = 4;
+}
+
+message Order {
+  string start_name = 1;
+  string end_name = 2;
+  string start_name_en = 3;
+  string end_name_en = 4;
+  double expected_distance = 5;
+  double expected_time = 6;
+  string phone_number = 7;
+  string license_number = 8;
+  string task_id = 9;
+  int32 guest_num = 10;
+  string verifier = 11;
+  repeated CommentTagInfo positive_tags = 12;
+  repeated CommentTagInfo negative_tags = 13;
+  int32 positive_comment_num = 14;
+  int32 negative_comment_num = 15;
+  repeated PassengerTagType passenger_type = 16;
+  repeated deeproute.app.base.AddressPoint points = 17;
+  TaskType type = 18;
+  RouteInfo route_info = 19;
+}
+
+message OrderInfo {
+  Order order = 1;
+  repeated deeproute.app.base.Payload status = 2;
+}
+
+message Truck {
+  string start_name = 1;
+  string end_name = 2;
+  string start_name_en = 3;
+  string end_name_en = 4;
+  double expected_distance = 5;
+  double expected_time = 6;
+  string phone_number = 7;
+  string task_id = 9;
+  double expected_duration = 10;
+}
+
+message TruckInfo {
+  Truck truck = 1;
+  repeated deeproute.app.base.Payload status = 2;
+}
+
+message LightTruck {
+  string start_name = 1;
+  string end_name = 2;
+  string start_name_en = 3;
+  string end_name_en = 4;
+  double expected_distance = 5;
+  double expected_time = 6;
+  string phone_number = 7;
+  string task_id = 9;
+  double expected_duration = 10;
+}
+
+message LightTruckInfo {
+  LightTruck light_truck = 1;
+  repeated deeproute.app.base.Payload status = 2;
+}
+
+message Cruise {
+  string dest_name = 1;
+  string dest_name_en = 2;
+  string task_id = 3;
+}
+
+message CruiseInfo {
+  Cruise cruise = 1;
+  repeated deeproute.app.base.Payload status = 2;
+}
+
+enum VpaType {
+  UNKNOWN_VPA_TYPE = 0;
+  RECORD_LANE_CRUISE = 1;    //记忆路线巡航
+  CRUISE_ALONG_THE_WAY = 2;  //沿途巡航
+  IN_PARKING = 3;            //入库中
+}
+
+message Garage {
+  string dest_name = 1;
+  string dest_name_en = 2;
+  string task_id = 3;
+  repeated deeproute.hdmap.StandbyArea areas = 4;
+
+  enum SourceType {
+    CRETAED_BY_SERVER = 0;
+    CRETAED_BY_APP = 1;
+    CRETAED_BY_VISUALIZER = 2;
+  }
+  SourceType type = 5;
+  VpaType vpa_type = 6;
+}
+
+message GarageInfo {
+  Garage garage = 1;
+  repeated deeproute.app.base.Payload status = 2;
+}
+
+message OutGarage {
+  string task_id = 1;
+}
+
+message OutGarageInfo {
+  OutGarage out_garage = 1;
+  repeated deeproute.app.base.Payload status = 2;
+}
+
+message OperatingPoint {
+  string dest_name = 1;
+  string dest_name_en = 2;
+  string task_id = 3;
+}
+
+message OperatingPointInfo {
+  OperatingPoint operating_point = 1;
+  repeated deeproute.app.base.Payload status = 2;
+}
+
+message LocalTask {
+  repeated deeproute.app.base.AddressPoint point = 1;
+  string task_id = 2;
+}
+
+message LocalTaskInfo {
+  LocalTask local_task = 1;
+  repeated deeproute.app.base.Payload status = 2;
+}
+
+message TraceReversingTask {
+  string task_id = 1;
+}
+
+message TraceReversingTaskInfo {
+  TraceReversingTask trace_reversing_task = 1;
+  repeated deeproute.app.base.Payload status = 2;
+}
+
+message AccountInfo {
+  Login login_info = 1;
+  LoginStatus login_status = 2;
+  WorkType work_type = 3;
+  Online online = 4;
+  string access_jwt = 5;
+  string refresh_jwt = 6;
+  string vehicle_id = 7;
+}
+
+message Prompt {
+  enum Level {
+    LOW = 0;
+    COMMON = 1;
+    EMERGENCY = 2;
+  }
+  Level level = 1;
+  string prompt = 2;
+}
+
+message TakeOverRequest {
+  enum Type {
+    BLOCK_ALL_ROAD = 0;
+    ABNORMAL_SINGLE_ROAD = 1;
+    UPSTREAM_DATA_FAILURE = 2;
+    BLOCK_NONE = 3;
+  }
+  Type type = 1;
+}
+
+message PlanningAbnormal {
+  string reason = 1;
+  oneof abnormal {
+    bool routing_failed = 2;
+  }
+}
+
+message DetourDone {
+}
+
+message TracingPointsDone {
+}
+
+message PullOverDone {
+}
+
+message EmergencyStopDone {
+}
+
+message DtuRestart {
+}
+
+message MapMatch {
+  enum Result {
+    SUCCESS = 0;
+    NOT_MATCH = 1;
+  }
+  Result result = 1;
+  repeated string server_semantic_maps = 2;
+}
+
+message RoutingPlan {
+  enum PlanResult {
+    SUCCESS = 0;
+    FAILED = 1;
+  }
+  PlanResult plan_result = 1;
+  int32 count = 5;
+}
+
+message DrivingBlock {
+  enum BlockReason {
+    OBSTACLE = 0;
+    CONTROL = 1;
+  }
+
+  BlockReason block_reason = 1;
+}
+
+message ALaneChange {
+  deeproute.app.base.Operator operator = 1;
+  enum LaneChangeType {
+    TYPE_UNKNOWN = 0;
+    TURN_LEFT = 1;
+    TURN_RIGHT = 2;
+  }
+  LaneChangeType type = 2;
+  string dtu_cmd_id = 3;
+}
+
+message NoticeInfo {
+  Receiver receiver = 1;
+  oneof notice {
+    Prompt prompt = 2;
+    TakeOverRequest take_over = 3;
+    PlanningAbnormal planning_abnormal = 4;
+    PullOverDone pull_over_done = 5;
+    DtuRestart restart = 6;
+    DetourDone detour_done = 7;
+    TracingPointsDone tracing_points_done = 8;
+    MapMatch map_match = 9;
+    RoutingPlan routing_plan = 10;
+    DrivingBlock driving_block = 11;
+    RouteRecordDone route_record_done = 12;
+    ParkingLotStatus parkinglot_status = 13;
+    ALaneChange a_lane_change = 14;
+  }
+}
+
+message NavigationAction {
+  enum LaneTurn {
+    INVALID = 0;
+    STRAIGHT = 1;
+    LEFT = 2;
+    RIGHT = 4;
+    U_TURN_LEFT = 8;
+    U_TURN_RIGHT = 16;
+  };
+  LaneTurn turn = 1;
+  double distance = 2;
+  enum LaneType {
+    UNKNOWN = 0;
+    HIGHWAY = 1;  // Controlled access. Expects no pedestrians or bicycles.
+    STREET = 2;   // No access control. Expects pedestrians and bicycles.
+    BIDIRECTIONAL = 3;  // Continuous two-way left-turn lane.
+    SHOULDER = 4;       // Emergency stopping lane
+    BIKING = 5;
+    SIDEWALK = 6;
+    RESTRICTED = 7;
+    PARKING = 8;
+    ROADWORK = 9;
+    OFFRAMP = 10;
+    ONRAMP = 11;
+    BUSLANE = 12;
+  };
+  LaneType lane_type = 3;
+  string road_name = 4;
+}
+
+message RunTimeStatus {
+  double cur_to_start_distance = 1;
+  double remaining_distance = 2;
+  deeproute.app.base.Position pos = 3;
+  double remaining_time = 4;  // unit s
+  int32 next_navi_point_index = 5;
+  NavigationAction navi_action = 6;
+  repeated NavigationAction specified_lane_info = 7;
+  double shift_gear_percent = 8;
+}
+
+message KeyLoginInfo {
+  message EnvInfo {
+    string env_id = 1;
+    string env_name_cn = 2;
+    string env_name_en = 3;
+  }
+  bool is_key_login = 1;
+  repeated EnvInfo env_info = 2;
+}
+
+message RealtimeComment {
+  enum CommentType {
+    POSITIVE = 0;
+    NEGATIVE = 1;
+  }
+  CommentType comment_type = 1;
+  repeated string comments = 2;
+}
+
+message VehicleDoorStatus {
+  bool driver = 1;
+  bool passenger = 2;
+  bool rear_left = 3;
+  bool rear_right = 4;
+  bool trunk = 5;
+}
+
+message SeatBeltStatus {
+  bool driver = 1;
+  bool passenger = 2;
+}
+
+message TakeOverStatus {
+  enum ModeType {
+    MODE_INVALID = 0;
+    MODE_MONITOR = 1;
+    MODE_SUPERVISE = 2;
+    MODE_TAKEOVER = 3;
+  }
+  ModeType mode = 1;
+}
+
+message ResidueDetected {
+  bool residue_found = 1;
+}
+
+message IMSStatus {
+  enum State {
+    NOT_CONNECTED = 0;
+    CONNECTED = 1;
+  }
+  State state = 1;
+  ResidueDetected residue_detected = 2;
+}
+
+enum AutomaticDrivingMode {
+  INVALID = 0;
+  ROBOTAXI_MODE = 1;
+  DRIVERLESS_MODE = 2;
+  UNMANNED_MODE = 3;
+  REMOTE_ASSIST_MODE = 4;
+  COLLABORATION_MODE = 5;
+}
+
+message AutomaticDrivingInfo {
+  deeproute.common.DevicesConfig cfg = 1;
+  AutomaticDrivingMode cur_mode = 2;
+}
+
+message DeviceStatus {
+  VehicleDoorStatus vehicle_door_status = 1;
+  SeatBeltStatus seat_belt_status = 2;
+  TakeOverStatus take_over_status = 3;
+  AutomaticDrivingInfo auto_driving_info = 4;
+}
+
+enum LaneChangeState {
+  LANE_KEEPING = 0;
+  TURN_LEFT = 1;
+  TURN_RIGHT = 2;
+}
+
+message LaneStatus {
+  LaneChangeState lane_chang_state = 1;
+}
+
+message ParkingLotStatus {  // 检测到停车场通知
+  enum ParkingLotType {
+    NOT_PARKING_LOT = 0;       // 非停车场
+    PRKING_LOT_UNPLANNED = 1;  // 停车场未建图
+    PRKING_LOT_PLANNED = 2;    // 停车场已建图
+  }
+  ParkingLotType parkinglot_type = 1;
+  repeated deeproute.hdmap.StandbyArea areas =
+      2;  // 车位信息，执行 ExcuteVPARouteCMD 之后
+}
+
+message RouteRecordDone {
+  bool success = 1;
+}
+
+message TraceReversingStatus {
+  bool enable = 1;
+  enum DisableReason {
+    GEAR_NOT_IN_REVERSE = 0;
+    VEHICLE_NOT_IN_STATIONARY = 1;
+    MEMORY_ROUTE_TO_SHORT = 2;
+    NOT_BRAKING = 3;
+
+    DRIVER_DOOR_OPEN = 100;
+    PASSENGER_DOOR_OPEN = 101;
+    REAR_LEFT_DOOR_OPEN = 102;
+    REAR_RIGHT_DOOR_OPEN = 103;
+    HOOD_OPEN = 104;
+    TRUNK_OPEN = 105;
+    REAR_VIEW_MIRROR_FOLDED = 106;
+  }
+  repeated DisableReason reasons = 2;
+}

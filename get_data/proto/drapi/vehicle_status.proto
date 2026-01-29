@@ -1,0 +1,378 @@
+syntax = "proto3";
+
+import "drapi/base.proto";
+
+package dr.vehiclestatus;
+
+/****************************车辆实时数据**************************************/
+message MovingStatus {
+  float speed = 2;  // m/s
+  float angle = 3;  // Clockwise angle with northward direction, [0,360]
+  dr.base.Point3D acceleration = 4;
+  dr.base.PointLLH pos = 5;
+  double total_mileage = 6;      // km
+  dr.base.Point3D velocity = 7;  //速度，分别是横向/纵向/垂直，m/s
+  dr.base.Point3D angular_velocity = 8;  //角速度，分别是横向/纵向/垂直,rad/s
+  float radius_of_curvature = 9;  //曲率半径
+}
+
+message DeviceStatus {   // topic /blc/device_status 车辆设备实时状态
+  uint64 timestamp = 1;  // ms
+  GPS gps_info = 6;
+
+  AcuInfo acu_info = 7;
+  EscInfo esc_info = 8;
+  VcuInfo vcu_info = 9;
+  BcmInfo bcm_info = 10;
+  EpsInfo eps_info = 11;
+  Ibooster Ibooster_info = 12;
+  Plg plg_info = 13;
+  Ivi ivi_info = 14;
+  CameraQuality camera_quality = 15;
+
+  repeated LightStatus lights = 102;
+  repeated HornStatus horns = 103;
+  repeated AirConditionerStatus air_conditioners = 104;
+  repeated WindowStatus windows = 106;
+}
+
+/****************************车辆实时数据引用的子结构体定义********************/
+message CameraQualityInfo {
+  enum CameraAbnormalType {
+    NORMAL = 0;
+    BLUR = 1;
+    SMEAR = 2;
+    OverExposure = 3;
+  };
+  CameraAbnormalType abnormal_type = 1;
+  string sensor_name = 2;
+}
+
+message CameraQuality {
+  repeated CameraQualityInfo camera_quality_info = 1;
+}
+
+enum Direction {
+  DIRACTION_UNKNOWN = 0;
+  FRONT = 1;
+  REAR = 2;
+}
+
+enum OnOffStatus {
+  NO_REQUEST = 0;
+  OFF_STATUS = 1;
+  ON_STATUS = 2;
+  INVALID = 3;
+}
+
+enum StandStill {
+  NOT_STANDSTILL = 0;
+  STANDSTILL = 1;
+  RESERVED = 2;
+}
+
+// 方向盘
+message SteeringWheel {
+  double actual_angle = 1;
+  float spd = 2;  //角速度
+  double raw_angle = 3;
+  bool is_spd_valid = 4;
+  bool is_angle_valid = 5;
+  bool raw_angle_valid = 6;
+}
+
+// 油门
+message Throttle {
+  double acc_pedal_position = 1;
+  double engine_rpm = 2;
+}
+
+message Brake {
+  enum Qualifier {
+    NOT_INITALIZED = 0;
+    NORMAL = 1;
+    FAULTY = 2;
+  }
+  double pedal = 1;
+  bool is_applied = 2;
+  Qualifier qualifier = 3;
+}
+
+message Gear {
+  dr.base.GearPosition gear_position = 1;
+}
+
+enum GPSState {
+  INVALID_STATE = 0;
+  CONVERGING = 1;
+  GOOD = 2;
+  // Discarded type.
+  MAP_COLLECTION = 3;
+}
+message GPS {
+  GPSState gps_state = 1;
+  double gps_azimuth = 2;  // 方向,0-360°
+  double gps_speed = 3;
+  dr.base.PointLLH pos_wgs84 = 4;  // 经纬度
+  float gps_accuracy = 5;          // gps精度
+  dr.base.PointLLH pos_gcj02 = 6;  // gcj02经纬度
+}
+
+enum EpbGear {
+  EPB_STATUS_UNKNOWN = 0;
+  EPB_PARKED = 1;
+  EPB_PARKING = 2;
+}
+
+message EpbStatus {
+  EpbGear gear = 1;
+}
+
+message EspStatus {
+  bool status = 1;
+}
+
+message HdcStatus {
+  enum Status {
+    OFF = 0;
+    STANDBY = 1;
+    AVTIVE = 2;
+  }
+  Status status = 1;
+}
+
+message TcsStatus {
+  bool tcs_active = 1;
+}
+
+message VdcStatus {
+  bool vdc_active = 1;
+}
+
+message AebStatus {
+  enum AwbLevel {
+    NO_LEVEL = 0;
+    LEVEL1 = 1;
+    LEVEL2 = 2;
+    LEVEL3 = 3;
+    LEVEL4 = 4;
+  }
+  enum PebsWarning {
+    NO_WARNING = 0;
+    PRE_WARNING = 1;
+  }
+  float target_ax = 1;
+  bool has_eba_req = 2;
+  bool has_aeb_req = 3;
+  bool has_aba_level = 4;
+  bool has_aba_req = 5;
+  bool has_awb_req = 6;
+  bool has_abp_req = 7;
+  PebsWarning pebs_warning = 8;
+  Pcw pcw_req = 9;
+  bool is_active = 10;
+  bool is_available = 11;
+}
+
+message CdpStatus {
+  bool cdp_active = 1;
+}
+
+message AvhStatus {
+  bool avh_active = 1;
+}
+
+message PoleStatus {
+  enum Gear {
+    GEAR_UNKNOWN = 0;
+    CRUISE_CANCEL = 1;
+    CRUISE_SW = 2;
+    CRUISE_RESUMEPLUS = 3;
+    CRUISE_SETMIN = 4;
+    CRUISE_HEADWAY_DECREASE = 5;
+    CRUISE_HEADWAY_INCREASE = 6;
+  }
+  Gear gear = 1;
+}
+
+message AbsStatus {
+  bool abs_active = 1;
+  bool abs_enabled = 2;
+  bool abs_fault = 3;
+}
+
+message PepsPower {
+  enum Mode {
+    DEFAULT = 0;
+    OFF = 1;
+    ON = 2;
+    INVALID = 7;
+  }
+  Mode mode = 1;
+}
+
+message TailGate {
+  enum OpenStatus {
+    CLOSED = 0;
+    OPENED = 1;
+    CLOSING = 2;
+    OPENNING = 3;
+    STOPPED = 4;
+    CLOSED_NOT_COMPLETELY = 5;
+    LOCKING = 6;
+    UNLOCKING = 7;
+  }
+  OpenStatus open_status = 1;
+}
+
+message Pcw {
+  OnOffStatus on_off_status = 1;
+}
+
+message Aba {
+  bool is_active = 1;
+  bool is_available = 2;
+}
+
+message Abp {
+  bool is_active = 1;
+  bool is_available = 2;
+}
+
+message Awb {
+  bool is_active = 1;
+  bool is_available = 2;
+}
+
+/**************单辆车上存在多个的设备用id来给每个设备编号做区分****************/
+message Wiper {
+  enum Gear {
+    GEAR_UNKNOWN = 0;
+    LOW = 1;
+    MIDDLE = 2;
+    HIGH = 3;
+  }
+  int32 id = 1;
+  Gear gear = 2;
+}
+
+message WheelStatus {
+  int32 id = 1;
+  double wheel_angle = 2;
+  double wheel_speed = 3;
+  Direction direction = 4;
+  bool is_speed_invalid = 5;
+}
+
+message DoorStatus {
+  int32 id = 1;
+  bool status = 2;
+}
+
+message LightStatus {
+  int32 id = 1;
+  bool status = 2;
+}
+
+message HornStatus {
+  int32 id = 1;
+  bool status = 2;
+}
+
+message SeatBeltStatus {
+  int32 id = 1;
+  bool status = 2;
+}
+
+message AirConditionerStatus {
+  int32 id = 1;
+  bool status = 2;
+  float env_temperature = 3;
+  float temperature = 4;
+}
+
+message WindowStatus {
+  int32 id = 1;
+  bool status = 2;
+  float percent = 3;  // 0 close, 1 open
+}
+
+/*************************Acu Esc Vcu Bcm Eps Ibooster plg
+ * Ivi定义******************************/
+message AcuInfo {
+  repeated SeatBeltStatus seat_belts_status = 1;
+}
+
+message EscInfo {
+  EpbStatus epb_status = 1;
+  WheelStatus wheel_status = 2;
+  EspStatus esp_status = 3;
+  AbsStatus abs_status = 4;
+  HdcStatus hdc_status = 5;
+  TcsStatus tcs_status = 6;
+  VdcStatus vdc_status = 7;
+  AebStatus aeb_status = 8;
+  CdpStatus cdp_status = 9;
+  AvhStatus avh_status = 10;
+  Aba aba_status = 11;
+  Abp apb_status = 12;
+  Awb awb_status = 13;
+
+  float yaw_rate = 50;
+  float vehicle_speed = 51;
+  float is_vehicle_speed_invalid = 52;
+  bool is_active = 53;
+  bool off_status_valid = 54;
+  bool is_fault = 55;
+  StandStill stand_still_status = 56;
+  bool is_stand_still_valid = 57;
+  float long_acceleration = 58;
+  bool is_long_acceleration_valid = 59;
+  float lateral_acceleration = 60;
+  bool is_lateral_acceleration_valid = 61;
+  bool is_yaw_rate_valid = 62;
+}
+
+message VcuInfo {
+  enum Tcm {
+    TCM_UNKNOWN = 0;
+    LIMPHOME = 1;
+  }
+  Gear gear_status = 1;
+  bool ready = 2;
+  Tcm tcm_status = 3;
+  Throttle throttle_info = 4;
+}
+
+message BcmInfo {
+  PoleStatus pole_status = 1;
+  PepsPower peps_power_status = 2;
+
+  repeated DoorStatus doors_status = 50;
+  repeated Wiper wipers_status = 51;
+}
+
+message EpsInfo {
+  enum TorqueCtrStatus {
+    NO_REQUEST = 0;
+    REQUEST_HONORED = 1;
+    REQUEST_NOT_ALLOWEDTEMP = 2;
+    REQUEST_NOT_ALLOWEDPERMANENT = 3;
+  }
+  SteeringWheel steering_status = 1;
+  TorqueCtrStatus torque_ctr_status = 2;
+  bool is_calibrate = 3;
+}
+
+message Ibooster {
+  Brake brake_info = 1;
+}
+
+message Plg {
+  TailGate tail_gate_info = 1;
+}
+
+message Ivi {
+  Pcw pcw_info = 1;
+  OnOffStatus aeb_on_off_status = 2;
+}
