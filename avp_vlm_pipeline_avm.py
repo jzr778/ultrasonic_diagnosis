@@ -121,7 +121,7 @@ def main():
         type=str,
         # default="gemini-3-pro-preview",
         # default='gemini-3-flash-preview',
-        default=["gemini-3-pro-preview"],
+        default=["gemini-3-pro-preview", 'gemini-3-flash-preview', 'claude-sonnet-4-5-20250929', 'gpt-5.2-2025-12-11'],
         # default=["gemini-3-pro-preview", ],
         help="指定的QWen版本"
     )
@@ -131,24 +131,14 @@ def main():
         default="chaosheng_wujian_avm",
         help="指定的prompt配置文件"
     )
-    # 97937879：不确定，车-点-线在一起
-    # 98034789：有的检测出，有的未检测出
     parser.add_argument(
         "--tag-id-list",
         nargs="+",
         type=int,
         default=[
-            98724502, 98679616, 98502291, 98392892, 98383844, 98321419, 98099917, 98034789, 98196500, 98081681,
-            97938019, 97937879,
-
-            99624582, 99622577, 99618544, 99615631, 99611943, 99571260, 99566777, 99552470, 99477298, 99475457,
-            99460115, 99458486,
-
-            99940155, 99907365, 99768348, 99736577, 99853011, 99722714, 99455627, 99440656, 99438271,
-
-            99997866,
-
-
+            97020556, 97020543, 97020546, 97020561, 97020563,
+            97020525, 97020564, 97020559, 97020554, 97020567,
+            97020550, 97020541
         ],
         help="指定要分析的tag"
     )
@@ -165,9 +155,9 @@ def main():
 
     for i in range(len(args.tag_id_list)):
         tag_id = args.tag_id_list[i]
-        print(tag_id)
         # feishu_id = args.feishu_id_list[i]
-        comment_record = ''
+        # pre_comment_record = '大模型诊断结果：\n'
+        # comment_record = ''
         # 准备数据 ##########################################################################################
         data_path = os.path.join(args.data_path, str(tag_id))
         with open(data_path + '/vehicle2sensing.json', 'r', encoding='utf-8') as f:
@@ -221,6 +211,7 @@ def main():
         image_save_path = os.path.join('get_data/draw_image', str(tag_id))
         os.makedirs(image_save_path, exist_ok=True)
         for item in all_items:
+            print(str(tag_id) + '******' + item)
             # 在avm上画检测点 ##########################################################################################
             item_path = os.path.join(data_path, item)
             item_save_path = os.path.join(image_save_path, item)
@@ -259,7 +250,7 @@ def main():
                 cv2.imwrite(item_save_path + '/avm.jpg', bev_img_with_obstacles)
                 with open(item_save_path + "/index_avm.json", 'w', encoding='utf-8') as f:
                     json.dump(index, f, indent=2)
-                # 在AVM上画FS_CAR点 #######################################################################################
+                # 在AVM上画FS_CAR点 ###########################################################################################
                 # 在AVM上绘制检测信息
                 bev_img_with_fs_car, box_list, point_list = projector.draw_fs_car_on_bev(
                     avm_image, obstacle, chaosheng, ground, focal_length, camera_height, planning_point
@@ -282,6 +273,9 @@ def main():
                     if max_distance > 8:
                         result_fs_car.append([center_point[0], center_point[1]])
 
+                if result_fs_car:
+                    print(result_fs_car)
+
                 # AI诊断 ###########################################################################################
                 # index['avm'] = []
                 if len(index['avm']) == 0:
@@ -292,7 +286,7 @@ def main():
                     image_list = {}
                     panoramic_1 = cv2.cvtColor(bev_img_with_obstacles, cv2.COLOR_BGR2RGB)
                     image_list['panoramic_1'] = panoramic_1
-                    # VLM################################################################################################
+                    # VLM###################################################################################################
                     # 进行分析（传入图像数组而不是文件路径）
                     # 生成prompt
                     prompt_config = args.prompt_config
@@ -302,45 +296,47 @@ def main():
                     if analysis_result is None:
                         print(f"tag {tag_id}，时间戳 {item}: 未从API获取到有效结果")
                         continue
-                # 保存单个case的结果到valid目录
-                result = {
-                    "fs_others": analysis_result['positions'],
-                    "fs_car": result_fs_car,
-                }
-                # 结果保存路径
-                save_path = os.path.join(args.output_dir, str(tag_id))
-                os.makedirs(save_path, exist_ok=True)
-                save_path = os.path.join(save_path, item)
-                os.makedirs(save_path, exist_ok=True)
-                if result_fs_car or analysis_result['positions']:
-                    print(result)
-                    analysis_json_path = os.path.join(f"{save_path}/analysis_result.json")
-                    with open(analysis_json_path, 'w', encoding='utf-8') as f:
-                        json.dump(result, f, ensure_ascii=False, indent=2)
-                    # print(f"tag {tag_id}，时间戳 {item}：分析结果已保存到 {analysis_json_path}")
-
-                    direction_text = ""
-                    direction = []
-                    for coor in result_fs_car:
-                        d = get_direction_from_position(int(coor[0]), int(coor[1]))
-                        direction.append(d)
-                    if direction:
-                        direction_text = direction_text + '超声FS_CAR误检点相对于车的位置：' + ', '.join(direction) + " "
-
-                    direction = []
-                    for coor in analysis_result['positions']:
-                        d = get_direction_from_position(int(coor[0]), int(coor[1]))
-                        direction.append(d)
-                    if direction:
-                        direction_text = direction_text + '超声障碍物误检点相对于车的位置：' + ', '.join(direction)
-
-                    comment_record = comment_record + '时间戳' + str(item) + ': ' + direction_text + "\n"
-        print(comment_record)
-        print("")
-        # tester = FeishuCommentTester()
-        # test_url = "https://project.feishu.cn/iffcom/case/detail/" + str(feishu_id)
-        # tester.test_comment(test_url, comment_record)
-        # 后面自带 (From plugin-飞书项目OPENAPI)
+                # # 保存单个case的结果到valid目录
+                # result = {
+                #     "fs_others": analysis_result['positions'],
+                #     "fs_car": result_fs_car,
+                # }
+                # # 结果保存路径
+                # save_path = os.path.join(args.output_dir, str(tag_id))
+                # os.makedirs(save_path, exist_ok=True)
+                # save_path = os.path.join(save_path, item)
+                # os.makedirs(save_path, exist_ok=True)
+                # if result_fs_car or analysis_result['positions']:
+                #     print(result)
+                #     analysis_json_path = os.path.join(f"{save_path}/analysis_result.json")
+                #     with open(analysis_json_path, 'w', encoding='utf-8') as f:
+                #         json.dump(result, f, ensure_ascii=False, indent=2)
+                #     print(f"tag {tag_id}，时间戳 {item}：分析结果已保存到 {analysis_json_path}")
+                #
+                #     direction_text = ""
+                #     direction = []
+                #     for coor in result_fs_car:
+                #         d = get_direction_from_position(int(coor[0]), int(coor[1]))
+                #         direction.append(d)
+                #     if direction:
+                #         direction_text = direction_text + 'FS_CAR误检点相对于车的位置：' + ', '.join(direction) + " "
+                #
+                #     direction = []
+                #     for coor in analysis_result['positions']:
+                #         d = get_direction_from_position(int(coor[0]), int(coor[1]))
+                #         direction.append(d)
+                #     if direction:
+                #         direction_text = direction_text + 'FS_OTHERS_STATIC误检点相对于车的位置：' + ', '.join(direction)
+                #
+                #     comment_record = comment_record + '时间戳' + str(item) + ': ' + direction_text + "\n"
+        # if comment_record:
+        #     comment_record = pre_comment_record + comment_record
+        #     print(comment_record)
+        #     tester = FeishuCommentTester()
+        #     test_url = "https://project.feishu.cn/iffcom/case/detail/" + str(feishu_id)
+        #     tester.test_comment(test_url, comment_record)
+        #     # 后面自带 (From plugin-飞书项目OPENAPI)
+        # print("")
 
 
 if __name__ == "__main__":
