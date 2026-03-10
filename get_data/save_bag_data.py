@@ -15,7 +15,7 @@ import pandas as pd
 
 def save_data(tag_id):
     # 保存路径
-    data_path = os.path.join('read_data', str(tag_id))
+    data_path = os.path.join('/mnt/public-data/user/ziroujiang/avp/read_data', str(tag_id))
     os.makedirs(data_path, exist_ok=True)
     meta_data = get_meta_data(tag_id=tag_id)
     with open(data_path + '/meta_data.json', 'w', encoding='utf-8') as f:
@@ -85,9 +85,10 @@ def save_data(tag_id):
 if __name__ == "__main__":
 
     tag_id_list = [
-        97020556, 97020543, 97020546, 97020561, 97020563,
-        97020525, 97020564, 97020559, 97020554, 97020567,
-        97020550, 97020541
+        # 97020556, 97020543, 97020546, 97020561, 97020563,
+        # 97020525, 97020564, 97020559, 97020554, 97020567,
+        # 97020550, 97020541
+        97020543
     ]
     target_id_list = []
     for i in range(len(tag_id_list)):

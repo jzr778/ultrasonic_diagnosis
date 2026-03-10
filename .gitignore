@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# 环境变量 (含密钥)
+.env
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 日志
+logs/
+
+# 大文件 / 压缩包
+*.tar.gz
+*.zip
+*.rar
+
+# 外部项目解压产物
+offline_avm_generate_release/
+
+# 运行时生成的图像和数据
+*.jpg
+*.png
+generate/
+read_data/
+get_data/read_data/
+get_data/draw_image/
+result_avm/
+
+# 运行时生成的 JSON 数据文件
+get_data/id_mapping.json
+get_data/tag_id_list.json
+get_data/feishu_id_list.json
+get_data/meta_data.json
+offline_avm_generate_release/bag_list.txt

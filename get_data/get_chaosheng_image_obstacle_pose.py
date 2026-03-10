@@ -267,7 +267,7 @@ def get_image_obstacle_pose(meta_data):
     return chaosheng_results, image_results, obstacle_results, pose_results, plan_results
 
 if __name__ == "__main__":
-    tag_id = 97020567
+    tag_id = 97020543
     meta_data = get_meta_data(tag_id=tag_id)
     chaosheng_results, image_results, obstacle_results, pose_results, plan_results = get_image_obstacle_pose(meta_data=meta_data)
     # 保存

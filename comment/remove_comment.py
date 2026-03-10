@@ -26,7 +26,7 @@ class FeishuCommentTester:
         # 飞书插件认证信息
         self.PLUGIN_ID = "MII_64EDCCED5EC38003"
         self.PLUGIN_SECRET = "F0B574D7270754A7A4BF4EB60FEBD5C4"
-        self.USER_KEY = "7565630504918138881"
+        self.USER_KEY = "7612461446294719435"
         self.endpoint = "https://project.feishu.cn/open_api"
         self.token = None
     

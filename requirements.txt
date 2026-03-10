@@ -9,5 +9,7 @@ langchain
 jinja2
 google
 protobuf
+pandas
+scipy
 # drmlp  # 单独安装命令 -i https://nexus.deeproute.ai/repository/pypi-group/simple
 # dpbag  # 单独安装命令 -i https://nexus.deeproute.ai/repository/pypi-group/simple

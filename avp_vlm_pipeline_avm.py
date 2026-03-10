@@ -25,9 +25,36 @@ import sys
 import cv2
 from typing import Tuple
 import math
+import logging
+from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 sys.path.append("/mnt/public-data/shared/public/trajcaching_v3/debs/proto")
 sys.path.append("/mnt/public-data/shared/public/trajcaching_v3/debs/scenariohouse")
+
+logger = logging.getLogger(__name__)
+
+
+def setup_logging():
+    log_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs")
+    os.makedirs(log_dir, exist_ok=True)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_file = os.path.join(log_dir, f"vlm_avm_{timestamp}.log")
+
+    formatter = logging.Formatter("[%(asctime)s] %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
+
+    file_handler = logging.FileHandler(log_file, encoding="utf-8")
+    file_handler.setFormatter(formatter)
+
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
+
+    logger.setLevel(logging.INFO)
+    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
+
+    logger.info(f"日志文件: {log_file}")
+    return log_file
 
 
 def get_direction_from_position(target_x: int, target_y: int,
@@ -102,27 +129,189 @@ def get_direction_from_position(target_x: int, target_y: int,
         return "左前方"
 
 
+def process_single_tag(tag_id, feishu_id, args):
+    """处理单个 tag_id 的完整流程"""
+    pre_comment_record = '大模型诊断结果：\n'
+    comment_record = ''
+    # 准备数据 ##########################################################################################
+    data_path = os.path.join(args.data_path, str(tag_id))
+    required_files = ['vehicle2sensing.json', 'ground.json', 'cameras_parameters.json', 'car_config.json']
+    missing = [f for f in required_files if not os.path.exists(os.path.join(data_path, f))]
+    if missing:
+        logger.warning(f"tag_id {tag_id} 缺少文件 {missing}，跳过")
+        return
+    with open(data_path + '/vehicle2sensing.json', 'r', encoding='utf-8') as f:
+        vehicle2sensing = json.load(f)
+    with open(data_path + '/ground.json', 'r', encoding='utf-8') as f:
+        ground = json.load(f)
+    with open(data_path + '/cameras_parameters.json', 'r', encoding='utf-8') as f:
+        cameras_parameters = json.load(f)
+    with open(data_path + '/car_config.json', 'r', encoding='utf-8') as f:
+        car_config = json.load(f)
+    focal_length = 162.6
+    camera_height = 3.44
+    projector = PanoramicProjector()
+    # 时间戳list
+    all_items = os.listdir(data_path)
+    # 过滤出文件夹
+    folders = []
+    for item in all_items:
+        item_path = os.path.join(data_path, item)
+        if os.path.isdir(item_path):
+            folders.append(item)
+    all_items = sorted(folders, key=lambda x: int(x))
+    # 为每一个时间戳匹配avm
+    avm_path_list = {}
+    meta_data = get_meta_data(tag_id=tag_id)
+    bag_list = meta_data['body'][0]['bagsName']
+    # 提取包名
+    bag_list = sorted([bag_name for bag_name in bag_list if 'Heavy' in bag_name])
+    bag_list = [item.split('.')[0] for item in bag_list]
+    for ts in all_items:
+        prefix_12 = ts[:11]
+        matched_file = None
+        for bag in bag_list:
+            bag_path = os.path.join("/mnt/public-data/user/ziroujiang/avp/generate", bag)
+            if not os.path.exists(bag_path):
+                continue
+            for fname in os.listdir(bag_path):
+                name_without_ext = os.path.splitext(fname)[0]
+                if name_without_ext[:11] == prefix_12:
+                    matched_file = os.path.join(bag_path, fname)
+                    break
+            if matched_file:
+                break
+        avm_path_list[ts] = matched_file
+    # 图像保存路径
+    image_save_path = os.path.join('/mnt/public-data/user/ziroujiang/avp/draw_image', str(tag_id))
+    os.makedirs(image_save_path, exist_ok=True)
+    for item in all_items:
+        logger.info(f"{tag_id}******{item}")
+        item_path = os.path.join(data_path, item)
+        item_save_path = os.path.join(image_save_path, item)
+        os.makedirs(item_save_path, exist_ok=True)
+        with open(item_path + '/chaosheng.json', 'r', encoding='utf-8') as f:
+            chaosheng = json.load(f)
+        with open(item_path + '/obstacle.json', 'r', encoding='utf-8') as f:
+            obstacle = json.load(f)
+        with open(item_path + '/pose.json', 'r', encoding='utf-8') as f:
+            pose = json.load(f)
+        with open(item_path + '/plan.json', 'r', encoding='utf-8') as f:
+            planning_point = json.load(f)
+        obstacle, ULTRASONIC_z = projector.world2vehicle2sensing(obstacle, pose, vehicle2sensing)
+        chaosheng = projector.world2vehicle2sensing_chaosheng(chaosheng, pose, vehicle2sensing, ULTRASONIC_z)
+        avm_path = avm_path_list[item]
+        if avm_path:
+            avm_image = cv2.imread(avm_path)
+            planning_point = projector.world2vehicle2sensing_planning(planning_point, pose, vehicle2sensing)
+            to_tail = car_config["back_edge_to_center"]
+            for point in planning_point:
+                point[0] -= to_tail
+            planning_point_df = pd.DataFrame(planning_point, columns=['x', 'y', 'z'])
+            planning_point_df = planning_point_df.drop_duplicates()
+            planning_point = planning_point_df.values.tolist()
+            index = {
+                "avm": None,
+            }
+            bev_img_with_obstacles, pos = projector.draw_obstacles_on_bev(
+                avm_image, obstacle, chaosheng, ground, focal_length, camera_height, planning_point
+            )
+            index["avm"] = pos
+            cv2.imwrite(item_save_path + '/avm.jpg', bev_img_with_obstacles)
+            with open(item_save_path + "/index_avm.json", 'w', encoding='utf-8') as f:
+                json.dump(index, f, indent=2)
+            bev_img_with_fs_car, box_list, point_list = projector.draw_fs_car_on_bev(
+                avm_image, obstacle, chaosheng, ground, focal_length, camera_height, planning_point
+            )
+            cv2.imwrite(item_save_path + '/avm_fs_car.jpg', bev_img_with_fs_car)
+            with open(item_save_path + "/box_list_avm.json", 'w', encoding='utf-8') as f:
+                json.dump(box_list, f, indent=2)
+            with open(item_save_path + "/point_list_avm.json", 'w', encoding='utf-8') as f:
+                json.dump(point_list, f, indent=2)
+            result_fs_car = []
+            for segment_points in point_list:
+                max_distance = get_max_distance_for_segment(segment_points, box_list)
+                center_point = calculate_segment_center(segment_points)
+                if max_distance > 8:
+                    result_fs_car.append([center_point[0], center_point[1]])
+
+            if result_fs_car:
+                logger.info(f"tag {tag_id} fs_car误检: {result_fs_car}")
+
+            if len(index['avm']) == 0:
+                analysis_result = {}
+                analysis_result['positions'] = []
+            else:
+                image_list = {}
+                panoramic_1 = cv2.cvtColor(bev_img_with_obstacles, cv2.COLOR_BGR2RGB)
+                image_list['panoramic_1'] = panoramic_1
+                prompt_config = args.prompt_config
+                prompt = prompt_gen(index, prompt_config)
+                analysis_result = analyze_scenario_from_images(image_list, prompt, args.model)
+                if analysis_result is None:
+                    logger.warning(f"tag {tag_id}，时间戳 {item}: 未从API获取到有效结果")
+                    continue
+            result = {
+                "fs_others": analysis_result['positions'],
+                "fs_car": result_fs_car,
+            }
+            save_path = os.path.join(args.output_dir, str(tag_id))
+            os.makedirs(save_path, exist_ok=True)
+            save_path = os.path.join(save_path, item)
+            os.makedirs(save_path, exist_ok=True)
+            if result_fs_car or analysis_result['positions']:
+                logger.info(f"tag {tag_id}，时间戳 {item} 结果: {result}")
+                analysis_json_path = os.path.join(f"{save_path}/analysis_result.json")
+                with open(analysis_json_path, 'w', encoding='utf-8') as f:
+                    json.dump(result, f, ensure_ascii=False, indent=2)
+                logger.info(f"tag {tag_id}，时间戳 {item}：分析结果已保存到 {analysis_json_path}")
+
+                direction_text = ""
+                direction = []
+                for coor in result_fs_car:
+                    d = get_direction_from_position(int(coor[0]), int(coor[1]))
+                    direction.append(d)
+                if direction:
+                    direction_text = direction_text + 'FS_CAR误检点相对于车的位置：' + ', '.join(direction) + " "
+
+                direction = []
+                for coor in analysis_result['positions']:
+                    d = get_direction_from_position(int(coor[0]), int(coor[1]))
+                    direction.append(d)
+                if direction:
+                    direction_text = direction_text + 'FS_OTHERS_STATIC误检点相对于车的位置：' + ', '.join(direction)
+
+                comment_record = comment_record + '时间戳' + str(item) + ': ' + direction_text + "\n"
+    if comment_record:
+        comment_record = pre_comment_record + comment_record
+        logger.info(f"tag {tag_id} 飞书评论:\n{comment_record}")
+        tester = FeishuCommentTester()
+        test_url = "https://project.feishu.cn/iffcom/case/detail/" + str(feishu_id)
+        tester.test_comment(test_url, comment_record)
+    logger.info(f"tag_id {tag_id} 处理完成")
+
+
 def main():
     parser = argparse.ArgumentParser(description="使用VLLM分析AVP场景图像")
     parser.add_argument(
         "--output-dir",
         type=str,
-        default="result_avm",
+        default="/mnt/public-data/user/ziroujiang/avp/result_avm",
         help="保存分析结果JSON文件的输出目录"
     )
     parser.add_argument(
         "--data-path",
         type=str,
-        default="get_data/read_data",
+        default="/mnt/public-data/user/ziroujiang/avp/read_data",
         help="数据路径"
     )
     parser.add_argument(
         "--model",
         type=str,
-        # default="gemini-3-pro-preview",
-        # default='gemini-3-flash-preview',
-        default=["gemini-3-pro-preview", 'gemini-3-flash-preview', 'claude-sonnet-4-5-20250929', 'gpt-5.2-2025-12-11'],
-        # default=["gemini-3-pro-preview", ],
+        # # default="gemini-3-pro-preview",
+        # # default='gemini-3-flash-preview',
+        # default=["gemini-3-pro-preview", 'gemini-3-flash-preview', 'claude-sonnet-4-5-20250929', 'gpt-5.2-2025-12-11'],
+        default=["gemini-3-pro-preview", ],
         help="指定的QWen版本"
     )
     parser.add_argument(
@@ -132,211 +321,38 @@ def main():
         help="指定的prompt配置文件"
     )
     parser.add_argument(
-        "--tag-id-list",
-        nargs="+",
-        type=int,
-        default=[
-            97020556, 97020543, 97020546, 97020561, 97020563,
-            97020525, 97020564, 97020559, 97020554, 97020567,
-            97020550, 97020541
-        ],
-        help="指定要分析的tag"
+        "--id-mapping",
+        type=str,
+        default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "get_data", "id_mapping.json"),
+        help="tag_id → feishu_id 映射文件路径 (JSON dict)"
     )
     parser.add_argument(
-        "--feishu-id-list",
-        nargs="+",
+        "--workers",
         type=int,
-        default=[
-            6644231273
-        ],
-        help="指定要分析的tag"
+        default=8,
+        help="并行线程数 (默认8)"
     )
     args = parser.parse_args()
 
-    for i in range(len(args.tag_id_list)):
-        tag_id = args.tag_id_list[i]
-        # feishu_id = args.feishu_id_list[i]
-        # pre_comment_record = '大模型诊断结果：\n'
-        # comment_record = ''
-        # 准备数据 ##########################################################################################
-        data_path = os.path.join(args.data_path, str(tag_id))
-        with open(data_path + '/vehicle2sensing.json', 'r', encoding='utf-8') as f:
-            vehicle2sensing = json.load(f)
-        with open(data_path + '/ground.json', 'r', encoding='utf-8') as f:
-            ground = json.load(f)
-        with open(data_path + '/cameras_parameters.json', 'r', encoding='utf-8') as f:
-            cameras_parameters = json.load(f)
-        with open(data_path + '/car_config.json', 'r', encoding='utf-8') as f:
-            car_config = json.load(f)
-        focal_length = 162.6
-        camera_height = 3.44
-        projector = PanoramicProjector()
-        # 时间戳list
-        all_items = os.listdir(data_path)
-        # 过滤出文件夹
-        folders = []
-        for item in all_items:
-            item_path = os.path.join(data_path, item)
-            if os.path.isdir(item_path):
-                folders.append(item)
-        all_items = sorted(folders, key=lambda x: int(x))
-        # 为每一个时间戳匹配avm
-        avm_path_list = {}
-        meta_data = get_meta_data(tag_id=tag_id)
-        bag_list = meta_data['body'][0]['bagsName']
-        # 提取包名
-        bag_list = sorted([bag_name for bag_name in bag_list if 'Heavy' in bag_name])
-        bag_list = [item.split('.')[0] for item in bag_list]
-        for ts in all_items:
-            ts_tmp = ts[:10] + "_" + ts[10:]
-            prefix_12 = ts_tmp[:12]  # 取前12位
-            matched_file = None  # 存储匹配到的文件路径
-            # 遍历所有文件夹
-            for bag in bag_list:
-                bag_path = os.path.join("/mnt/public-data/deelooper/csi-data-aly/shared/public/yiliu03", bag)
-                if not os.path.exists(bag_path):
-                    continue
-                # 遍历当前文件夹中的所有文件
-                for fname in os.listdir(bag_path):
-                    name_without_ext = os.path.splitext(fname)[0]
-                    if name_without_ext[:12] == prefix_12:
-                        # 找到匹配，记录完整路径
-                        matched_file = os.path.join(bag_path, fname)
-                        break  # 跳出文件循环
-                if matched_file:
-                    break  # 跳出文件夹循环
-            # 记录结果
-            avm_path_list[ts] = matched_file
-        # 图像保存路径
-        image_save_path = os.path.join('get_data/draw_image', str(tag_id))
-        os.makedirs(image_save_path, exist_ok=True)
-        for item in all_items:
-            print(str(tag_id) + '******' + item)
-            # 在avm上画检测点 ##########################################################################################
-            item_path = os.path.join(data_path, item)
-            item_save_path = os.path.join(image_save_path, item)
-            os.makedirs(item_save_path, exist_ok=True)
-            with open(item_path + '/chaosheng.json', 'r', encoding='utf-8') as f:
-                chaosheng = json.load(f)
-            with open(item_path + '/obstacle.json', 'r', encoding='utf-8') as f:
-                obstacle = json.load(f)
-            with open(item_path + '/pose.json', 'r', encoding='utf-8') as f:
-                pose = json.load(f)
-            with open(item_path + '/plan.json', 'r', encoding='utf-8') as f:
-                planning_point = json.load(f)
-            # 坐标变换
-            obstacle, ULTRASONIC_z = projector.world2vehicle2sensing(obstacle, pose, vehicle2sensing)
-            chaosheng = projector.world2vehicle2sensing_chaosheng(chaosheng, pose, vehicle2sensing, ULTRASONIC_z)
-            avm_path = avm_path_list[item]
-            if avm_path:
-                avm_image = cv2.imread(avm_path)
-                planning_point = projector.world2vehicle2sensing_planning(planning_point, pose, vehicle2sensing)
-                to_tail = car_config["back_edge_to_center"]
-                for point in planning_point:
-                    point[0] -= to_tail
-                # 转换为DataFrame
-                planning_point_df = pd.DataFrame(planning_point, columns=['x', 'y', 'z'])
-                # 去除重复行
-                planning_point_df = planning_point_df.drop_duplicates()
-                planning_point = planning_point_df.values.tolist()
-                # 在AVM上绘制检测信息
-                index = {
-                    "avm": None,
-                }
-                bev_img_with_obstacles, pos = projector.draw_obstacles_on_bev(
-                    avm_image, obstacle, chaosheng, ground, focal_length, camera_height, planning_point
-                )
-                index["avm"] = pos
-                cv2.imwrite(item_save_path + '/avm.jpg', bev_img_with_obstacles)
-                with open(item_save_path + "/index_avm.json", 'w', encoding='utf-8') as f:
-                    json.dump(index, f, indent=2)
-                # 在AVM上画FS_CAR点 ###########################################################################################
-                # 在AVM上绘制检测信息
-                bev_img_with_fs_car, box_list, point_list = projector.draw_fs_car_on_bev(
-                    avm_image, obstacle, chaosheng, ground, focal_length, camera_height, planning_point
-                )
-                cv2.imwrite(item_save_path + '/avm_fs_car.jpg', bev_img_with_fs_car)
-                with open(item_save_path + "/box_list_avm.json", 'w', encoding='utf-8') as f:
-                    json.dump(box_list, f, indent=2)
-                with open(item_save_path + "/point_list_avm.json", 'w', encoding='utf-8') as f:
-                    json.dump(point_list, f, indent=2)
-                # 在AVM上判断FS_CAR #####################################################################################
-                # 结果
-                result_fs_car = []
-                # 计算每个点到所有边框的最小距离
-                for segment_points in point_list:
-                    # 计算线段的最大距离
-                    max_distance = get_max_distance_for_segment(segment_points, box_list)
-                    # 计算线段中心点
-                    center_point = calculate_segment_center(segment_points)
-                    # 判断是否误检（距离 > 8）
-                    if max_distance > 8:
-                        result_fs_car.append([center_point[0], center_point[1]])
+    setup_logging()
 
-                if result_fs_car:
-                    print(result_fs_car)
+    with open(args.id_mapping, "r", encoding="utf-8") as f:
+        id_mapping = json.load(f)
+    logger.info(f"参数: workers={args.workers}, model={args.model}, tag数量={len(id_mapping)}")
 
-                # AI诊断 ###########################################################################################
-                # index['avm'] = []
-                if len(index['avm']) == 0:
-                    analysis_result = {}
-                    analysis_result['positions'] = []
-                else:
-                    # 读取图像数据
-                    image_list = {}
-                    panoramic_1 = cv2.cvtColor(bev_img_with_obstacles, cv2.COLOR_BGR2RGB)
-                    image_list['panoramic_1'] = panoramic_1
-                    # VLM###################################################################################################
-                    # 进行分析（传入图像数组而不是文件路径）
-                    # 生成prompt
-                    prompt_config = args.prompt_config
-                    prompt = prompt_gen(index, prompt_config)
-                    analysis_result = analyze_scenario_from_images(image_list, prompt, args.model)
-                    # 打印并保存结果
-                    if analysis_result is None:
-                        print(f"tag {tag_id}，时间戳 {item}: 未从API获取到有效结果")
-                        continue
-                # # 保存单个case的结果到valid目录
-                # result = {
-                #     "fs_others": analysis_result['positions'],
-                #     "fs_car": result_fs_car,
-                # }
-                # # 结果保存路径
-                # save_path = os.path.join(args.output_dir, str(tag_id))
-                # os.makedirs(save_path, exist_ok=True)
-                # save_path = os.path.join(save_path, item)
-                # os.makedirs(save_path, exist_ok=True)
-                # if result_fs_car or analysis_result['positions']:
-                #     print(result)
-                #     analysis_json_path = os.path.join(f"{save_path}/analysis_result.json")
-                #     with open(analysis_json_path, 'w', encoding='utf-8') as f:
-                #         json.dump(result, f, ensure_ascii=False, indent=2)
-                #     print(f"tag {tag_id}，时间戳 {item}：分析结果已保存到 {analysis_json_path}")
-                #
-                #     direction_text = ""
-                #     direction = []
-                #     for coor in result_fs_car:
-                #         d = get_direction_from_position(int(coor[0]), int(coor[1]))
-                #         direction.append(d)
-                #     if direction:
-                #         direction_text = direction_text + 'FS_CAR误检点相对于车的位置：' + ', '.join(direction) + " "
-                #
-                #     direction = []
-                #     for coor in analysis_result['positions']:
-                #         d = get_direction_from_position(int(coor[0]), int(coor[1]))
-                #         direction.append(d)
-                #     if direction:
-                #         direction_text = direction_text + 'FS_OTHERS_STATIC误检点相对于车的位置：' + ', '.join(direction)
-                #
-                #     comment_record = comment_record + '时间戳' + str(item) + ': ' + direction_text + "\n"
-        # if comment_record:
-        #     comment_record = pre_comment_record + comment_record
-        #     print(comment_record)
-        #     tester = FeishuCommentTester()
-        #     test_url = "https://project.feishu.cn/iffcom/case/detail/" + str(feishu_id)
-        #     tester.test_comment(test_url, comment_record)
-        #     # 后面自带 (From plugin-飞书项目OPENAPI)
-        # print("")
+    with ThreadPoolExecutor(max_workers=args.workers) as executor:
+        futures = {}
+        for tag_id_str, feishu_id in id_mapping.items():
+            tag_id = int(tag_id_str)
+            future = executor.submit(process_single_tag, tag_id, feishu_id, args)
+            futures[future] = tag_id
+
+        for future in as_completed(futures):
+            tag_id = futures[future]
+            try:
+                future.result()
+            except Exception as e:
+                logger.error(f"tag_id {tag_id} 处理失败: {e}", exc_info=True)
 
 
 if __name__ == "__main__":

@@ -12,22 +12,49 @@
 版本：1.0
 """
 
+import os
 import requests
 import json
 import re
 from typing import Optional, Dict, Any
 from urllib.parse import urlparse
 
+# 可选：若已安装 python-dotenv，会自动从 .env 加载环境变量
+try:
+    from dotenv import load_dotenv  # pyright: ignore[reportMissingImports]
+    _this_dir = os.path.dirname(os.path.abspath(__file__))
+    _project_root = os.path.dirname(_this_dir)
+    load_dotenv(os.path.join(_this_dir, ".env"))
+    load_dotenv(os.path.join(_project_root, ".env"))
+except ImportError:
+    pass
+
+
+def _get_required_env(name: str) -> str:
+    """从环境变量读取必填配置，缺失时抛出明确错误"""
+    value = os.environ.get(name)
+    if not value or not value.strip():
+        raise ValueError(
+            f"缺少飞书配置: 请设置环境变量 {name}，或在项目根目录/comment 目录下创建 .env 并填写。"
+            f"可参考 .env.example"
+        )
+    return value.strip()
+
+
+def _get_optional_env(name: str, default: str) -> str:
+    """从环境变量读取可选配置"""
+    return (os.environ.get(name) or default).strip()
+
 
 class FeishuCommentTester:
     """飞书项目评论测试器"""
-    
+
     def __init__(self):
-        # 飞书插件认证信息
-        self.PLUGIN_ID = "MII_64EDCCED5EC38003"
-        self.PLUGIN_SECRET = "F0B574D7270754A7A4BF4EB60FEBD5C4"
-        self.USER_KEY = "7565630504918138881"
-        self.endpoint = "https://project.feishu.cn/open_api"
+        # 飞书插件认证信息：从环境变量或 .env 读取，避免写死在代码里
+        self.PLUGIN_ID = _get_required_env("FEISHU_PLUGIN_ID")
+        self.PLUGIN_SECRET = _get_required_env("FEISHU_PLUGIN_SECRET")
+        self.USER_KEY = _get_required_env("FEISHU_USER_KEY")
+        self.endpoint = _get_optional_env("FEISHU_ENDPOINT", "https://project.feishu.cn/open_api")
         self.token = None
     
     def get_token(self):
