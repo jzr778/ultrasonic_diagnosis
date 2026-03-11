@@ -31,8 +31,8 @@ if _project_root not in sys.path:
     sys.path.insert(0, _project_root)
 
 import config
-from bag_reader import BagReader
-from dr_client import DRFILE_AVAILABLE, download_trip_config
+from get_data.bag_reader import BagReader
+from get_data.dr_client import DRFILE_AVAILABLE, download_trip_config
 
 
 # ============ 工具函数 ============

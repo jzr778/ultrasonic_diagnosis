@@ -37,7 +37,7 @@ except ImportError as e:
     sys.exit(1)
 
 from google.protobuf.json_format import MessageToDict
-from get_meta_data import get_meta_data
+from get_data.get_meta_data import get_meta_data
 
 
 class BagReader:

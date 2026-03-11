@@ -1,8 +1,13 @@
 import os
+import sys
 import re
 import json
 
-from dr_client import download_trip_config
+_project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
+
+from get_data.dr_client import download_trip_config
 
 
 def extract_params(byte_data):

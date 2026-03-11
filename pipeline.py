@@ -112,8 +112,7 @@ def step1_get_id_mapping(project_key, view_id, output_path):
 def step2_get_bags(tag_ids, bag_list_path):
     banner(2, "获取 bag 列表")
 
-    sys.path.insert(0, os.path.join(PROJECT_ROOT, "get_data"))
-    from get_meta_data import get_meta_data
+    from get_data.get_meta_data import get_meta_data
 
     bags = []
     for tag_id in tag_ids:
@@ -137,10 +136,7 @@ def step2_get_bags(tag_ids, bag_list_path):
 def step3_unpack_bags(tag_ids, samples_dir):
     banner(3, "解包 bag (unpack_bag_for_avm)")
 
-    get_data_dir = os.path.join(PROJECT_ROOT, "get_data")
-    if get_data_dir not in sys.path:
-        sys.path.insert(0, get_data_dir)
-    from unpack_bag_for_avm import unpack_tag
+    from get_data.unpack_bag_for_avm import unpack_tag
 
     for tag_id in tag_ids:
         log.info(f"  解包 tag_id={tag_id} ...")
@@ -153,10 +149,7 @@ def step3_unpack_bags(tag_ids, samples_dir):
 def step4_save_bag_data(tag_ids, read_data_dir):
     banner(4, "准备 read_data (save_bag_data)")
 
-    get_data_dir = os.path.join(PROJECT_ROOT, "get_data")
-    if get_data_dir not in sys.path:
-        sys.path.insert(0, get_data_dir)
-    from save_bag_data import save_data
+    from get_data.save_bag_data import save_data
 
     success = 0
     for tag_id in tag_ids:
@@ -235,7 +228,7 @@ def step6_run_vlm(id_mapping_path, read_data_dir):
     banner(6, "运行 VLM 大模型诊断")
 
     cmd = [
-        PYTHON, os.path.join(PROJECT_ROOT, "avp_vlm_pipeline_avm.py"),
+        PYTHON, os.path.join(PROJECT_ROOT, "vlm", "avp_vlm_pipeline_avm.py"),
         "--id-mapping", id_mapping_path,
         "--data-path", read_data_dir,
     ]

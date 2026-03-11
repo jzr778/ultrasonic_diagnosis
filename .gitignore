@@ -24,7 +24,7 @@ logs/
 *.rar
 
 # 外部项目解压产物
-offline_avm_generate_release/
+# offline_avm_generate_release/
 
 # 运行时生成的图像和数据
 *.jpg
