@@ -2,16 +2,11 @@ from get_meta_data import get_meta_data
 from get_camera_parameters import get_camera_engine_parameters
 from get_chaosheng_image_obstacle_pose import get_image_obstacle_pose
 from get_vehicle2sensing import get_vehicle2sensing
-from panoramic_projector import PanoramicProjector
 from get_planning import get_planning
 from get_car_config import get_car_config
 from get_ground import get_ground
-import cv2
-import math
-import numpy as np
 import os
 import json
-import pandas as pd
 
 def save_data(tag_id):
     # 保存路径
@@ -22,22 +17,9 @@ def save_data(tag_id):
         json.dump(meta_data, f, ensure_ascii=False, indent=2)
     print("meta_data")
     chaosheng_results, image_results, obstacle_results, pose_results, plan_results = get_image_obstacle_pose(meta_data=meta_data)
-    for time, camera_data in image_results.items():
+    for time in image_results.keys():
         time_path = os.path.join(data_path, str(int(time)))
         os.makedirs(time_path, exist_ok=True)
-        img_1 = camera_data["panoramic_1_raw_data"]["image"]
-        img_2 = camera_data["panoramic_2_raw_data"]["image"]
-        img_3 = camera_data["panoramic_3_raw_data"]["image"]
-        img_4 = camera_data["panoramic_4_raw_data"]["image"]
-        path_1 = os.path.join(time_path, 'panoramic_1.jpg')
-        path_2 = os.path.join(time_path, 'panoramic_2.jpg')
-        path_3 = os.path.join(time_path, 'panoramic_3.jpg')
-        path_4 = os.path.join(time_path, 'panoramic_4.jpg')
-        cv2.imwrite(path_1, img_1)
-        cv2.imwrite(path_2, img_2)
-        cv2.imwrite(path_3, img_3)
-        cv2.imwrite(path_4, img_4)
-    print("panoramic_image")
     for time, chaosheng_data in chaosheng_results.items():
         time_path = os.path.join(data_path, str(int(time)))
         path = os.path.join(time_path, 'chaosheng.json')
