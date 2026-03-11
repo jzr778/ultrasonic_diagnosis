@@ -4,13 +4,15 @@ from openai import OpenAI
 from PIL import Image
 import io
 
+import config
+
 
 class InteractiveGeminiChat:
     def __init__(self):
         # 初始化OpenAI客户端
         self.client = OpenAI(
-            api_key="sk-zeCJYsWZjsuhJuFbM2TNArqMfsWx5nPecFwJNfXp6ykTOGCT",
-            base_url="https://api.apiqik.online/v1/"
+            api_key=config.VLM_API_KEY,
+            base_url=config.VLM_BASE_URL,
         )
 
         # 对话历史（保持上下文）

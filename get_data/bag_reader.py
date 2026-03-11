@@ -16,15 +16,16 @@ import sys
 import cv2
 import numpy as np
 
-current_dir = os.path.dirname(os.path.abspath(__file__))
-proto_dir = os.path.join(current_dir, "proto")
-sys.path.insert(0, proto_dir)
+_project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
+
+import config
+
+sys.path.insert(0, config.PROTO_LOCAL_DIR)
 
 from dpbag import strip_header
 from dpbag.bag.bag import DpBag
-
-os.environ['DPBAG_DP_USERNAME'] = 'perceptionteam'
-os.environ['DPBAG_DP_PASSWORD'] = 'r6zR86V4*+=*'
 
 try:
     from drivers.sensor_image_pb2 import CompressedImage
@@ -37,22 +38,6 @@ except ImportError as e:
 
 from google.protobuf.json_format import MessageToDict
 from get_meta_data import get_meta_data
-
-# ============ Topic 常量 ============
-
-CHAOSHENG_TOPIC = "/planner/stop_objects"
-
-CAMERA_TOPICS = [
-    "/sensors/camera/panoramic_1_raw_data/compressed_proto",
-    "/sensors/camera/panoramic_2_raw_data/compressed_proto",
-    "/sensors/camera/panoramic_3_raw_data/compressed_proto",
-    "/sensors/camera/panoramic_4_raw_data/compressed_proto",
-]
-CAMERA_NAMES = ["panoramic_1", "panoramic_2", "panoramic_3", "panoramic_4"]
-
-OBSTACLE_TOPIC = "/perception/objects"
-POSE_TOPIC = "/localization/pose"
-PLANNING_TOPIC = "/planner/trajectory"
 
 
 class BagReader:
@@ -87,7 +72,7 @@ class BagReader:
             try:
                 with DpBag(bag=bag_name) as bag:
                     for _, msg, _ in bag.read_messages(
-                        topics=[CHAOSHENG_TOPIC],
+                        topics=[config.CHAOSHENG_TOPIC],
                         dpbag_name=bag_name,
                         force_get_data_by_raw=True,
                     ):
@@ -129,11 +114,11 @@ class BagReader:
         """
         image_results = {t: {} for t in self.perception_time_list}
         min_diffs = {
-            t: {cam: float('inf') for cam in CAMERA_NAMES}
+            t: {cam: float('inf') for cam in config.CAMERA_NAMES}
             for t in self.perception_time_list
         }
 
-        for topic, cam_name in zip(CAMERA_TOPICS, CAMERA_NAMES):
+        for topic, cam_name in zip(config.CAMERA_TOPICS, config.CAMERA_NAMES):
             print(f"    提取 {cam_name} ...")
             count = 0
 
@@ -187,7 +172,7 @@ class BagReader:
             try:
                 with DpBag(bag=bag_name) as bag:
                     for _, msg, _ in bag.read_messages(
-                        topics=[OBSTACLE_TOPIC],
+                        topics=[config.OBSTACLE_TOPIC],
                         dpbag_name=bag_name,
                         force_get_data_by_raw=True,
                     ):
@@ -226,7 +211,7 @@ class BagReader:
             try:
                 with DpBag(bag=bag_name) as bag:
                     for _, msg, _ in bag.read_messages(
-                        topics=[POSE_TOPIC],
+                        topics=[config.POSE_TOPIC],
                         dpbag_name=bag_name,
                         force_get_data_by_raw=True,
                     ):
@@ -267,7 +252,7 @@ class BagReader:
             try:
                 with DpBag(bag=bag_name) as bag:
                     for _, msg, _ in bag.read_messages(
-                        topics=[PLANNING_TOPIC],
+                        topics=[config.PLANNING_TOPIC],
                         dpbag_name=bag_name,
                         force_get_data_by_raw=True,
                     ):

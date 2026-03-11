@@ -8,6 +8,8 @@ from openai import OpenAI
 from typing import Dict, List, Any
 from collections import Counter
 
+import config
+
 def encode_image_to_base64(image_path):
     """将图片转换为base64编码"""
     try:
@@ -44,8 +46,8 @@ def call_qwen_model_with_images(image_list, question, model):
     """
     # 配置客户端 - 使用阿里云百炼的端点
     client = OpenAI(
-        api_key="sk-zeCJYsWZjsuhJuFbM2TNArqMfsWx5nPecFwJNfXp6ykTOGCT",
-        base_url="https://api.apiqik.online/v1/"
+        api_key=config.VLM_API_KEY,
+        base_url=config.VLM_BASE_URL,
     )
 
     # 构建消息内容

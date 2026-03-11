@@ -12,22 +12,29 @@
 版本：1.0
 """
 
+import os
+import sys
 import requests
 import json
 import re
 from typing import Optional, Dict, Any
 from urllib.parse import urlparse
 
+_project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
+
+import config
+
 
 class FeishuCommentTester:
     """飞书项目评论测试器"""
     
     def __init__(self):
-        # 飞书插件认证信息
-        self.PLUGIN_ID = "MII_64EDCCED5EC38003"
-        self.PLUGIN_SECRET = "F0B574D7270754A7A4BF4EB60FEBD5C4"
-        self.USER_KEY = "7612461446294719435"
-        self.endpoint = "https://project.feishu.cn/open_api"
+        self.PLUGIN_ID = config.FEISHU_PLUGIN_ID
+        self.PLUGIN_SECRET = config.FEISHU_PLUGIN_SECRET
+        self.USER_KEY = config.FEISHU_USER_KEY
+        self.endpoint = config.FEISHU_ENDPOINT
         self.token = None
     
     def get_token(self):

@@ -29,8 +29,10 @@ import logging
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-sys.path.append("/mnt/public-data/shared/public/trajcaching_v3/debs/proto")
-sys.path.append("/mnt/public-data/shared/public/trajcaching_v3/debs/scenariohouse")
+import config
+
+sys.path.append(os.path.join(config.PROTO_DEBS_DIR, "proto"))
+sys.path.append(os.path.join(config.PROTO_DEBS_DIR, "scenariohouse"))
 
 logger = logging.getLogger(__name__)
 
@@ -171,7 +173,7 @@ def process_single_tag(tag_id, feishu_id, args):
         prefix_12 = ts[:11]
         matched_file = None
         for bag in bag_list:
-            bag_path = os.path.join("/mnt/public-data/user/ziroujiang/avp/generate", bag)
+            bag_path = os.path.join(config.GENERATE_DIR, bag)
             if not os.path.exists(bag_path):
                 continue
             for fname in os.listdir(bag_path):
@@ -183,7 +185,7 @@ def process_single_tag(tag_id, feishu_id, args):
                 break
         avm_path_list[ts] = matched_file
     # 图像保存路径
-    image_save_path = os.path.join('/mnt/public-data/user/ziroujiang/avp/draw_image', str(tag_id))
+    image_save_path = os.path.join(config.DRAW_IMAGE_DIR, str(tag_id))
     os.makedirs(image_save_path, exist_ok=True)
     for item in all_items:
         logger.info(f"{tag_id}******{item}")
@@ -286,7 +288,7 @@ def process_single_tag(tag_id, feishu_id, args):
         comment_record = pre_comment_record + comment_record
         logger.info(f"tag {tag_id} 飞书评论:\n{comment_record}")
         tester = FeishuCommentTester()
-        test_url = "https://project.feishu.cn/iffcom/case/detail/" + str(feishu_id)
+        test_url = f"https://project.feishu.cn/{config.FEISHU_PROJECT_KEY}/case/detail/{feishu_id}"
         tester.test_comment(test_url, comment_record)
     logger.info(f"tag_id {tag_id} 处理完成")
 
@@ -296,13 +298,13 @@ def main():
     parser.add_argument(
         "--output-dir",
         type=str,
-        default="/mnt/public-data/user/ziroujiang/avp/result_avm",
+        default=config.RESULT_DIR,
         help="保存分析结果JSON文件的输出目录"
     )
     parser.add_argument(
         "--data-path",
         type=str,
-        default="/mnt/public-data/user/ziroujiang/avp/read_data",
+        default=config.READ_DATA_DIR,
         help="数据路径"
     )
     parser.add_argument(

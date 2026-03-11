@@ -26,7 +26,9 @@ import subprocess
 import sys
 from datetime import datetime
 
-PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+import config
+
+PROJECT_ROOT = str(config.PROJECT_ROOT)
 PYTHON = sys.executable
 TOTAL_STEPS = 6
 
@@ -167,7 +169,7 @@ def step4_save_bag_data(tag_ids, read_data_dir):
             continue
         log.info(f"  保存 tag_id={tag_id} 数据 ...")
         try:
-            save_data(tag_id)
+            save_data(tag_id, output_root=read_data_dir)
             success += 1
             log.info(f"  tag_id={tag_id} ✅")
         except Exception as e:
@@ -244,18 +246,18 @@ def step6_run_vlm(id_mapping_path, read_data_dir):
 # ── main ────────────────────────────────────────────────────
 def main():
     parser = argparse.ArgumentParser(description="AVP 全流程 Pipeline")
-    parser.add_argument("-p", "--project-key", default="iffcom",
-                        help="飞书项目 Key (默认: iffcom)")
+    parser.add_argument("-p", "--project-key", default=config.FEISHU_PROJECT_KEY,
+                        help="飞书项目 Key")
     parser.add_argument("-v", "--view-id", default="U9zPLpFvR",
                         help="飞书视图 ID (默认: U9zPLpFvR)")
     parser.add_argument("--samples-dir",
-                        default="/mnt/public-data/user/ziroujiang/avp/samples",
+                        default=config.SAMPLES_DIR,
                         help="unpack 输出 / AVM 输入目录")
     parser.add_argument("--generate-dir",
-                        default="/mnt/public-data/user/ziroujiang/avp/generate",
+                        default=config.GENERATE_DIR,
                         help="AVM 鱼眼图输出目录")
     parser.add_argument("--read-data-dir",
-                        default="/mnt/public-data/user/ziroujiang/avp/read_data",
+                        default=config.READ_DATA_DIR,
                         help="save_bag_data 输出 / VLM 读取目录")
     parser.add_argument("--skip-steps", nargs="*", type=int, default=[],
                         help="跳过指定步骤编号 (1-6)，如 --skip-steps 1 2")

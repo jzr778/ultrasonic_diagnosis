@@ -1,79 +1,65 @@
-import requests
+"""
+⚠️ 已废弃 — 此模块的 planning 提取功能已合并到 bag_reader.py (BagReader.extract_planning)。
+保留此文件仅供独立调用/调试使用。
+"""
+
 import json
 import os
 import sys
-import argparse
-import cv2
-import re
-import numpy as np
-sys.path.append("/mnt/pubic-data/shared/public/trajcaching_v3/debs/proto")
-sys.path.append("/mnt/pubic-data/shared/public/trajcaching_v3/debs/scenariohouse")
-# Add proto directory to Python path
-# sys.path.append('/opt/deeproute/common/common-protocol/include/proto/')
-sys.path.insert(0, "/mnt/pubic-data/shared/public/trajcaching_v3/debs/proto")
-sys.path.insert(0, "/mnt/pubic-data/shared/public/trajcaching_v3/debs/scenariohouse")
-from dpbag import strip_header
-from collections import defaultdict
-from dpbag.bag.bag import DpBag
 
-# 设置环境变量
-os.environ['DPBAG_DP_USERNAME'] = 'perceptionteam'
-os.environ['DPBAG_DP_PASSWORD'] = 'r6zR86V4*+=*'
-# proto
-import drivers
-import perception
-from drivers.sensor_image_pb2 import CompressedImage
-from perception.deeproute_perception_obstacle_pb2 import PerceptionObstacles
-from drivers.gnss.ins_pb2 import Ins
+_project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
+
+import config
+
+sys.path.insert(0, config.PROTO_LOCAL_DIR)
+
+from dpbag import strip_header
+from dpbag.bag.bag import DpBag
 from planning.planning_pb2 import ADCTrajectory
-# get data
 from get_meta_data import get_meta_data
-from google.protobuf.json_format import MessageToDict
 
 plan_topic_map = {
-    "/planner/trajectory": ADCTrajectory,
+    config.PLANNING_TOPIC: ADCTrajectory,
 }
+
 
 def get_planning(meta_data, tag_time=0):
     bag_name_list = meta_data['body'][0]['bagsName']
     if tag_time == 0:
         tag_time = meta_data['body'][0]['ntpTime']
 
-    # 分别提取包名
-    heavy_bags = sorted([bag_name for bag_name in bag_name_list if 'Heavy' in bag_name])[1:]
-    light_bags = sorted([bag_name for bag_name in bag_name_list if 'Light' in bag_name])[1:]
+    light_bags = sorted([b for b in bag_name_list if 'Light' in b])[1:]
 
-    # 从light_bag读取planning信息
     planning = []
-    for i in range(len(light_bags)):
-        bag_name = light_bags[i]
+    for bag_name in light_bags:
         topic_list = list(plan_topic_map.keys())
         flag = False
         with DpBag(bag=bag_name) as bag:
             for topic, msg, t in bag.read_messages(
-                    topics=topic_list,
-                    dpbag_name=bag_name,
-                    force_get_data_by_raw=True,
+                topics=topic_list,
+                dpbag_name=bag_name,
+                force_get_data_by_raw=True,
             ):
                 t = t.to_sec() * 1e6
                 if tag_time - t <= 0:
-                    # Parse camera proto
                     obj = plan_topic_map[topic]()
                     raw_msg = strip_header(msg.data)
                     obj.ParseFromString(raw_msg)
                     for trajectory_point in obj.trajectory_point:
-                        point_dict = {
+                        planning.append({
                             'relative_time': trajectory_point.relative_time,
                             'x': trajectory_point.path_point.x,
                             'y': trajectory_point.path_point.y,
-                        }
-                        planning.append(point_dict)
+                        })
                     flag = True
                     break
         if flag:
             break
 
     return planning
+
 
 if __name__ == "__main__":
     tag_id = 63787346
@@ -84,6 +70,3 @@ if __name__ == "__main__":
     with open(path, 'w', encoding='utf-8') as f:
         json.dump(planning, f, indent=2, ensure_ascii=False)
     print("debug")
-
-
-

@@ -18,7 +18,13 @@ import re
 import urllib.request
 from urllib.error import HTTPError
 
-BASE_URL = "https://project.feishu.cn/open_api"
+_project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
+
+import config
+
+BASE_URL = config.FEISHU_ENDPOINT
 
 
 def http_json(method, url, headers=None, body=None, timeout=30):
@@ -132,9 +138,9 @@ def main():
 
     args = parser.parse_args()
 
-    plugin_id = "MII_64EDCCED5EC38003"
-    plugin_secret = "F0B574D7270754A7A4BF4EB60FEBD5C4"
-    user_key = "7343719510022553604"
+    plugin_id = config.FEISHU_PLUGIN_ID
+    plugin_secret = config.FEISHU_PLUGIN_SECRET
+    user_key = config.FEISHU_USER_KEY
 
     print("1. 正在获取插件 Token...")
     try:

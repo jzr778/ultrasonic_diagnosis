@@ -1,8 +1,13 @@
 import requests
 import json
 import os
+import sys
 
-url_query_tag_instance = "https://drplatform-backend.deeproute.cn/scene/tag/instance/query"
+_project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
+
+import config
 
 headers = {
     'Accept': 'application/json',
@@ -11,11 +16,8 @@ headers = {
 
 def get_meta_data(tag_id):
     request_body = {"condition" : {"id": {"eq" : tag_id,},}}
-    # 发送请求
-    response = requests.post(url_query_tag_instance, headers=headers, data=json.dumps(request_body))
-    # 打印状态信息
+    response = requests.post(config.DR_TAG_QUERY_URL, headers=headers, data=json.dumps(request_body))
     if response.status_code == 200:
-        # 解析JSON
         meta_data = response.json()
         return meta_data
     else:
@@ -29,13 +31,6 @@ if __name__ == '__main__':
     tag_id = 90294380
     meta_data = get_meta_data(tag_id=tag_id)
     print(meta_data)
-    # 保存
-    output_path = "meta_data.json"
-    output_path = os.path.join(os.path.dirname(__file__), output_path)
+    output_path = os.path.join(os.path.dirname(__file__), "meta_data.json")
     with open(output_path, 'w', encoding='utf-8') as f:
         json.dump(meta_data, f, indent=2, ensure_ascii=False)
-
-# 90294405, 90294401, 90294397, 90294393, 90294380,
-# 90294374, 90294370, 90294359, 90294347, 90294334,
-# 90294333, 90294329, 90294293, 90294286, 90293836
-

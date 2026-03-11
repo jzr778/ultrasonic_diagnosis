@@ -17,17 +17,24 @@
 
 import json
 import os
+import sys
 
+_project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
+
+import config
 from bag_reader import BagReader
 from get_camera_parameters import get_camera_engine_parameters
 from get_vehicle2sensing import get_vehicle2sensing
 from get_car_config import get_car_config
 from get_ground import get_ground
 
-READ_DATA_ROOT = "/mnt/public-data/user/ziroujiang/avp/read_data"
 
+def save_data(tag_id, output_root=None):
+    if output_root is None:
+        output_root = config.READ_DATA_DIR
 
-def save_data(tag_id, output_root=READ_DATA_ROOT):
     data_path = os.path.join(output_root, str(tag_id))
     os.makedirs(data_path, exist_ok=True)
 
@@ -44,18 +51,15 @@ def save_data(tag_id, output_root=READ_DATA_ROOT):
         print(f"  tag_id={tag_id} 无超声波事件，跳过 bag 数据提取")
         return
 
-    # 创建时间戳子目录
     for t in reader.perception_time_list:
         os.makedirs(os.path.join(data_path, str(int(t))), exist_ok=True)
 
-    # 超声波数据
     for t, chaosheng_data in reader.chaosheng_results.items():
         path = os.path.join(data_path, str(int(t)), 'chaosheng.json')
         with open(path, 'w', encoding='utf-8') as f:
             json.dump(chaosheng_data, f, indent=2, ensure_ascii=False)
     print("chaosheng_data")
 
-    # 障碍物数据
     obstacle_results = reader.extract_obstacles()
     for t, obstacle_data in obstacle_results.items():
         if not obstacle_data:
@@ -65,7 +69,6 @@ def save_data(tag_id, output_root=READ_DATA_ROOT):
             json.dump(obstacle_data['obstacle'], f, indent=2, ensure_ascii=False)
     print("obstacle_data")
 
-    # 位姿数据
     pose_results = reader.extract_poses()
     for t, pose_data in pose_results.items():
         if not pose_data:
@@ -75,7 +78,6 @@ def save_data(tag_id, output_root=READ_DATA_ROOT):
             json.dump(pose_data, f, indent=2, ensure_ascii=False)
     print("pose_data")
 
-    # 规划轨迹数据
     plan_results = reader.extract_planning()
     for t, plan_data in plan_results.items():
         if not plan_data:
@@ -93,9 +95,9 @@ def save_data(tag_id, output_root=READ_DATA_ROOT):
         json.dump(vehicle2sensing, f, ensure_ascii=False, indent=2)
     print("vehicle2sensing")
 
-    car_config = get_car_config(trip_id)
+    car_cfg = get_car_config(trip_id)
     with open(os.path.join(data_path, 'car_config.json'), 'w', encoding='utf-8') as f:
-        json.dump(car_config, f, ensure_ascii=False, indent=2)
+        json.dump(car_cfg, f, ensure_ascii=False, indent=2)
     print("car_config")
 
     ground = get_ground(trip_id=trip_id)

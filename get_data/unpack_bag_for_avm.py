@@ -22,97 +22,28 @@
 import bisect
 import os
 import re
+import sys
 
 import cv2
 
-from bag_reader import BagReader, CAMERA_NAMES
+_project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
 
-try:
-    from drfile.drfile_client import DrFileClient, ClientConfiguration
-    from drfile.modules.sdk.model.request.file_transfer_request import GetFileRequest
-    from dplib.env import EnvConfig
-    from dplib import DpEngine
-    DRFILE_AVAILABLE = True
-except ImportError:
-    print("警告: drfile 模块未安装，config 文件下载功能将不可用")
-    DRFILE_AVAILABLE = False
-
-# ============ 配置 ============
-OUTPUT_ROOT = "/mnt/public-data/user/ziroujiang/avp/samples"
-
-PERCEPTIONTEAM_USERNAME = "perceptionteam"
-PERCEPTIONTEAM_PASSWORD = "r6zR86V4*+=*"
-DR_ENDPOINT = os.getenv("DR_ENDPOINT", "https://drplatform-backend.deeproute.cn")
-
-# ============ DrFile 客户端（单例） ============
-_dr_client = None
-_dr_engine = None
-
-
-def _get_env_config():
-    cfg = EnvConfig()
-    cfg.retry_times = 5
-    cfg.dplib_retry_sleep_time = 20
-    return cfg
-
-
-def get_dr_client():
-    global _dr_client
-    if not DRFILE_AVAILABLE:
-        return None
-    if _dr_client is None:
-        _dr_client = DrFileClient(
-            ClientConfiguration(
-                username=PERCEPTIONTEAM_USERNAME,
-                password=PERCEPTIONTEAM_PASSWORD,
-                endpoint=DR_ENDPOINT,
-                token_expired_time=-1,
-                show_config=False,
-                show_progress=False,
-                show_summary=False,
-            )
-        )
-    return _dr_client
-
-
-def get_dr_engine():
-    global _dr_engine
-    if not DRFILE_AVAILABLE:
-        return None
-    if _dr_engine is None:
-        _dr_engine = DpEngine(
-            username=PERCEPTIONTEAM_USERNAME,
-            password=PERCEPTIONTEAM_PASSWORD,
-            env_config=_get_env_config(),
-        )
-    return _dr_engine
-
-
-def download_config_file(trip_id, config_filename):
-    """从 DrFile 下载配置文件的原始字节。"""
-    dr_engine = get_dr_engine()
-    trip_meta = dr_engine.get_trip_meta(trip_id=int(trip_id))
-    trip_name = trip_meta.trip_name
-    dr_client = get_dr_client()
-    return dr_client.download_bytes(
-        GetFileRequest(
-            namespace='trip',
-            path=f"/{trip_name}/configs/{config_filename}",
-        )
-    )
+import config
+from bag_reader import BagReader
+from dr_client import DRFILE_AVAILABLE, download_trip_config
 
 
 # ============ 工具函数 ============
 
 def extract_bag_prefix(bag_name):
-    """从 bag 名中去掉 .Heavy_Topic_Group.bag 等后缀，只保留前缀。
-    例: YR-C01-35_20260120_062850.Heavy_Topic_Group.bag -> YR-C01-35_20260120_062850
-    """
+    """从 bag 名中去掉 .Heavy_Topic_Group.bag 等后缀，只保留前缀。"""
     return os.path.basename(bag_name).split('.')[0]
 
 
 def extract_yyyymm(bag_name):
-    """从 bag 名(如 YR-C01-35_20260120_062850.Heavy_Topic_Group.bag)中提取 YYYYMM。"""
+    """从 bag 名中提取 YYYYMM。"""
     match = re.search(r'_(\d{8})_', bag_name)
     if match:
         return match.group(1)[:6]
@@ -167,39 +98,37 @@ def save_images_to_disk(image_results, output_root):
             fname = ts_us_to_filename(ts_us)
             cv2.imwrite(os.path.join(cam_dir, fname), img)
 
-            per_bag_frames.setdefault(src_bag, {cam: [] for cam in CAMERA_NAMES})
+            per_bag_frames.setdefault(src_bag, {cam: [] for cam in config.CAMERA_NAMES})
             per_bag_frames[src_bag][cam_name].append((ts_us, fname))
 
     for bag_data in per_bag_frames.values():
-        for cam_name in CAMERA_NAMES:
+        for cam_name in config.CAMERA_NAMES:
             bag_data[cam_name].sort(key=lambda x: x[0])
 
     return per_bag_frames
 
 
 def save_data_index(config_dir, camera_frames, bag_prefix):
-    """生成 data_index.csv（以 panoramic_1 为参考，最近邻匹配其余相机）。
-    格式兼容 mighty/samples: TIMESTAMP, panoramic_1..4, Data_dir，使用 ', ' 分隔。
-    """
-    ref_frames = camera_frames[CAMERA_NAMES[0]]
+    """生成 data_index.csv（以 panoramic_1 为参考，最近邻匹配其余相机）。"""
+    ref_frames = camera_frames[config.CAMERA_NAMES[0]]
     if not ref_frames:
         print("    [WARN] 未提取到任何帧，跳过 data_index.csv")
         return
 
     other_ts = {}
     other_fnames = {}
-    for cam_name in CAMERA_NAMES[1:]:
+    for cam_name in config.CAMERA_NAMES[1:]:
         frames = camera_frames[cam_name]
         other_ts[cam_name] = [f[0] for f in frames]
         other_fnames[cam_name] = [f[1] for f in frames]
 
     csv_path = os.path.join(config_dir, "data_index.csv")
     with open(csv_path, "w", newline="") as f:
-        header = ", ".join(["TIMESTAMP"] + CAMERA_NAMES + ["Data_dir"])
+        header = ", ".join(["TIMESTAMP"] + config.CAMERA_NAMES + ["Data_dir"])
         f.write(header + "\n")
         for ref_ts, ref_fname in ref_frames:
             parts = [str(ref_ts), ref_fname]
-            for cam_name in CAMERA_NAMES[1:]:
+            for cam_name in config.CAMERA_NAMES[1:]:
                 ts_list = other_ts[cam_name]
                 if not ts_list:
                     parts.append("")
@@ -214,8 +143,11 @@ def save_data_index(config_dir, camera_frames, bag_prefix):
 
 # ============ 核心入口 ============
 
-def unpack_tag(tag_id, output_root=OUTPUT_ROOT):
+def unpack_tag(tag_id, output_root=None):
     """根据 tag_id 扫描超声波事件并解包对应的最近邻图像帧。"""
+    if output_root is None:
+        output_root = config.SAMPLES_DIR
+
     print(f"\n{'=' * 60}")
     print(f"Tag ID: {tag_id}")
     print(f"{'=' * 60}")
@@ -253,15 +185,15 @@ def unpack_tag(tag_id, output_root=OUTPUT_ROOT):
     if DRFILE_AVAILABLE:
         for heavy_bag in valid_heavy_bags:
             bag_prefix, yyyymm = yyyymm_map[heavy_bag]
-            config_dir = os.path.join(output_root, "config", yyyymm, bag_prefix)
-            os.makedirs(config_dir, exist_ok=True)
+            cfg_dir = os.path.join(output_root, "config", yyyymm, bag_prefix)
+            os.makedirs(cfg_dir, exist_ok=True)
             for cfg_name in ["cameras.cfg", "ground.cfg"]:
-                cfg_path = os.path.join(config_dir, cfg_name)
+                cfg_path = os.path.join(cfg_dir, cfg_name)
                 if os.path.exists(cfg_path):
                     print(f"    {bag_prefix}/{cfg_name} 已存在，跳过下载")
                     continue
                 try:
-                    cfg_bytes = download_config_file(reader.trip_id, cfg_name)
+                    cfg_bytes = download_trip_config(reader.trip_id, cfg_name)
                     with open(cfg_path, "wb") as f:
                         f.write(cfg_bytes)
                     print(f"    已下载 {bag_prefix}/{cfg_name}")
@@ -278,8 +210,8 @@ def unpack_tag(tag_id, output_root=OUTPUT_ROOT):
         if heavy_bag not in per_bag_frames:
             continue
         bag_prefix, yyyymm = yyyymm_map[heavy_bag]
-        config_dir = os.path.join(output_root, "config", yyyymm, bag_prefix)
-        save_data_index(config_dir, per_bag_frames[heavy_bag], bag_prefix)
+        cfg_dir = os.path.join(output_root, "config", yyyymm, bag_prefix)
+        save_data_index(cfg_dir, per_bag_frames[heavy_bag], bag_prefix)
 
     print(f"\n完成! 输出目录: {output_root}")
 
