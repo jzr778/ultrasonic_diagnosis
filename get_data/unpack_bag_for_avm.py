@@ -19,32 +19,13 @@
   修改底部 tag_id_list 即可指定要处理的 tag。
 """
 
-import json
-import os
-import sys
-import re
 import bisect
+import os
+import re
+
 import cv2
-import numpy as np
 
-current_dir = os.path.dirname(os.path.abspath(__file__))
-proto_dir = os.path.join(current_dir, "proto")
-sys.path.insert(0, proto_dir)
-
-from dpbag import strip_header
-from dpbag.bag.bag import DpBag
-
-os.environ['DPBAG_DP_USERNAME'] = 'perceptionteam'
-os.environ['DPBAG_DP_PASSWORD'] = 'r6zR86V4*+=*'
-
-try:
-    from drivers.sensor_image_pb2 import CompressedImage
-    from perception.deeproute_perception_obstacle_pb2 import PerceptionObstacles
-except ImportError as e:
-    print(f"Proto import error: {e}")
-    sys.exit(1)
-
-from google.protobuf.json_format import MessageToDict
+from bag_reader import BagReader, CAMERA_NAMES
 
 try:
     from drfile.drfile_client import DrFileClient, ClientConfiguration
@@ -56,24 +37,12 @@ except ImportError:
     print("警告: drfile 模块未安装，config 文件下载功能将不可用")
     DRFILE_AVAILABLE = False
 
-from get_meta_data import get_meta_data
-
 # ============ 配置 ============
 OUTPUT_ROOT = "/mnt/public-data/user/ziroujiang/avp/samples"
 
 PERCEPTIONTEAM_USERNAME = "perceptionteam"
 PERCEPTIONTEAM_PASSWORD = "r6zR86V4*+=*"
 DR_ENDPOINT = os.getenv("DR_ENDPOINT", "https://drplatform-backend.deeproute.cn")
-
-CAMERA_TOPICS = [
-    "/sensors/camera/panoramic_1_raw_data/compressed_proto",
-    "/sensors/camera/panoramic_2_raw_data/compressed_proto",
-    "/sensors/camera/panoramic_3_raw_data/compressed_proto",
-    "/sensors/camera/panoramic_4_raw_data/compressed_proto",
-]
-CAMERA_NAMES = ["panoramic_1", "panoramic_2", "panoramic_3", "panoramic_4"]
-
-CHAOSHENG_TOPIC = "/planner/stop_objects"
 
 # ============ DrFile 客户端（单例） ============
 _dr_client = None
@@ -169,119 +138,41 @@ def ts_us_to_filename(ts_us):
     return f"{sec}_{usec:06d}.jpg"
 
 
-# ============ 核心逻辑 ============
+# ============ 保存逻辑 ============
 
-def scan_ultrasonic_events(light_bags):
+def save_images_to_disk(image_results, output_root):
+    """将 BagReader 返回的内存图像按 AVM 目录结构保存到磁盘。
+
+    返回 per_bag_frames: {heavy_bag: {cam_name: [(timestamp_us, filename), ...]}}
     """
-    从 Light bag 中扫描超声波触发的停车事件，返回:
-      - perception_time_list: 事件时间戳列表
-      - event_light_bags: 包含事件的 Light bag 列表
-    """
-    perception_time_list = []
-    event_light_bags = []
+    per_bag_frames = {}
 
-    for bag_name in light_bags:
-        try:
-            with DpBag(bag=bag_name) as bag:
-                for topic, msg, _ in bag.read_messages(
-                    topics=[CHAOSHENG_TOPIC],
-                    dpbag_name=bag_name,
-                    force_get_data_by_raw=True,
-                ):
-                    obj = PerceptionObstacles()
-                    raw_msg = strip_header(msg.data)
-                    obj.ParseFromString(raw_msg)
-                    per_t = obj.time_measurement
+    for evt_t, cam_dict in image_results.items():
+        for cam_name, info in cam_dict.items():
+            img = info['image']
+            ts_us = info['timestamp_us']
+            src_bag = info['source_bag']
 
-                    has_ultrasonic = False
-                    for item in obj.perception_obstacle:
-                        if hasattr(item, 'DESCRIPTOR'):
-                            data = MessageToDict(item)
-                        else:
-                            data = item
-                        model_type = data.get("modelType", "")
-                        obs_type = data.get("type", "")
-                        sensor_type = data.get("sensorType", "")
-                        if (model_type == 'MODEL_PARKING'
-                                and obs_type == 'PLANNING_STOP_OBSTACLE'
-                                and sensor_type == 'ULTRASONIC'):
-                            has_ultrasonic = True
-                            break
-
-                    if has_ultrasonic:
-                        if bag_name not in event_light_bags:
-                            event_light_bags.append(bag_name)
-                        perception_time_list.append(per_t)
-        except Exception as e:
-            print(f"    [WARN] 跳过 {bag_name}: {e}")
-
-    return perception_time_list, event_light_bags
-
-
-def extract_nearest_frames(heavy_bags, perception_time_list, output_root, yyyymm_map):
-    """
-    跨所有 Heavy bag 全局匹配：为每个超声波事件时间戳找到全局最近邻的 4 路相机图像。
-    返回 per-bag 结构: {heavy_bag: {cam_name: [(timestamp_us, filename), ...]}}
-
-    yyyymm_map: {heavy_bag_name: (bag_prefix, yyyymm)}
-    """
-    per_bag_frames = {hb: {cam: [] for cam in CAMERA_NAMES} for hb in heavy_bags}
-
-    for topic, cam_name in zip(CAMERA_TOPICS, CAMERA_NAMES):
-        print(f"    提取 {cam_name} ...")
-
-        min_diffs = {t: float('inf') for t in perception_time_list}
-        best_data = {t: None for t in perception_time_list}
-
-        for heavy_bag in heavy_bags:
-            try:
-                with DpBag(bag=heavy_bag) as bag:
-                    for _, msg, _ in bag.read_messages(
-                        topics=[topic],
-                        dpbag_name=heavy_bag,
-                        force_get_data_by_raw=True,
-                    ):
-                        obj = CompressedImage()
-                        raw_msg = strip_header(msg.data)
-                        obj.ParseFromString(raw_msg)
-                        ts_us = int(obj.header.timestamp_sec * 1e6)
-
-                        for evt_time in perception_time_list:
-                            diff = abs(ts_us - evt_time)
-                            if diff < min_diffs[evt_time]:
-                                min_diffs[evt_time] = diff
-                                best_data[evt_time] = (ts_us, obj.data, heavy_bag)
-            except Exception as e:
-                print(f"      [WARN] 跳过 {heavy_bag}: {e}")
-
-        saved = set()
-        count = 0
-        for evt_time in perception_time_list:
-            if best_data[evt_time] is None:
-                continue
-            ts_us, img_bytes, src_bag = best_data[evt_time]
-            if ts_us in saved:
-                continue
-            saved.add(ts_us)
-
-            img = cv2.imdecode(
-                np.frombuffer(img_bytes, np.uint8), cv2.IMREAD_COLOR
-            )
             if img is None:
                 continue
 
-            bag_prefix, yyyymm = yyyymm_map[src_bag]
+            bag_prefix = extract_bag_prefix(src_bag)
+            yyyymm = extract_yyyymm(bag_prefix)
+            if not yyyymm:
+                continue
+
             cam_dir = os.path.join(output_root, cam_name, yyyymm, bag_prefix)
             os.makedirs(cam_dir, exist_ok=True)
 
             fname = ts_us_to_filename(ts_us)
             cv2.imwrite(os.path.join(cam_dir, fname), img)
-            per_bag_frames[src_bag][cam_name].append((ts_us, fname))
-            count += 1
 
-        for hb in heavy_bags:
-            per_bag_frames[hb][cam_name].sort(key=lambda x: x[0])
-        print(f"      -> {count} 帧")
+            per_bag_frames.setdefault(src_bag, {cam: [] for cam in CAMERA_NAMES})
+            per_bag_frames[src_bag][cam_name].append((ts_us, fname))
+
+    for bag_data in per_bag_frames.values():
+        for cam_name in CAMERA_NAMES:
+            bag_data[cam_name].sort(key=lambda x: x[0])
 
     return per_bag_frames
 
@@ -321,39 +212,30 @@ def save_data_index(config_dir, camera_frames, bag_prefix):
     print(f"    data_index.csv: {len(ref_frames)} 条记录")
 
 
+# ============ 核心入口 ============
+
 def unpack_tag(tag_id, output_root=OUTPUT_ROOT):
     """根据 tag_id 扫描超声波事件并解包对应的最近邻图像帧。"""
     print(f"\n{'=' * 60}")
     print(f"Tag ID: {tag_id}")
     print(f"{'=' * 60}")
 
-    meta_data = get_meta_data(tag_id=tag_id)
-    if not meta_data:
-        print(f"[ERROR] 获取 meta_data 失败: tag_id={tag_id}")
-        return
+    reader = BagReader(tag_id=tag_id)
+    print(f"Trip ID: {reader.trip_id}")
 
-    trip_id = meta_data['body'][0]['tripId']
-    bag_name_list = meta_data['body'][0]['bagsName']
-    light_bags = sorted([b for b in bag_name_list if 'Light' in b])
-    print(f"Trip ID: {trip_id}")
-
-    # 第一步：从 Light bag 扫描超声波停车事件
-    print(f"\n扫描超声波停车事件 (Light bags: {len(light_bags)}) ...")
-    perception_time_list, event_light_bags = scan_ultrasonic_events(light_bags)
+    # 第一步：扫描超声波停车事件
+    print(f"\n扫描超声波停车事件 (Light bags: {len(reader.all_light_bags)}) ...")
+    perception_time_list, _ = reader.scan_ultrasonic_events()
     print(f"  发现 {len(perception_time_list)} 个超声波停车事件")
 
     if not perception_time_list:
         print("  无超声波事件，跳过")
         return
 
-    # 将有事件的 Light bag 名转为对应的 Heavy bag 名
-    heavy_bags = sorted([b.replace("Light", "Heavy") for b in event_light_bags])
-    print(f"  关联 Heavy bags ({len(heavy_bags)}):")
-
-    # 构建 bag -> (prefix, yyyymm) 映射，并过滤无效 bag
-    yyyymm_map = {}
+    print(f"  关联 Heavy bags ({len(reader.event_heavy_bags)}):")
     valid_heavy_bags = []
-    for heavy_bag in heavy_bags:
+    yyyymm_map = {}
+    for heavy_bag in reader.event_heavy_bags:
         bag_prefix = extract_bag_prefix(heavy_bag)
         yyyymm = extract_yyyymm(bag_prefix)
         if not yyyymm:
@@ -367,7 +249,7 @@ def unpack_tag(tag_id, output_root=OUTPUT_ROOT):
         print("  无有效 Heavy bag，跳过")
         return
 
-    # 第二步：下载配置文件（同一 trip 的 config 相同，每个 bag 目录各存一份）
+    # 第二步：下载配置文件
     if DRFILE_AVAILABLE:
         for heavy_bag in valid_heavy_bags:
             bag_prefix, yyyymm = yyyymm_map[heavy_bag]
@@ -379,21 +261,22 @@ def unpack_tag(tag_id, output_root=OUTPUT_ROOT):
                     print(f"    {bag_prefix}/{cfg_name} 已存在，跳过下载")
                     continue
                 try:
-                    cfg_bytes = download_config_file(trip_id, cfg_name)
+                    cfg_bytes = download_config_file(reader.trip_id, cfg_name)
                     with open(cfg_path, "wb") as f:
                         f.write(cfg_bytes)
                     print(f"    已下载 {bag_prefix}/{cfg_name}")
                 except Exception as e:
                     print(f"    [WARN] 下载 {bag_prefix}/{cfg_name} 失败: {e}")
 
-    # 第三步：跨所有 Heavy bag 全局匹配，提取最近邻图像帧
+    # 第三步：提取最近邻图像帧并保存
     print(f"\n  跨 {len(valid_heavy_bags)} 个 Heavy bag 全局匹配图像帧 ...")
-    per_bag_frames = extract_nearest_frames(
-        valid_heavy_bags, perception_time_list, output_root, yyyymm_map
-    )
+    image_results = reader.extract_nearest_images()
+    per_bag_frames = save_images_to_disk(image_results, output_root)
 
     # 第四步：为每个 bag 目录生成各自的 data_index.csv
     for heavy_bag in valid_heavy_bags:
+        if heavy_bag not in per_bag_frames:
+            continue
         bag_prefix, yyyymm = yyyymm_map[heavy_bag]
         config_dir = os.path.join(output_root, "config", yyyymm, bag_prefix)
         save_data_index(config_dir, per_bag_frames[heavy_bag], bag_prefix)

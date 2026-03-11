@@ -1,3 +1,8 @@
+"""
+⚠️ 已废弃 — 此模块的功能已合并到 bag_reader.py (BagReader 类)。
+保留此文件仅供参考，新代码请直接使用 bag_reader.BagReader。
+"""
+
 import json
 import os
 import sys
