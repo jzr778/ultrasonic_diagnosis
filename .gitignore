@@ -26,18 +26,9 @@ logs/
 # 外部项目解压产物
 # offline_avm_generate_release/
 
-# 运行时生成的图像和数据
-*.jpg
-*.png
-generate/
-read_data/
-get_data/read_data/
-get_data/draw_image/
-result_avm/
+
 
 # 运行时生成的 JSON 数据文件
 get_data/id_mapping.json
-get_data/tag_id_list.json
-get_data/feishu_id_list.json
 get_data/meta_data.json
 offline_avm_generate_release/bag_list.txt
