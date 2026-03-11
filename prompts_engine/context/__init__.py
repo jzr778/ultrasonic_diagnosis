@@ -6,4 +6,4 @@ Context - 上下文构建模块
 
 from .builder import ContextBuilder
 
-__all__ = ["ContextBuilder", "StructuredDataFormatter"]
+__all__ = ["ContextBuilder"]
