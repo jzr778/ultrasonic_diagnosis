@@ -8,7 +8,8 @@ AVP 全流程 Pipeline
   3. unpack_bag_for_avm.py     解包 bag 为鱼眼图输入
   4. save_bag_data.py          准备 read_data (vehicle2sensing / obstacle / pose 等)
   5. run_standalone.sh          拼接鱼眼图
-  6. avp_vlm_pipeline_avm.py   大模型诊断
+  6. avp_vlm_pipeline_avm.py   绘制 AVM 标注图像
+  7. avp_vlm_pipeline_avm.py   大模型诊断
 
 日志自动保存到 logs/pipeline_<时间戳>.log，同时在终端实时输出。
 
@@ -30,14 +31,16 @@ import config
 
 PROJECT_ROOT = str(config.PROJECT_ROOT)
 PYTHON = sys.executable
-TOTAL_STEPS = 6
+TOTAL_STEPS = 7
 
 
 def setup_logging(log_dir):
     """配置日志：同时输出到文件和终端"""
-    os.makedirs(log_dir, exist_ok=True)
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_file = os.path.join(log_dir, f"pipeline_{timestamp}.log")
+    now = datetime.now()
+    date_dir = os.path.join(log_dir, now.strftime("%m%d"))
+    os.makedirs(date_dir, exist_ok=True)
+    timestamp = now.strftime("%Y%m%d_%H%M%S")
+    log_file = os.path.join(date_dir, f"pipeline_{timestamp}.log")
 
     logger = logging.getLogger("pipeline")
     logger.setLevel(logging.INFO)
@@ -224,14 +227,31 @@ def step5_generate_avm(samples_dir, generate_dir):
 
 
 # ── Step 6 ──────────────────────────────────────────────────
-def step6_run_vlm(id_mapping_path, read_data_dir):
-    banner(6, "运行 VLM 大模型诊断")
+def step6_draw_images(id_mapping_path, read_data_dir):
+    banner(6, "绘制 AVM 标注图像")
 
     cmd = [
         PYTHON, os.path.join(PROJECT_ROOT, "vlm", "avp_vlm_pipeline_avm.py"),
         "--id-mapping", id_mapping_path,
         "--data-path", read_data_dir,
+        "--mode", "draw",
     ]
+    run(cmd)
+    log.info(f"  ✅ 绘图完成")
+
+
+# ── Step 7 ──────────────────────────────────────────────────
+def step7_run_vlm(id_mapping_path, read_data_dir, model=None):
+    banner(7, "运行 VLM 大模型诊断")
+
+    cmd = [
+        PYTHON, os.path.join(PROJECT_ROOT, "vlm", "avp_vlm_pipeline_avm.py"),
+        "--id-mapping", id_mapping_path,
+        "--data-path", read_data_dir,
+        "--mode", "diagnose",
+    ]
+    if model:
+        cmd.extend(["--model"] + model)
     run(cmd)
     log.info(f"  ✅ VLM 诊断完成")
 
@@ -253,7 +273,9 @@ def main():
                         default=config.READ_DATA_DIR,
                         help="save_bag_data 输出 / VLM 读取目录")
     parser.add_argument("--skip-steps", nargs="*", type=int, default=[],
-                        help="跳过指定步骤编号 (1-6)，如 --skip-steps 1 2")
+                        help="跳过指定步骤编号 (1-7)，如 --skip-steps 1 2")
+    parser.add_argument("--model", nargs="+", default=["auto"],
+                        help="VLM 模型名称列表，透传给 step7 (默认: auto)")
     parser.add_argument("--log-dir", default=os.path.join(PROJECT_ROOT, "logs"),
                         help="日志输出目录 (默认: logs/)")
     args = parser.parse_args()
@@ -307,9 +329,15 @@ def main():
 
     # Step 6
     if 6 not in skip:
-        step6_run_vlm(id_mapping_path, args.read_data_dir)
+        step6_draw_images(id_mapping_path, args.read_data_dir)
     else:
         log.info(f"[跳过 Step 6]")
+
+    # Step 7
+    if 7 not in skip:
+        step7_run_vlm(id_mapping_path, args.read_data_dir, model=args.model)
+    else:
+        log.info(f"[跳过 Step 7]")
 
     log.info("")
     log.info("=" * 60)

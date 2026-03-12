@@ -15,6 +15,19 @@ if _project_root not in sys.path:
 
 import config
 
+_auto_model_cache = {}
+
+def _resolve_model_name(model, client):
+    """如果 model 为 'auto'，则通过 API 自动获取可用模型名。"""
+    if model != "auto":
+        return model
+    cache_key = (config.VLM_API_KEY, config.VLM_BASE_URL)
+    if cache_key not in _auto_model_cache:
+        models = client.models.list()
+        _auto_model_cache[cache_key] = models.data[0].id
+    return _auto_model_cache[cache_key]
+
+
 def encode_image_to_base64(image_path):
     """将图片转换为base64编码"""
     try:
@@ -73,8 +86,9 @@ def call_qwen_model_with_images(image_list, question, model):
     }]
     # 调用
     try:
+        resolved_model = _resolve_model_name(model, client)
         response = client.chat.completions.create(
-            model=model,
+            model=resolved_model,
             messages=messages,
             temperature=0.1,
         )
