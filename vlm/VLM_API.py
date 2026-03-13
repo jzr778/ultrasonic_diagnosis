@@ -140,18 +140,22 @@ def majority_coordinate_voting_with_empty(results: Dict[str, Dict[str, List]]) -
     return {'positions': majority_coords}
 
 def analyze_scenario_from_images(image_list, prompt, model_list):
+    """调用多个模型分析图像，返回投票结果。
+
+    Returns:
+        成功时返回 {"positions": [...]};
+        全部失败时返回 {"error": "...", "raw_responses": {...}} 供调用方记录日志。
+    """
     results = {}
+    raw_responses = {}
     for model in model_list:
         result = call_qwen_model_with_images(image_list, prompt, model)
-        # 尝试解析JSON结果
+        raw_responses[model] = result
         json_result = None
         try:
-            # 尝试直接解析
             json_result = json.loads(result)
         except (json.JSONDecodeError, TypeError):
-            # 如果直接解析失败，尝试从代码块中提取
             if isinstance(result, str):
-                # 尝试匹配 ```json ... ``` 格式
                 match = re.search(r'```(?:json)?\s*(.*?)\s*```', result, re.DOTALL)
                 if match:
                     try:
@@ -159,9 +163,7 @@ def analyze_scenario_from_images(image_list, prompt, model_list):
                     except json.JSONDecodeError:
                         pass
                 else:
-                    # 尝试匹配纯JSON内容（没有代码块）
                     try:
-                        # 查找可能的JSON开头和结尾
                         json_pattern = r'\{.*\}|\[.*\]'
                         matches = re.findall(json_pattern, result, re.DOTALL)
                         for match in matches:
@@ -173,14 +175,16 @@ def analyze_scenario_from_images(image_list, prompt, model_list):
                     except:
                         pass
 
-        # 存储结果
         if json_result:
             results[model] = json_result
         else:
             results[model] = None
     results = {k: v for k, v in results.items() if v is not None}
     if len(results) == 0:
-        return None
+        failed_details = "; ".join(
+            f"[{m}] {str(r)[:200]}" for m, r in raw_responses.items()
+        )
+        return {"error": failed_details, "raw_responses": raw_responses}
 
     results = majority_coordinate_voting_with_empty(results)
 

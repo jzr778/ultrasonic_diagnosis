@@ -276,9 +276,20 @@ def main():
                         help="跳过指定步骤编号 (1-7)，如 --skip-steps 1 2")
     parser.add_argument("--model", nargs="+", default=["auto"],
                         help="VLM 模型名称列表，透传给 step7 (默认: auto)")
+    parser.add_argument("--list-models", action="store_true",
+                        help="查询并列出所有可用的 VLM 模型，然后退出")
     parser.add_argument("--log-dir", default=os.path.join(PROJECT_ROOT, "logs"),
                         help="日志输出目录 (默认: logs/)")
     args = parser.parse_args()
+
+    if args.list_models:
+        from openai import OpenAI
+        client = OpenAI(api_key=config.VLM_API_KEY, base_url=config.VLM_BASE_URL)
+        models = client.models.list()
+        print("可用模型列表：")
+        for i, m in enumerate(models.data, 1):
+            print(f"  {i}. {m.id}")
+        sys.exit(0)
 
     _, log_file = setup_logging(args.log_dir)
 

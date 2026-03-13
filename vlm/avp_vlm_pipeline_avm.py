@@ -227,13 +227,19 @@ def draw_single_tag(tag_id, args):
 
 
 def diagnose_single_tag(tag_id, feishu_id, args):
-    """处理单个 tag_id 的大模型诊断流程：读取已绘制图像，调用 VLM 分析"""
+    """处理单个 tag_id 的大模型诊断流程：读取已绘制图像，调用 VLM 分析
+
+    Returns:
+        dict: {"misdetected": [...], "normal": [...], "api_error": [...]}
+              每个列表元素为 (tag_id, timestamp) 元组
+    """
+    stats = {"misdetected": [], "normal": [], "api_error": []}
     pre_comment_record = '大模型诊断结果：\n'
     comment_record = ''
     image_save_path = os.path.join(config.DRAW_IMAGE_DIR, str(tag_id))
     if not os.path.isdir(image_save_path):
         logger.warning(f"tag_id {tag_id} 无绘图结果目录，跳过诊断")
-        return
+        return stats
     all_items = sorted(
         [d for d in os.listdir(image_save_path)
          if os.path.isdir(os.path.join(image_save_path, d))],
@@ -273,14 +279,16 @@ def diagnose_single_tag(tag_id, feishu_id, args):
             prompt_config = args.prompt_config
             prompt = prompt_gen(index, prompt_config)
             analysis_result = analyze_scenario_from_images(image_list, prompt, args.model)
-            if analysis_result is None:
-                logger.warning(f"tag {tag_id}，时间戳 {item}: 未从API获取到有效结果")
+            if "error" in analysis_result:
+                logger.warning(f"tag {tag_id}，时间戳 {item}: 未从API获取到有效结果 | {analysis_result['error']}")
+                stats["api_error"].append((tag_id, item))
                 continue
         result = {
             "fs_others": analysis_result['positions'],
             "fs_car": result_fs_car,
         }
         if result_fs_car or analysis_result['positions']:
+            stats["misdetected"].append((tag_id, item))
             save_path = os.path.join(args.output_dir, str(tag_id), item)
             os.makedirs(save_path, exist_ok=True)
             logger.info(f"tag {tag_id}，时间戳 {item} 结果: {result}")
@@ -305,6 +313,8 @@ def diagnose_single_tag(tag_id, feishu_id, args):
                 direction_text = direction_text + 'FS_OTHERS_STATIC误检点相对于车的位置：' + ', '.join(direction)
 
             comment_record = comment_record + '时间戳' + str(item) + ': ' + direction_text + "\n"
+        else:
+            stats["normal"].append((tag_id, item))
     if comment_record:
         comment_record = pre_comment_record + comment_record
         logger.info(f"tag {tag_id} 飞书评论:\n{comment_record}")
@@ -312,12 +322,13 @@ def diagnose_single_tag(tag_id, feishu_id, args):
         test_url = f"https://project.feishu.cn/{config.FEISHU_PROJECT_KEY}/case/detail/{feishu_id}"
         tester.test_comment(test_url, comment_record)
     logger.info(f"tag_id {tag_id} 诊断完成")
+    return stats
 
 
 def process_single_tag(tag_id, feishu_id, args):
     """处理单个 tag_id 的完整流程（绘图 + 诊断）"""
     draw_single_tag(tag_id, args)
-    diagnose_single_tag(tag_id, feishu_id, args)
+    return diagnose_single_tag(tag_id, feishu_id, args)
 
 
 def main():
@@ -374,6 +385,8 @@ def main():
         id_mapping = json.load(f)
     logger.info(f"参数: mode={args.mode}, workers={args.workers}, model={args.model}, tag数量={len(id_mapping)}")
 
+    all_stats = {"misdetected": [], "normal": [], "api_error": []}
+
     with ThreadPoolExecutor(max_workers=args.workers) as executor:
         futures = {}
         for tag_id_str, feishu_id in id_mapping.items():
@@ -389,9 +402,30 @@ def main():
         for future in as_completed(futures):
             tag_id = futures[future]
             try:
-                future.result()
+                result = future.result()
+                if isinstance(result, dict):
+                    for key in all_stats:
+                        all_stats[key].extend(result.get(key, []))
             except Exception as e:
                 logger.error(f"tag_id {tag_id} 处理失败: {e}", exc_info=True)
+
+    if args.mode != "draw":
+        logger.info("")
+        logger.info("=" * 60)
+        logger.info("  诊断结果统计")
+        logger.info("=" * 60)
+        logger.info(f"  有误检: {len(all_stats['misdetected'])} 条")
+        for tag_id, ts in all_stats["misdetected"]:
+            logger.info(f"    tag={tag_id}, ts={ts}")
+        logger.info(f"  无误检（正常）: {len(all_stats['normal'])} 条")
+        for tag_id, ts in all_stats["normal"]:
+            logger.info(f"    tag={tag_id}, ts={ts}")
+        logger.info(f"  API 异常: {len(all_stats['api_error'])} 条")
+        for tag_id, ts in all_stats["api_error"]:
+            logger.info(f"    tag={tag_id}, ts={ts}")
+        total = len(all_stats['misdetected']) + len(all_stats['normal']) + len(all_stats['api_error'])
+        logger.info(f"  总计: {total} 条 (误检 {len(all_stats['misdetected'])} / 正常 {len(all_stats['normal'])} / 异常 {len(all_stats['api_error'])})")
+        logger.info("=" * 60)
 
 
 if __name__ == "__main__":
