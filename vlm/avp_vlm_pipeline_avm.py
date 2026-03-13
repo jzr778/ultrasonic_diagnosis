@@ -12,6 +12,7 @@ AEB LLM标注管道 - 直接从PKL文件提取图像版本
 """
 import json
 import os
+import shutil
 import argparse
 import pandas as pd
 import pickle
@@ -289,13 +290,16 @@ def diagnose_single_tag(tag_id, feishu_id, args):
         }
         if result_fs_car or analysis_result['positions']:
             stats["misdetected"].append((tag_id, item))
-            save_path = os.path.join(args.output_dir, str(tag_id), item)
+            save_path = os.path.join(args.output_dir, "misdetected", str(tag_id), item)
             os.makedirs(save_path, exist_ok=True)
             logger.info(f"tag {tag_id}，时间戳 {item} 结果: {result}")
             analysis_json_path = os.path.join(save_path, "analysis_result.json")
             with open(analysis_json_path, 'w', encoding='utf-8') as f:
                 json.dump(result, f, ensure_ascii=False, indent=2)
-            logger.info(f"tag {tag_id}，时间戳 {item}：分析结果已保存到 {analysis_json_path}")
+            for jpg in os.listdir(item_save_path):
+                if jpg.endswith(".jpg"):
+                    shutil.copy2(os.path.join(item_save_path, jpg), save_path)
+            logger.info(f"tag {tag_id}，时间戳 {item}：分析结果已保存到 {save_path}")
 
             direction_text = ""
             direction = []
@@ -315,6 +319,11 @@ def diagnose_single_tag(tag_id, feishu_id, args):
             comment_record = comment_record + '时间戳' + str(item) + ': ' + direction_text + "\n"
         else:
             stats["normal"].append((tag_id, item))
+            save_path = os.path.join(args.output_dir, "normal", str(tag_id), item)
+            os.makedirs(save_path, exist_ok=True)
+            for jpg in os.listdir(item_save_path):
+                if jpg.endswith(".jpg"):
+                    shutil.copy2(os.path.join(item_save_path, jpg), save_path)
     if comment_record:
         comment_record = pre_comment_record + comment_record
         logger.info(f"tag {tag_id} 飞书评论:\n{comment_record}")
