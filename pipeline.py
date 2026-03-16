@@ -14,7 +14,7 @@ AVP 全流程 Pipeline
 日志自动保存到 logs/pipeline_<时间戳>.log，同时在终端实时输出。
 
 用法:
-  python pipeline.py -p iffcom -v U9zPLpFvR
+  python pipeline.py -p iffcom -v U9zPLpFvR --model gemini-3-pro-preview
   python pipeline.py -p iffcom -v U9zPLpFvR --skip-steps 1 2
   python pipeline.py -p iffcom -v U9zPLpFvR --log-dir my_logs
 """
@@ -278,6 +278,9 @@ def main():
                         help="VLM 模型名称列表，透传给 step7 (默认: auto)")
     parser.add_argument("--list-models", action="store_true",
                         help="查询并列出所有可用的 VLM 模型，然后退出")
+    parser.add_argument("--id-mapping",
+                        default=os.path.join(PROJECT_ROOT, "get_data", "id_mapping.json"),
+                        help="tag_id → feishu_id 映射文件 (默认: get_data/id_mapping.json)")
     parser.add_argument("--log-dir", default=os.path.join(PROJECT_ROOT, "logs"),
                         help="日志输出目录 (默认: logs/)")
     args = parser.parse_args()
@@ -293,7 +296,7 @@ def main():
 
     _, log_file = setup_logging(args.log_dir)
 
-    id_mapping_path = os.path.join(PROJECT_ROOT, "get_data", "id_mapping.json")
+    id_mapping_path = args.id_mapping
     bag_list_path = os.path.join(PROJECT_ROOT, "offline_avm_generate_release", "bag_list.txt")
 
     skip = set(args.skip_steps)

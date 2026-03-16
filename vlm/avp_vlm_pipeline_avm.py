@@ -138,13 +138,20 @@ def get_direction_from_position(target_x: int, target_y: int,
 
 
 def draw_single_tag(tag_id, args):
-    """处理单个 tag_id 的绘图流程：生成 AVM 标注图像及中间数据"""
+    """处理单个 tag_id 的绘图流程：生成 AVM 标注图像及中间数据。
+
+    Returns:
+        dict: 包含以下可能的 key（互斥，每次只出现一组）:
+            - missing_files: [(tag_id, [缺失文件列表])]
+            - no_ultrasonic: [tag_id]
+            - draw_success:  [tag_id]
+    """
     data_path = os.path.join(args.data_path, str(tag_id))
     required_files = ['vehicle2sensing.json', 'ground.json', 'cameras_parameters.json', 'car_config.json']
     missing = [f for f in required_files if not os.path.exists(os.path.join(data_path, f))]
     if missing:
-        logger.warning(f"tag_id {tag_id} 缺少文件 {missing}，跳过绘图")
-        return
+        logger.warning(f"[绘图] tag={tag_id} 缺少配置文件 {missing}，跳过")
+        return {"missing_files": [(tag_id, missing)]}
     with open(data_path + '/vehicle2sensing.json', 'r', encoding='utf-8') as f:
         vehicle2sensing = json.load(f)
     with open(data_path + '/ground.json', 'r', encoding='utf-8') as f:
@@ -163,6 +170,9 @@ def draw_single_tag(tag_id, args):
         if os.path.isdir(item_path):
             folders.append(item)
     all_items = sorted(folders, key=lambda x: int(x))
+    if not all_items:
+        logger.info(f"[绘图] tag={tag_id} 无时间戳目录（无超声波事件），跳过")
+        return {"no_ultrasonic": [tag_id]}
     avm_path_list = {}
     meta_data = get_meta_data(tag_id=tag_id)
     bag_list = meta_data['body'][0]['bagsName']
@@ -185,7 +195,7 @@ def draw_single_tag(tag_id, args):
         avm_path_list[ts] = matched_file
     image_save_path = os.path.join(config.DRAW_IMAGE_DIR, str(tag_id))
     for item in all_items:
-        logger.info(f"{tag_id}***绘图***{item}")
+        logger.info(f"[绘图] tag={tag_id}, ts={item}")
         item_path = os.path.join(data_path, item)
         item_save_path = os.path.join(image_save_path, item)
         with open(item_path + '/chaosheng.json', 'r', encoding='utf-8') as f:
@@ -224,22 +234,29 @@ def draw_single_tag(tag_id, args):
                 json.dump(box_list, f, indent=2)
             with open(item_save_path + "/point_list_avm.json", 'w', encoding='utf-8') as f:
                 json.dump(point_list, f, indent=2)
-    logger.info(f"tag_id {tag_id} 绘图完成")
+        else:
+            logger.warning(f"[绘图] tag={tag_id}, ts={item} 未匹配到 AVM 图像文件，跳过")
+    logger.info(f"[绘图] tag={tag_id} 完成，共 {len(all_items)} 个时间戳")
+    return {"draw_success": [tag_id]}
 
 
 def diagnose_single_tag(tag_id, feishu_id, args):
     """处理单个 tag_id 的大模型诊断流程：读取已绘制图像，调用 VLM 分析
 
     Returns:
-        dict: {"misdetected": [...], "normal": [...], "api_error": [...]}
-              每个列表元素为 (tag_id, timestamp) 元组
+        dict: 包含以下 key:
+            - no_draw_output: [tag_id]          （无绘图结果时）
+            - misdetected:    [(tag_id, ts)]     （检测到误检的时间戳）
+            - normal:         [(tag_id, ts)]     （正常的时间戳）
+            - api_error:      [(tag_id, ts)]     （API 调用失败的时间戳）
     """
     stats = {"misdetected": [], "normal": [], "api_error": []}
     pre_comment_record = '大模型诊断结果：\n'
     comment_record = ''
     image_save_path = os.path.join(config.DRAW_IMAGE_DIR, str(tag_id))
     if not os.path.isdir(image_save_path):
-        logger.warning(f"tag_id {tag_id} 无绘图结果目录，跳过诊断")
+        logger.warning(f"[诊断] tag={tag_id} 无绘图结果目录，跳过")
+        stats["no_draw_output"] = [tag_id]
         return stats
     all_items = sorted(
         [d for d in os.listdir(image_save_path)
@@ -253,9 +270,9 @@ def diagnose_single_tag(tag_id, feishu_id, args):
         box_list_path = os.path.join(item_save_path, "box_list_avm.json")
         point_list_path = os.path.join(item_save_path, "point_list_avm.json")
         if not os.path.isfile(index_path) or not os.path.isfile(avm_img_path):
-            logger.warning(f"tag {tag_id}，时间戳 {item}: 缺少绘图输出，跳过")
+            logger.warning(f"[诊断] tag={tag_id}, ts={item} 缺少绘图输出，跳过")
             continue
-        logger.info(f"{tag_id}***诊断***{item}")
+        logger.info(f"[诊断] tag={tag_id}, ts={item}")
         with open(index_path, 'r', encoding='utf-8') as f:
             index = json.load(f)
         result_fs_car = []
@@ -270,7 +287,7 @@ def diagnose_single_tag(tag_id, feishu_id, args):
                 if max_distance > 8:
                     result_fs_car.append([center_point[0], center_point[1]])
         if result_fs_car:
-            logger.info(f"tag {tag_id} fs_car误检: {result_fs_car}")
+            logger.info(f"[诊断] tag={tag_id}, ts={item} fs_car误检: {result_fs_car}")
         if len(index.get('avm', [])) == 0:
             analysis_result = {'positions': []}
         else:
@@ -281,7 +298,7 @@ def diagnose_single_tag(tag_id, feishu_id, args):
             prompt = prompt_gen(index, prompt_config)
             analysis_result = analyze_scenario_from_images(image_list, prompt, args.model)
             if "error" in analysis_result:
-                logger.warning(f"tag {tag_id}，时间戳 {item}: 未从API获取到有效结果 | {analysis_result['error']}")
+                logger.warning(f"[诊断] tag={tag_id}, ts={item} API 返回异常: {analysis_result['error']}")
                 stats["api_error"].append((tag_id, item))
                 continue
         result = {
@@ -292,14 +309,14 @@ def diagnose_single_tag(tag_id, feishu_id, args):
             stats["misdetected"].append((tag_id, item))
             save_path = os.path.join(args.output_dir, "misdetected", str(tag_id), item)
             os.makedirs(save_path, exist_ok=True)
-            logger.info(f"tag {tag_id}，时间戳 {item} 结果: {result}")
+            logger.info(f"[诊断] tag={tag_id}, ts={item} 误检结果: {result}")
             analysis_json_path = os.path.join(save_path, "analysis_result.json")
             with open(analysis_json_path, 'w', encoding='utf-8') as f:
                 json.dump(result, f, ensure_ascii=False, indent=2)
             for jpg in os.listdir(item_save_path):
                 if jpg.endswith(".jpg"):
                     shutil.copy2(os.path.join(item_save_path, jpg), save_path)
-            logger.info(f"tag {tag_id}，时间戳 {item}：分析结果已保存到 {save_path}")
+            logger.info(f"[诊断] tag={tag_id}, ts={item} 结果已保存 → {save_path}")
 
             direction_text = ""
             direction = []
@@ -326,18 +343,21 @@ def diagnose_single_tag(tag_id, feishu_id, args):
                     shutil.copy2(os.path.join(item_save_path, jpg), save_path)
     if comment_record:
         comment_record = pre_comment_record + comment_record
-        logger.info(f"tag {tag_id} 飞书评论:\n{comment_record}")
-        tester = FeishuCommentTester()
-        test_url = f"https://project.feishu.cn/{config.FEISHU_PROJECT_KEY}/case/detail/{feishu_id}"
-        tester.test_comment(test_url, comment_record)
-    logger.info(f"tag_id {tag_id} 诊断完成")
+        logger.info(f"[诊断] tag={tag_id} 飞书评论:\n{comment_record}")
+        # tester = FeishuCommentTester()
+        # test_url = f"https://project.feishu.cn/{config.FEISHU_PROJECT_KEY}/case/detail/{feishu_id}"
+        # tester.test_comment(test_url, comment_record)
+    logger.info(f"[诊断] tag={tag_id} 完成 (误检={len(stats['misdetected'])}, 正常={len(stats['normal'])}, API异常={len(stats['api_error'])})")
     return stats
 
 
 def process_single_tag(tag_id, feishu_id, args):
-    """处理单个 tag_id 的完整流程（绘图 + 诊断）"""
-    draw_single_tag(tag_id, args)
-    return diagnose_single_tag(tag_id, feishu_id, args)
+    """处理单个 tag_id 的完整流程（绘图 + 按需诊断）"""
+    draw_result = draw_single_tag(tag_id, args)
+    if "draw_success" not in draw_result:
+        return draw_result
+    diagnose_result = diagnose_single_tag(tag_id, feishu_id, args)
+    return {**draw_result, **diagnose_result}
 
 
 def main():
@@ -392,9 +412,20 @@ def main():
 
     with open(args.id_mapping, "r", encoding="utf-8") as f:
         id_mapping = json.load(f)
-    logger.info(f"参数: mode={args.mode}, workers={args.workers}, model={args.model}, tag数量={len(id_mapping)}")
 
-    all_stats = {"misdetected": [], "normal": [], "api_error": []}
+    total_tags = len(id_mapping)
+    logger.info(f"参数: mode={args.mode}, workers={args.workers}, model={args.model}, tag数量={total_tags}")
+
+    all_stats = {
+        "missing_files":   [],   # [(tag_id, [缺失文件])]
+        "no_ultrasonic":   [],   # [tag_id]
+        "draw_success":    [],   # [tag_id]
+        "no_draw_output":  [],   # [tag_id]
+        "misdetected":     [],   # [(tag_id, ts)]
+        "normal":          [],   # [(tag_id, ts)]
+        "api_error":       [],   # [(tag_id, ts)]
+        "exception":       [],   # [(tag_id, error_msg)]
+    }
 
     with ThreadPoolExecutor(max_workers=args.workers) as executor:
         futures = {}
@@ -416,26 +447,105 @@ def main():
                     for key in all_stats:
                         all_stats[key].extend(result.get(key, []))
             except Exception as e:
-                logger.error(f"tag_id {tag_id} 处理失败: {e}", exc_info=True)
+                logger.error(f"[异常] tag={tag_id} 处理失败: {e}", exc_info=True)
+                all_stats["exception"].append((tag_id, str(e)))
 
-    if args.mode != "draw":
+    _print_summary(logger, args.mode, total_tags, all_stats)
+
+
+def _print_summary(logger, mode, total_tags, stats):
+    """输出格式化的结果汇总。"""
+    W = 64
+    SEP = "=" * W
+    THIN = "-" * W
+
+    logger.info("")
+    logger.info(SEP)
+    logger.info("  VLM Pipeline 结果汇总")
+    logger.info(SEP)
+    logger.info(f"  输入 tag 总数: {total_tags}")
+    logger.info("")
+
+    # ── 绘图阶段 ──
+    if mode in ("draw", "all"):
+        logger.info(f"  {'── 绘图阶段 ──':─<{W - 4}}")
         logger.info("")
-        logger.info("=" * 60)
-        logger.info("  诊断结果统计")
-        logger.info("=" * 60)
-        logger.info(f"  有误检: {len(all_stats['misdetected'])} 条")
-        for tag_id, ts in all_stats["misdetected"]:
+
+        n_missing = len(stats["missing_files"])
+        n_no_us = len(stats["no_ultrasonic"])
+        n_draw_ok = len(stats["draw_success"])
+        logger.info(f"  缺少配置文件:   {n_missing} 个 tag")
+        for tag_id, missing in stats["missing_files"]:
+            logger.info(f"    tag={tag_id}  缺少: {', '.join(missing)}")
+        logger.info(f"  无超声波事件:   {n_no_us} 个 tag")
+        for tag_id in stats["no_ultrasonic"]:
+            logger.info(f"    tag={tag_id}")
+        logger.info(f"  绘图成功:       {n_draw_ok} 个 tag")
+        logger.info("")
+
+    # ── 诊断阶段 ──
+    if mode in ("diagnose", "all"):
+        logger.info(f"  {'── 诊断阶段 ──':─<{W - 4}}")
+        logger.info("")
+
+        n_no_draw = len(stats["no_draw_output"])
+        if n_no_draw:
+            logger.info(f"  无绘图结果:     {n_no_draw} 个 tag")
+            for tag_id in stats["no_draw_output"]:
+                logger.info(f"    tag={tag_id}")
+
+        n_misdet = len(stats["misdetected"])
+        n_normal = len(stats["normal"])
+        n_api_err = len(stats["api_error"])
+        tags_misdet = sorted(set(t for t, _ in stats["misdetected"]))
+        tags_normal = sorted(set(t for t, _ in stats["normal"]))
+
+        logger.info(f"  检测到误检:     {n_misdet} 条 ({len(tags_misdet)} 个 tag)")
+        for tag_id, ts in stats["misdetected"]:
             logger.info(f"    tag={tag_id}, ts={ts}")
-        logger.info(f"  无误检（正常）: {len(all_stats['normal'])} 条")
-        for tag_id, ts in all_stats["normal"]:
+        logger.info(f"  检测正常:       {n_normal} 条 ({len(tags_normal)} 个 tag)")
+        for tag_id, ts in stats["normal"]:
             logger.info(f"    tag={tag_id}, ts={ts}")
-        logger.info(f"  API 异常: {len(all_stats['api_error'])} 条")
-        for tag_id, ts in all_stats["api_error"]:
+        logger.info(f"  API 异常:       {n_api_err} 条")
+        for tag_id, ts in stats["api_error"]:
             logger.info(f"    tag={tag_id}, ts={ts}")
-        total = len(all_stats['misdetected']) + len(all_stats['normal']) + len(all_stats['api_error'])
-        logger.info(f"  总计: {total} 条 (误检 {len(all_stats['misdetected'])} / 正常 {len(all_stats['normal'])} / 异常 {len(all_stats['api_error'])})")
-        logger.info("=" * 60)
+        logger.info("")
+
+    # ── 异常 ──
+    n_exc = len(stats["exception"])
+    if n_exc:
+        logger.info(f"  {'── 运行异常 ──':─<{W - 4}}")
+        logger.info("")
+        logger.info(f"  处理异常:       {n_exc} 个 tag")
+        for tag_id, err in stats["exception"]:
+            logger.error(f"    tag={tag_id}  错误: {err}")
+        logger.info("")
+
+    # ── 总计 ──
+    logger.info(THIN)
+    if mode in ("draw", "all"):
+        n_missing = len(stats["missing_files"])
+        n_no_us = len(stats["no_ultrasonic"])
+        n_draw_ok = len(stats["draw_success"])
+        logger.info(f"  绘图: 成功 {n_draw_ok} / 缺文件 {n_missing} / 无超声 {n_no_us}")
+    if mode in ("diagnose", "all"):
+        n_misdet = len(stats["misdetected"])
+        n_normal = len(stats["normal"])
+        n_api_err = len(stats["api_error"])
+        n_ts_total = n_misdet + n_normal + n_api_err
+        logger.info(f"  诊断: 共 {n_ts_total} 条 (误检 {n_misdet} / 正常 {n_normal} / API异常 {n_api_err})")
+    n_exc = len(stats["exception"])
+    if n_exc:
+        logger.info(f"  异常: {n_exc} 个 tag")
+    logger.info(SEP)
 
 
 if __name__ == "__main__":
+    # import sys
+    # sys.argv = [
+    #     "avp_vlm_pipeline_avm.py",
+    #     "--id-mapping", os.path.join(str(config.PROJECT_ROOT), "get_data", "liuyi_benchmark.json"),
+    #     "--model", "gemini-3-pro-preview",
+    #     "--mode", "diagnose",
+    # ]
     main()

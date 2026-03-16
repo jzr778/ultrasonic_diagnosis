@@ -45,6 +45,31 @@ def save_data(tag_id, output_root=None):
         json.dump(reader.meta_data, f, ensure_ascii=False, indent=2)
     print("meta_data")
 
+    # ── 通过 API 获取配置数据（不依赖超声波事件，始终下载） ──
+    trip_id = reader.trip_id
+
+    vehicle2sensing = get_vehicle2sensing(trip_id)
+    with open(os.path.join(data_path, 'vehicle2sensing.json'), 'w', encoding='utf-8') as f:
+        json.dump(vehicle2sensing, f, ensure_ascii=False, indent=2)
+    print("vehicle2sensing")
+
+    car_cfg = get_car_config(trip_id)
+    with open(os.path.join(data_path, 'car_config.json'), 'w', encoding='utf-8') as f:
+        json.dump(car_cfg, f, ensure_ascii=False, indent=2)
+    print("car_config")
+
+    ground = get_ground(trip_id=trip_id)
+    with open(os.path.join(data_path, 'ground.json'), 'w', encoding='utf-8') as f:
+        json.dump(ground, f, ensure_ascii=False, indent=2)
+    print("ground")
+
+    cameras_parameters = get_camera_engine_parameters(trip_id=trip_id)
+    cameras_parameters = cameras_parameters.decode('utf-8').splitlines()
+    with open(os.path.join(data_path, 'cameras_parameters.json'), 'w', encoding='utf-8') as f:
+        json.dump(cameras_parameters, f, ensure_ascii=False, indent=2)
+    print("cameras_parameters")
+
+    # ── 提取超声波相关 bag 数据 ──
     reader.scan_ultrasonic_events()
 
     if not reader.perception_time_list:
@@ -86,31 +111,6 @@ def save_data(tag_id, output_root=None):
         with open(path, 'w', encoding='utf-8') as f:
             json.dump(plan_data, f, indent=2, ensure_ascii=False)
     print("plan_data")
-
-    # ── 通过 API 获取配置数据 ──
-    trip_id = reader.trip_id
-
-    vehicle2sensing = get_vehicle2sensing(trip_id)
-    with open(os.path.join(data_path, 'vehicle2sensing.json'), 'w', encoding='utf-8') as f:
-        json.dump(vehicle2sensing, f, ensure_ascii=False, indent=2)
-    print("vehicle2sensing")
-
-    car_cfg = get_car_config(trip_id)
-    with open(os.path.join(data_path, 'car_config.json'), 'w', encoding='utf-8') as f:
-        json.dump(car_cfg, f, ensure_ascii=False, indent=2)
-    print("car_config")
-
-    ground = get_ground(trip_id=trip_id)
-    with open(os.path.join(data_path, 'ground.json'), 'w', encoding='utf-8') as f:
-        json.dump(ground, f, ensure_ascii=False, indent=2)
-    print("ground")
-
-    cameras_parameters = get_camera_engine_parameters(trip_id=trip_id)
-    cameras_parameters = cameras_parameters.decode('utf-8').splitlines()
-    with open(os.path.join(data_path, 'cameras_parameters.json'), 'w', encoding='utf-8') as f:
-        json.dump(cameras_parameters, f, ensure_ascii=False, indent=2)
-    print("cameras_parameters")
-
 
 if __name__ == "__main__":
     tag_id_list = [
