@@ -30,7 +30,7 @@ if _project_root not in sys.path:
 
 import config
 from vlm.panoramic_projector import PanoramicProjector
-from vlm.point2box_mindistance_avm import get_max_distance_for_segment, calculate_segment_center
+
 from vlm.VLM_API import analyze_scenario_from_images
 from get_data.get_meta_data import get_meta_data
 from prompts_engine.prompt_gen import prompt_gen
@@ -227,15 +227,6 @@ def draw_single_tag(tag_id, args):
             cv2.imwrite(item_save_path + '/avm.jpg', bev_img_with_obstacles)
             with open(item_save_path + "/index_avm.json", 'w', encoding='utf-8') as f:
                 json.dump(index, f, indent=2)
-            bev_img_with_fs_car, box_list, point_list = projector.draw_fs_car_on_bev(
-                avm_image, obstacle, chaosheng, ground, focal_length, camera_height, planning_point,
-                chaosheng_pixel_radius=50
-            )
-            cv2.imwrite(item_save_path + '/avm_fs_car.jpg', bev_img_with_fs_car)
-            with open(item_save_path + "/box_list_avm.json", 'w', encoding='utf-8') as f:
-                json.dump(box_list, f, indent=2)
-            with open(item_save_path + "/point_list_avm.json", 'w', encoding='utf-8') as f:
-                json.dump(point_list, f, indent=2)
         else:
             logger.warning(f"[绘图] tag={tag_id}, ts={item} 未匹配到 AVM 图像文件，跳过")
     logger.info(f"[绘图] tag={tag_id} 完成，共 {len(all_items)} 个时间戳")
@@ -269,27 +260,12 @@ def diagnose_single_tag(tag_id, feishu_id, args):
         item_save_path = os.path.join(image_save_path, item)
         index_path = os.path.join(item_save_path, "index_avm.json")
         avm_img_path = os.path.join(item_save_path, "avm.jpg")
-        box_list_path = os.path.join(item_save_path, "box_list_avm.json")
-        point_list_path = os.path.join(item_save_path, "point_list_avm.json")
         if not os.path.isfile(index_path) or not os.path.isfile(avm_img_path):
             logger.warning(f"[诊断] tag={tag_id}, ts={item} 缺少绘图输出，跳过")
             continue
         logger.info(f"[诊断] tag={tag_id}, ts={item}")
         with open(index_path, 'r', encoding='utf-8') as f:
             index = json.load(f)
-        result_fs_car = []
-        if os.path.isfile(box_list_path) and os.path.isfile(point_list_path):
-            with open(box_list_path, 'r', encoding='utf-8') as f:
-                box_list = json.load(f)
-            with open(point_list_path, 'r', encoding='utf-8') as f:
-                point_list = json.load(f)
-            for segment_points in point_list:
-                max_distance = get_max_distance_for_segment(segment_points, box_list)
-                center_point = calculate_segment_center(segment_points)
-                if max_distance > 8:
-                    result_fs_car.append([center_point[0], center_point[1]])
-        if result_fs_car:
-            logger.info(f"[诊断] tag={tag_id}, ts={item} fs_car误检: {result_fs_car}")
         if len(index.get('avm', [])) == 0:
             analysis_result = {'positions': []}
         else:
@@ -303,11 +279,8 @@ def diagnose_single_tag(tag_id, feishu_id, args):
                 logger.warning(f"[诊断] tag={tag_id}, ts={item} API 返回异常: {analysis_result['error']}")
                 stats["api_error"].append((tag_id, item))
                 continue
-        result = {
-            "fs_others": analysis_result['positions'],
-            "fs_car": result_fs_car,
-        }
-        if result_fs_car or analysis_result['positions']:
+        result = {"positions": analysis_result['positions']}
+        if analysis_result['positions']:
             stats["misdetected"].append((tag_id, item))
             save_path = os.path.join(args.output_dir, "misdetected", str(tag_id), item)
             os.makedirs(save_path, exist_ok=True)
@@ -322,18 +295,11 @@ def diagnose_single_tag(tag_id, feishu_id, args):
 
             direction_text = ""
             direction = []
-            for coor in result_fs_car:
-                d = get_direction_from_position(int(coor[0]), int(coor[1]))
-                direction.append(d)
-            if direction:
-                direction_text = direction_text + 'FS_CAR误检点相对于车的位置：' + ', '.join(direction) + " "
-
-            direction = []
             for coor in analysis_result['positions']:
                 d = get_direction_from_position(int(coor[0]), int(coor[1]))
                 direction.append(d)
             if direction:
-                direction_text = direction_text + 'FS_OTHERS_STATIC误检点相对于车的位置：' + ', '.join(direction)
+                direction_text = '误检点相对于车的位置：' + ', '.join(direction)
 
             comment_record = comment_record + '时间戳' + str(item) + ': ' + direction_text + "\n"
         else:

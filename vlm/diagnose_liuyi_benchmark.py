@@ -4,9 +4,7 @@
 数据目录结构（与 draw_image 一致）:
   liuyi_benchmark/{tag_id}/{timestamp}/
     ├── avm.jpg
-    ├── index_avm.json
-    ├── box_list_avm.json
-    └── point_list_avm.json
+    └── index_avm.json
 
 用法:
   python vlm/diagnose_liuyi_benchmark.py
@@ -29,7 +27,6 @@ if _project_root not in sys.path:
     sys.path.insert(0, _project_root)
 
 import config
-from vlm.point2box_mindistance_avm import get_max_distance_for_segment, calculate_segment_center
 from vlm.VLM_API import analyze_scenario_from_images
 from vlm.avp_vlm_pipeline_avm import get_direction_from_position
 from prompts_engine.prompt_gen import prompt_gen
@@ -87,8 +84,6 @@ def diagnose_single_tag(tag_id, args):
         item_path = os.path.join(tag_dir, item)
         index_path = os.path.join(item_path, "index_avm.json")
         avm_img_path = os.path.join(item_path, "avm.jpg")
-        box_list_path = os.path.join(item_path, "box_list_avm.json")
-        point_list_path = os.path.join(item_path, "point_list_avm.json")
 
         if not os.path.isfile(avm_img_path):
             logger.warning(f"[诊断] tag={tag_id}, ts={item} 缺少 avm.jpg，跳过")
@@ -102,22 +97,6 @@ def diagnose_single_tag(tag_id, args):
         with open(index_path, 'r', encoding='utf-8') as f:
             index = json.load(f)
 
-        # ── FS_CAR 检测 ──
-        result_fs_car = []
-        if os.path.isfile(box_list_path) and os.path.isfile(point_list_path):
-            with open(box_list_path, 'r', encoding='utf-8') as f:
-                box_list = json.load(f)
-            with open(point_list_path, 'r', encoding='utf-8') as f:
-                point_list = json.load(f)
-            for segment_points in point_list:
-                max_distance = get_max_distance_for_segment(segment_points, box_list)
-                center_point = calculate_segment_center(segment_points)
-                if max_distance > 8:
-                    result_fs_car.append([center_point[0], center_point[1]])
-        if result_fs_car:
-            logger.info(f"[诊断] tag={tag_id}, ts={item} fs_car误检: {result_fs_car}")
-
-        # ── VLM 大模型检测 ──
         if len(index.get('avm', [])) == 0:
             analysis_result = {'positions': []}
         else:
@@ -131,12 +110,9 @@ def diagnose_single_tag(tag_id, args):
                 stats["api_error"].append((tag_id, item))
                 continue
 
-        result = {
-            "fs_others": analysis_result['positions'],
-            "fs_car": result_fs_car,
-        }
+        result = {"positions": analysis_result['positions']}
 
-        if result_fs_car or analysis_result['positions']:
+        if analysis_result['positions']:
             stats["misdetected"].append((tag_id, item))
             save_path = os.path.join(args.output_dir, "misdetected", str(tag_id), item)
             os.makedirs(save_path, exist_ok=True)
@@ -149,14 +125,9 @@ def diagnose_single_tag(tag_id, args):
                     shutil.copy2(os.path.join(item_path, jpg), save_path)
             logger.info(f"[诊断] tag={tag_id}, ts={item} 结果已保存 → {save_path}")
 
-            direction_parts = []
-            car_dirs = [get_direction_from_position(int(c[0]), int(c[1])) for c in result_fs_car]
-            if car_dirs:
-                direction_parts.append(f"FS_CAR: {', '.join(car_dirs)}")
-            other_dirs = [get_direction_from_position(int(c[0]), int(c[1])) for c in analysis_result['positions']]
-            if other_dirs:
-                direction_parts.append(f"FS_OTHERS_STATIC: {', '.join(other_dirs)}")
-            comment_record += f"  ts={item}: {' | '.join(direction_parts)}\n"
+            directions = [get_direction_from_position(int(c[0]), int(c[1])) for c in analysis_result['positions']]
+            if directions:
+                comment_record += f"  ts={item}: 误检点相对于车的位置: {', '.join(directions)}\n"
         else:
             stats["normal"].append((tag_id, item))
             save_path = os.path.join(args.output_dir, "normal", str(tag_id), item)

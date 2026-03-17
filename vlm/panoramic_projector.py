@@ -629,319 +629,53 @@ class PanoramicProjector:
 
         pos = []
         for obstacle in chaosheng:
-            ULTRASONIC_type = obstacle.get("freespaceType", "")
             color = (0, 0, 255)
-            if ULTRASONIC_type != "FS_CAR":
-                # 获取polygon_area
-                polygon_area = obstacle.get("polygonArea", {}).get("point", [])
-                if polygon_area is None or len(polygon_area) == 0:
-                    continue
+            polygon_area = obstacle.get("polygonArea", {}).get("point", [])
+            if polygon_area is None or len(polygon_area) == 0:
+                continue
 
-                # 提取所有点的坐标
-                points_3d = []
-                for point in polygon_area:
-                    x = point.get('x', 0)
-                    y = point.get('y', 0)
-                    z = point.get('z', 0)
-                    points_3d.append([x, y, z])
+            points_3d = []
+            for point in polygon_area:
+                x = point.get('x', 0)
+                y = point.get('y', 0)
+                z = point.get('z', 0)
+                points_3d.append([x, y, z])
 
-                points_3d = np.array(points_3d, dtype=np.float32)
+            points_3d = np.array(points_3d, dtype=np.float32)
+            if len(points_3d) == 0:
+                continue
 
-                if len(points_3d) == 0:
-                    continue
-
-                # 转换到图像坐标系
-                try:
-                    points_2d = self.transform_sensor_to_avm_image(
-                        points_3d,
-                        ground_param,
-                        virtual_camera_focal_length=virtual_camera_focal_length,
-                        virtual_camera_height=virtual_camera_height,
-                        image_height=image_height,
-                        image_width=image_width
-                    )
-                except Exception as e:
-                    print(f"Warning: Failed to transform points for obstacle {obstacle.get('id', 'unknown')}: {e}")
-                    continue
-                points_2d_int = points_2d.astype(np.int32)
-                valid_points = points_2d_int[:-1] if len(points_2d_int) > 1 and np.array_equal(points_2d_int[0], points_2d_int[-1]) else points_2d_int
-
-                if len(valid_points) >= 2:
-                    for i in range(len(valid_points) - 1):
-                        pt1 = tuple(valid_points[i])
-                        pt2 = tuple(valid_points[i + 1])
-                        u1, v1 = int(pt1[0]), int(pt1[1])
-                        u2, v2 = int(pt2[0]), int(pt2[1])
-                        if 0 <= u1 < image_width and 0 <= v1 < image_height:
-                            cv2.circle(image_out, (u1, v1), 2, color, -1)
-                        if 0 <= u2 < image_width and 0 <= v2 < image_height:
-                            cv2.circle(image_out, (u2, v2), 2, color, -1)
-                        cv2.line(image_out, (u1, v1), (u2, v2), color, 2)
-
-                    center = np.mean(valid_points, axis=0)
-                    pos.append([int(center[0]), int(center[1])])
-
-        return image_out, pos
-
-    def draw_fs_car_on_bev(self, image, obstacles, chaosheng, ground_param, virtual_camera_focal_length, virtual_camera_height,
-                           planning_point, chaosheng_pixel_radius=None):
-        """
-        在BEV图像上绘制障碍物的polygon
-
-        Args:
-            image: 输入BEV图像 (H, W, 3)
-            obstacles: 障碍物列表
-            ground_param: 地面参数
-            virtual_camera_focal_length: 虚拟相机焦距
-            virtual_camera_height: 虚拟相机高度
-            chaosheng_pixel_radius: 若非 None，仅绘制质心在超声障碍图像中心 <= 该像素距离内的相机障碍物
-
-        Returns:
-            绘制了障碍物的图像
-        """
-        image_out = image.copy()
-        image_height, image_width = image.shape[:2]
-        # 画planing
-        if len(planning_point) > 0:
-            planning_point = np.array(planning_point, dtype=np.float32)
-            # 转换到图像坐标系
-            planning_point = self.transform_sensor_to_avm_image(
-                planning_point,
-                ground_param,
-                virtual_camera_focal_length=virtual_camera_focal_length,
-                virtual_camera_height=virtual_camera_height,
-                image_height=image_height,
-                image_width=image_width
-            )
-            # 初始化
-            transformed_tail_points = planning_point
-            start = transformed_tail_points[0]
-            end = transformed_tail_points[-1]
-            if end[1] - start[1] >= 5.0:
-                # 使用抗锯齿线绘制
-                for i in range(len(transformed_tail_points) - 1):
-                    p1 = transformed_tail_points[i]
-                    p2 = transformed_tail_points[i + 1]
-                    cv2.line(image_out,
-                             (int(p1[0]), int(p1[1])),
-                             (int(p2[0]), int(p2[1])),
-                             color=(255, 255, 255),
-                             thickness=2)
-                # 获取最后两个点
-                p1 = transformed_tail_points[-2]  # 倒数第二个点
-                p2 = transformed_tail_points[-1]  # 最后一个点（终点）
-
-                # 计算方向向量
-                dx = p2[0] - p1[0]
-                dy = p2[1] - p1[1]
-
-                # 计算方向角度
-                angle = math.atan2(dy, dx)
-
-                # 计算箭头端点位置
-                arrow_tip = (int(p2[0]), int(p2[1]))
-
-                # 箭头左侧点
-                arrow_length = 5
-                left_angle = angle + math.pi * 0.75  # 135度
-                left_point = (
-                    int(p2[0] + arrow_length * math.cos(left_angle)),
-                    int(p2[1] + arrow_length * math.sin(left_angle))
+            try:
+                points_2d = self.transform_sensor_to_avm_image(
+                    points_3d,
+                    ground_param,
+                    virtual_camera_focal_length=virtual_camera_focal_length,
+                    virtual_camera_height=virtual_camera_height,
+                    image_height=image_height,
+                    image_width=image_width
                 )
+            except Exception as e:
+                print(f"Warning: Failed to transform points for obstacle {obstacle.get('id', 'unknown')}: {e}")
+                continue
+            points_2d_int = points_2d.astype(np.int32)
+            valid_points = points_2d_int[:-1] if len(points_2d_int) > 1 and np.array_equal(points_2d_int[0], points_2d_int[-1]) else points_2d_int
 
-                # 箭头右侧点
-                right_angle = angle - math.pi * 0.75  # -135度
-                right_point = (
-                    int(p2[0] + arrow_length * math.cos(right_angle)),
-                    int(p2[1] + arrow_length * math.sin(right_angle))
-                )
-
-                # 绘制箭头（填充三角形）
-                arrow_points = np.array([arrow_tip, left_point, right_point], dtype=np.int32)
-                cv2.fillPoly(image_out, [arrow_points], color=(255, 255, 255))
-
-        chaosheng_img_pts = np.empty((0, 2), dtype=np.float32)
-        if chaosheng_pixel_radius is not None:
-            chaosheng_img_pts = self._precompute_chaosheng_img_points(
-                chaosheng, ground_param, virtual_camera_focal_length,
-                virtual_camera_height, image_height, image_width)
-
-        box_list = []
-        point_list = []
-        for obstacle in obstacles:
-            sensor_type = obstacle.get('sensorType', 0)
-            if sensor_type == 'CAMERA':
-                if chaosheng_pixel_radius is not None and \
-                        (len(chaosheng_img_pts) == 0 or
-                         not self._obstacle_near_chaosheng_pixels(
-                             obstacle, chaosheng_img_pts, chaosheng_pixel_radius,
-                             ground_param, virtual_camera_focal_length,
-                             virtual_camera_height, image_height, image_width)):
-                    continue
-                obj_type = obstacle.get('type', 0)
-                model_type = obstacle.get('modelType', 0)
-                fs_type = obstacle.get('freespaceType', 0)
-                if (obj_type == 'VEHICLE' and model_type == 'MODEL_PARKING') or (
-                        obj_type == 'TRUCK' and model_type == 'MODEL_PARKING'):
-                    # 获取颜色（统一函数）
-                    color = (0, 255, 0)
-                    # 获取polygon_area
-                    polygon_area = obstacle.get("polygonArea", {}).get("point", [])
-                    if polygon_area is None or len(polygon_area) == 0:
-                        continue
-
-                    # 提取所有点的坐标
-                    points_3d = []
-                    for point in polygon_area:
-                        x = point.get('x', 0)
-                        y = point.get('y', 0)
-                        z = point.get('z', 0)
-                        points_3d.append([x, y, z])
-
-                    points_3d = np.array(points_3d, dtype=np.float32)
-
-                    if len(points_3d) == 0:
-                        continue
-
-                    if len(points_3d) <= 5:
-                        continue
-
-                    # 转换到图像坐标系
-                    try:
-                        points_2d = self.transform_sensor_to_avm_image(
-                            points_3d,
-                            ground_param,
-                            virtual_camera_focal_length=virtual_camera_focal_length,
-                            virtual_camera_height=virtual_camera_height,
-                            image_height=image_height,
-                            image_width=image_width
-                        )
-                    except Exception as e:
-                        print(f"Warning: Failed to transform points for obstacle {obstacle.get('id', 'unknown')}: {e}")
-                        continue
-
-                    # 绘制连线（不连接首尾）
-                    box = []
-                    for i in range(len(points_2d)):
-                        pt = points_2d[i]
-                        u, v = int(pt[0]), int(pt[1])
-                        box.append([u, v])
-                    box_list.append(box)
-                    # 绘制连线（不连接首尾）
-                    for i in range(len(points_2d) - 1):
-                        pt1 = points_2d[i]
-                        pt2 = points_2d[i + 1]
-                        u1, v1 = int(pt1[0]), int(pt1[1])
-                        u2, v2 = int(pt2[0]), int(pt2[1])
-                        # 画线
-                        cv2.line(image_out, (u1, v1), (u2, v2), color, 2)
-                if obj_type == 'PARK_FREESPACE':
-                    color = (0, 255, 255)  # 黄色 (BGR)
-                    is_fs_car = fs_type in ('FS_CAR', 'FS_BIGCAR')
-
-                    polygon_area = obstacle.get("polygonArea", {}).get("point", [])
-                    if polygon_area is None or len(polygon_area) == 0:
-                        continue
-
-                    points_3d = []
-                    for point in polygon_area:
-                        x = point.get('x', 0)
-                        y = point.get('y', 0)
-                        z = 0.0
-                        points_3d.append([x, y, z])
-
-                    points_3d = np.array(points_3d, dtype=np.float32)
-
-                    if len(points_3d) == 0:
-                        continue
-
-                    try:
-                        points_2d = self.transform_sensor_to_avm_image(
-                            points_3d,
-                            ground_param,
-                            virtual_camera_focal_length=virtual_camera_focal_length,
-                            virtual_camera_height=virtual_camera_height,
-                            image_height=image_height,
-                            image_width=image_width
-                        )
-                    except Exception as e:
-                        print(f"Warning: Failed to transform points for obstacle {obstacle.get('id', 'unknown')}: {e}")
-                        continue
-
-                    if is_fs_car:
-                        box = []
-                        for i in range(len(points_2d)):
-                            pt = points_2d[i]
-                            u, v = int(pt[0]), int(pt[1])
-                            box.append([u, v])
-                        box_list.append(box)
-
-                    for i in range(len(points_2d) - 1):
-                        pt1 = points_2d[i]
-                        pt2 = points_2d[i + 1]
-                        u1, v1 = int(pt1[0]), int(pt1[1])
-                        u2, v2 = int(pt2[0]), int(pt2[1])
-                        cv2.line(image_out, (u1, v1), (u2, v2), color, 2)
-
-        for obstacle in chaosheng:
-            ULTRASONIC_type = obstacle.get("freespaceType", "")
-            color = (0, 0, 255)
-            if ULTRASONIC_type == "FS_CAR":
-                # 获取polygon_area
-                polygon_area = obstacle.get("polygonArea", {}).get("point", [])
-                if polygon_area is None or len(polygon_area) == 0:
-                    continue
-
-                # 提取所有点的坐标
-                points_3d = []
-                for point in polygon_area:
-                    x = point.get('x', 0)
-                    y = point.get('y', 0)
-                    z = point.get('z', 0)
-                    points_3d.append([x, y, z])
-
-                points_3d = np.array(points_3d, dtype=np.float32)
-
-                if len(points_3d) == 0:
-                    continue
-
-                # 转换到图像坐标系
-                try:
-                    points_2d = self.transform_sensor_to_avm_image(
-                        points_3d,
-                        ground_param,
-                        virtual_camera_focal_length=virtual_camera_focal_length,
-                        virtual_camera_height=virtual_camera_height,
-                        image_height=image_height,
-                        image_width=image_width
-                    )
-                except Exception as e:
-                    print(f"Warning: Failed to transform points for obstacle {obstacle.get('id', 'unknown')}: {e}")
-                    continue
-
-                p_list = []
-                for i in range(len(points_2d)):
-                    pt = points_2d[i]
-                    u, v = int(pt[0]), int(pt[1])
-                    if 0 <= u < image_width and 0 <= v < image_height:
-                        p_list.append([u, v])
-                point_list.append(p_list)
-
-                # 绘制连线（不连接首尾）
-                for i in range(len(points_2d) - 1):
-                    pt1 = points_2d[i]
-                    pt2 = points_2d[i + 1]
+            if len(valid_points) >= 2:
+                for i in range(len(valid_points) - 1):
+                    pt1 = tuple(valid_points[i])
+                    pt2 = tuple(valid_points[i + 1])
                     u1, v1 = int(pt1[0]), int(pt1[1])
                     u2, v2 = int(pt2[0]), int(pt2[1])
-                    # 画点
                     if 0 <= u1 < image_width and 0 <= v1 < image_height:
                         cv2.circle(image_out, (u1, v1), 2, color, -1)
                     if 0 <= u2 < image_width and 0 <= v2 < image_height:
                         cv2.circle(image_out, (u2, v2), 2, color, -1)
-                    # 画线
                     cv2.line(image_out, (u1, v1), (u2, v2), color, 2)
 
-        return image_out, box_list, point_list
+                center = np.mean(valid_points, axis=0)
+                pos.append([int(center[0]), int(center[1])])
+
+        return image_out, pos
 
 
 
