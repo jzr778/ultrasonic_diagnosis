@@ -142,9 +142,10 @@ def draw_single_tag(tag_id, args):
 
     Returns:
         dict: 包含以下可能的 key（互斥，每次只出现一组）:
-            - missing_files: [(tag_id, [缺失文件列表])]
-            - no_ultrasonic: [tag_id]
-            - draw_success:  [tag_id]
+            - missing_files:  [(tag_id, [缺失文件列表])]
+            - no_ultrasonic:  [tag_id]
+            - no_avm_match:   [tag_id]
+            - draw_success:   [tag_id]
     """
     data_path = os.path.join(args.data_path, str(tag_id))
     required_files = ['vehicle2sensing.json', 'ground.json', 'cameras_parameters.json', 'car_config.json']
@@ -173,27 +174,36 @@ def draw_single_tag(tag_id, args):
     if not all_items:
         logger.info(f"[绘图] tag={tag_id} 无时间戳目录（无超声波事件），跳过")
         return {"no_ultrasonic": [tag_id]}
+    AVM_MATCH_TOLERANCE = 200000  # 200ms，单位微秒
     avm_path_list = {}
     meta_data = get_meta_data(tag_id=tag_id)
     bag_list = meta_data['body'][0]['bagsName']
     bag_list = sorted([bag_name for bag_name in bag_list if 'Heavy' in bag_name])
     bag_list = [item.split('.')[0] for item in bag_list]
-    for ts in all_items:
-        prefix_12 = ts[:11]
-        matched_file = None
-        for bag in bag_list:
-            bag_path = os.path.join(config.GENERATE_DIR, bag)
-            if not os.path.exists(bag_path):
+    all_avm_files = []
+    for bag in bag_list:
+        bag_path = os.path.join(config.GENERATE_DIR, bag)
+        if not os.path.exists(bag_path):
+            continue
+        for fname in os.listdir(bag_path):
+            name_without_ext = os.path.splitext(fname)[0]
+            try:
+                avm_ts = int(name_without_ext)
+            except ValueError:
                 continue
-            for fname in os.listdir(bag_path):
-                name_without_ext = os.path.splitext(fname)[0]
-                if name_without_ext[:11] == prefix_12:
-                    matched_file = os.path.join(bag_path, fname)
-                    break
-            if matched_file:
-                break
+            all_avm_files.append((avm_ts, os.path.join(bag_path, fname)))
+    for ts in all_items:
+        ts_val = int(ts)
+        matched_file = None
+        best_diff = AVM_MATCH_TOLERANCE + 1
+        for avm_ts, avm_fpath in all_avm_files:
+            diff = abs(avm_ts - ts_val)
+            if diff < best_diff:
+                best_diff = diff
+                matched_file = avm_fpath
         avm_path_list[ts] = matched_file
     image_save_path = os.path.join(config.DRAW_IMAGE_DIR, str(tag_id))
+    drawn_count = 0
     for item in all_items:
         logger.info(f"[绘图] tag={tag_id}, ts={item}")
         item_path = os.path.join(data_path, item)
@@ -227,9 +237,13 @@ def draw_single_tag(tag_id, args):
             cv2.imwrite(item_save_path + '/avm.jpg', bev_img_with_obstacles)
             with open(item_save_path + "/index_avm.json", 'w', encoding='utf-8') as f:
                 json.dump(index, f, indent=2)
+            drawn_count += 1
         else:
-            logger.warning(f"[绘图] tag={tag_id}, ts={item} 未匹配到 AVM 图像文件，跳过")
-    logger.info(f"[绘图] tag={tag_id} 完成，共 {len(all_items)} 个时间戳")
+            logger.warning(f"[绘图] tag={tag_id}, ts={item} 未匹配到 AVM 图像文件（容差{AVM_MATCH_TOLERANCE}μs），跳过")
+    if drawn_count == 0:
+        logger.warning(f"[绘图] tag={tag_id} 共 {len(all_items)} 个时间戳均未匹配到 AVM 图像，无绘图输出")
+        return {"no_avm_match": [tag_id]}
+    logger.info(f"[绘图] tag={tag_id} 完成，共 {len(all_items)} 个时间戳，成功绘制 {drawn_count} 个")
     return {"draw_success": [tag_id]}
 
 
@@ -387,6 +401,7 @@ def main():
     all_stats = {
         "missing_files":   [],   # [(tag_id, [缺失文件])]
         "no_ultrasonic":   [],   # [tag_id]
+        "no_avm_match":    [],   # [tag_id]
         "draw_success":    [],   # [tag_id]
         "no_draw_output":  [],   # [tag_id]
         "misdetected":     [],   # [(tag_id, ts)]
@@ -441,14 +456,27 @@ def _print_summary(logger, mode, total_tags, stats):
 
         n_missing = len(stats["missing_files"])
         n_no_us = len(stats["no_ultrasonic"])
+        n_no_avm = len(stats["no_avm_match"])
         n_draw_ok = len(stats["draw_success"])
-        logger.info(f"  缺少配置文件:   {n_missing} 个 tag")
-        for tag_id, missing in stats["missing_files"]:
-            logger.info(f"    tag={tag_id}  缺少: {', '.join(missing)}")
+        n_fail = n_missing + n_no_avm
+
+        logger.info(f"  绘图成功:       {n_draw_ok} 个 tag")
+        for tag_id in stats["draw_success"]:
+            logger.info(f"    tag={tag_id}")
+
+        logger.info(f"  绘图失败:       {n_fail} 个 tag")
+        if n_missing:
+            logger.info(f"    缺少配置文件: {n_missing} 个")
+            for tag_id, missing in stats["missing_files"]:
+                logger.info(f"      tag={tag_id}  缺少: {', '.join(missing)}")
+        if n_no_avm:
+            logger.info(f"    无 AVM 匹配:  {n_no_avm} 个")
+            for tag_id in stats["no_avm_match"]:
+                logger.info(f"      tag={tag_id}")
+
         logger.info(f"  无超声波事件:   {n_no_us} 个 tag")
         for tag_id in stats["no_ultrasonic"]:
             logger.info(f"    tag={tag_id}")
-        logger.info(f"  绘图成功:       {n_draw_ok} 个 tag")
         logger.info("")
 
     # ── 诊断阶段 ──
@@ -494,8 +522,10 @@ def _print_summary(logger, mode, total_tags, stats):
     if mode in ("draw", "all"):
         n_missing = len(stats["missing_files"])
         n_no_us = len(stats["no_ultrasonic"])
+        n_no_avm = len(stats["no_avm_match"])
         n_draw_ok = len(stats["draw_success"])
-        logger.info(f"  绘图: 成功 {n_draw_ok} / 缺文件 {n_missing} / 无超声 {n_no_us}")
+        n_fail = n_missing + n_no_avm
+        logger.info(f"  绘图: 成功 {n_draw_ok} / 失败 {n_fail} (缺文件 {n_missing} + 无AVM {n_no_avm}) / 无超声 {n_no_us}")
     if mode in ("diagnose", "all"):
         n_misdet = len(stats["misdetected"])
         n_normal = len(stats["normal"])
