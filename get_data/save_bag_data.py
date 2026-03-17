@@ -48,26 +48,28 @@ def save_data(tag_id, output_root=None):
     # ── 通过 API 获取配置数据（不依赖超声波事件，始终下载） ──
     trip_id = reader.trip_id
 
-    vehicle2sensing = get_vehicle2sensing(trip_id)
-    with open(os.path.join(data_path, 'vehicle2sensing.json'), 'w', encoding='utf-8') as f:
-        json.dump(vehicle2sensing, f, ensure_ascii=False, indent=2)
-    print("vehicle2sensing")
+    config_tasks = [
+        ("vehicle2sensing.json", lambda: get_vehicle2sensing(trip_id)),
+        ("car_config.json",      lambda: get_car_config(trip_id)),
+        ("ground.json",          lambda: get_ground(trip_id=trip_id)),
+    ]
+    for filename, fetch_fn in config_tasks:
+        try:
+            data = fetch_fn()
+            with open(os.path.join(data_path, filename), 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+            print(f"  {filename}")
+        except Exception as e:
+            print(f"  [WARN] 下载 {filename} 失败: {e}")
 
-    car_cfg = get_car_config(trip_id)
-    with open(os.path.join(data_path, 'car_config.json'), 'w', encoding='utf-8') as f:
-        json.dump(car_cfg, f, ensure_ascii=False, indent=2)
-    print("car_config")
-
-    ground = get_ground(trip_id=trip_id)
-    with open(os.path.join(data_path, 'ground.json'), 'w', encoding='utf-8') as f:
-        json.dump(ground, f, ensure_ascii=False, indent=2)
-    print("ground")
-
-    cameras_parameters = get_camera_engine_parameters(trip_id=trip_id)
-    cameras_parameters = cameras_parameters.decode('utf-8').splitlines()
-    with open(os.path.join(data_path, 'cameras_parameters.json'), 'w', encoding='utf-8') as f:
-        json.dump(cameras_parameters, f, ensure_ascii=False, indent=2)
-    print("cameras_parameters")
+    try:
+        raw = get_camera_engine_parameters(trip_id=trip_id)
+        cameras_parameters = raw.decode('utf-8').splitlines()
+        with open(os.path.join(data_path, 'cameras_parameters.json'), 'w', encoding='utf-8') as f:
+            json.dump(cameras_parameters, f, ensure_ascii=False, indent=2)
+        print("  cameras_parameters.json")
+    except Exception as e:
+        print(f"  [WARN] 下载 cameras_parameters.json 失败: {e}")
 
     # ── 提取超声波相关 bag 数据 ──
     reader.scan_ultrasonic_events()

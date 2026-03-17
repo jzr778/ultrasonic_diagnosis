@@ -30,8 +30,8 @@ _dr_engine = None
 
 def _get_env_config():
     cfg = EnvConfig()
-    cfg.retry_times = 5
-    cfg.dplib_retry_sleep_time = 20
+    cfg.retry_times = 2
+    cfg.dplib_retry_sleep_time = 5
     return cfg
 
 
