@@ -337,11 +337,11 @@ class PanoramicProjector:
         proj_y = y1 + t * dy
         return math.sqrt((px - proj_x) ** 2 + (py - proj_y) ** 2)
 
-    def _precompute_chaosheng_img_centers(self, chaosheng, ground_param,
-                                          focal_length, camera_height,
-                                          image_height, image_width):
-        """将所有超声障碍物质心投影到图像坐标系，返回 [(cx_px, cy_px), ...]。"""
-        centers = []
+    def _precompute_chaosheng_img_points(self, chaosheng, ground_param,
+                                         focal_length, camera_height,
+                                         image_height, image_width):
+        """将所有超声障碍物顶点投影到图像坐标系，返回 np.ndarray (M, 2)。"""
+        all_pts = []
         for obs in chaosheng:
             polygon = obs.get("polygonArea", {}).get("point", [])
             if not polygon:
@@ -353,32 +353,33 @@ class PanoramicProjector:
                 pts_2d = self.transform_sensor_to_avm_image(
                     pts, ground_param, focal_length, camera_height,
                     image_height, image_width)
-                c = np.mean(pts_2d, axis=0)
-                centers.append((float(c[0]), float(c[1])))
+                all_pts.append(pts_2d)
             except Exception:
                 continue
-        return centers
+        if all_pts:
+            return np.vstack(all_pts)
+        return np.empty((0, 2), dtype=np.float32)
 
-    def _obstacle_near_chaosheng_pixels(self, obstacle, chaosheng_img_centers,
+    def _obstacle_near_chaosheng_pixels(self, obstacle, chaosheng_img_pts,
                                         pixel_threshold, ground_param,
                                         focal_length, camera_height,
                                         image_height, image_width):
-        """判断相机障碍物质心投影到图像后是否在任一超声中心 pixel_threshold 像素内。"""
+        """判断相机障碍物任一顶点到任一超声顶点的最小像素距离 <= pixel_threshold。"""
         polygon_area = obstacle.get("polygonArea", {}).get("point", [])
         if not polygon_area:
             return False
-        cx = float(np.mean([p.get('x', 0) for p in polygon_area]))
-        cy = float(np.mean([p.get('y', 0) for p in polygon_area]))
-        centroid_3d = np.array([[cx, cy, 0.0]], dtype=np.float32)
+        pts_3d = np.array(
+            [[p.get('x', 0), p.get('y', 0), 0.0] for p in polygon_area],
+            dtype=np.float32)
         try:
-            centroid_2d = self.transform_sensor_to_avm_image(
-                centroid_3d, ground_param, focal_length, camera_height,
+            pts_2d = self.transform_sensor_to_avm_image(
+                pts_3d, ground_param, focal_length, camera_height,
                 image_height, image_width)
         except Exception:
             return False
-        ox, oy = float(centroid_2d[0][0]), float(centroid_2d[0][1])
-        for cc in chaosheng_img_centers:
-            if math.sqrt((ox - cc[0]) ** 2 + (oy - cc[1]) ** 2) <= pixel_threshold:
+        for op in pts_2d:
+            dists = np.sqrt(np.sum((chaosheng_img_pts - op) ** 2, axis=1))
+            if np.min(dists) <= pixel_threshold:
                 return True
         return False
 
@@ -522,9 +523,9 @@ class PanoramicProjector:
                 arrow_points = np.array([arrow_tip, left_point, right_point], dtype=np.int32)
                 cv2.fillPoly(image_out, [arrow_points], color=(255, 255, 255))
 
-        chaosheng_img_centers = []
+        chaosheng_img_pts = np.empty((0, 2), dtype=np.float32)
         if chaosheng_pixel_radius is not None:
-            chaosheng_img_centers = self._precompute_chaosheng_img_centers(
+            chaosheng_img_pts = self._precompute_chaosheng_img_points(
                 chaosheng, ground_param, virtual_camera_focal_length,
                 virtual_camera_height, image_height, image_width)
 
@@ -532,9 +533,9 @@ class PanoramicProjector:
             sensor_type = obstacle.get('sensorType', 0)
             if sensor_type == 'CAMERA':
                 if chaosheng_pixel_radius is not None and \
-                        (not chaosheng_img_centers or
+                        (len(chaosheng_img_pts) == 0 or
                          not self._obstacle_near_chaosheng_pixels(
-                             obstacle, chaosheng_img_centers, chaosheng_pixel_radius,
+                             obstacle, chaosheng_img_pts, chaosheng_pixel_radius,
                              ground_param, virtual_camera_focal_length,
                              virtual_camera_height, image_height, image_width)):
                     continue
@@ -543,9 +544,7 @@ class PanoramicProjector:
                 fs_type = obstacle.get('freespaceType', 0)
                 if (obj_type == 'VEHICLE' and model_type == 'MODEL_PARKING') or (
                         obj_type == 'TRUCK' and model_type == 'MODEL_PARKING'):
-                    # 获取颜色（统一函数）
                     color = (0, 255, 0)
-                    # 获取polygon_area
                     polygon_area = obstacle.get("polygonArea", {}).get("point", [])
                     if polygon_area is None or len(polygon_area) == 0:
                         continue
@@ -589,17 +588,13 @@ class PanoramicProjector:
                         # 画线
                         cv2.line(image_out, (u1, v1), (u2, v2), color, 2)
 
-                if (obj_type == 'PARK_FREESPACE' and fs_type == 'FS_CAR') or (
-                        obj_type == 'PARK_FREESPACE' and fs_type == 'FS_BIGCAR'):
-                    # 获取颜色（统一函数）
-                    color = (0, 255, 0)
+                if obj_type == 'PARK_FREESPACE':
+                    color = (0, 255, 255)  # 黄色 (BGR)
 
-                    # 获取polygon_area
                     polygon_area = obstacle.get("polygonArea", {}).get("point", [])
                     if polygon_area is None or len(polygon_area) == 0:
                         continue
 
-                    # 提取所有点的坐标
                     points_3d = []
                     for point in polygon_area:
                         x = point.get('x', 0)
@@ -612,7 +607,6 @@ class PanoramicProjector:
                     if len(points_3d) == 0:
                         continue
 
-                    # 转换到图像坐标系
                     try:
                         points_2d = self.transform_sensor_to_avm_image(
                             points_3d,
@@ -626,58 +620,11 @@ class PanoramicProjector:
                         print(f"Warning: Failed to transform points for obstacle {obstacle.get('id', 'unknown')}: {e}")
                         continue
 
-                    # 绘制连线（不连接首尾）
                     for i in range(len(points_2d) - 1):
                         pt1 = points_2d[i]
                         pt2 = points_2d[i + 1]
                         u1, v1 = int(pt1[0]), int(pt1[1])
                         u2, v2 = int(pt2[0]), int(pt2[1])
-                        # 画线
-                        cv2.line(image_out, (u1, v1), (u2, v2), color, 2)
-
-                if (obj_type == 'PARK_FREESPACE' and fs_type == 'FS_WALL') or (obj_type == 'PARK_FREESPACE' and fs_type == 'FS_PILLAR'):
-                    # 获取颜色（统一函数）
-                    color = (0, 0, 0)
-
-                    # 获取polygon_area
-                    polygon_area = obstacle.get("polygonArea", {}).get("point", [])
-                    if polygon_area is None or len(polygon_area) == 0:
-                        continue
-
-                    # 提取所有点的坐标
-                    points_3d = []
-                    for point in polygon_area:
-                        x = point.get('x', 0)
-                        y = point.get('y', 0)
-                        z = point.get('z', 0)
-                        points_3d.append([x, y, z])
-
-                    points_3d = np.array(points_3d, dtype=np.float32)
-
-                    if len(points_3d) == 0:
-                        continue
-
-                    # 转换到图像坐标系
-                    try:
-                        points_2d = self.transform_sensor_to_avm_image(
-                            points_3d,
-                            ground_param,
-                            virtual_camera_focal_length=virtual_camera_focal_length,
-                            virtual_camera_height=virtual_camera_height,
-                            image_height=image_height,
-                            image_width=image_width
-                        )
-                    except Exception as e:
-                        print(f"Warning: Failed to transform points for obstacle {obstacle.get('id', 'unknown')}: {e}")
-                        continue
-
-                    # 绘制连线（不连接首尾）
-                    for i in range(len(points_2d) - 1):
-                        pt1 = points_2d[i]
-                        pt2 = points_2d[i + 1]
-                        u1, v1 = int(pt1[0]), int(pt1[1])
-                        u2, v2 = int(pt2[0]), int(pt2[1])
-                        # 画线
                         cv2.line(image_out, (u1, v1), (u2, v2), color, 2)
 
         pos = []
@@ -813,9 +760,9 @@ class PanoramicProjector:
                 arrow_points = np.array([arrow_tip, left_point, right_point], dtype=np.int32)
                 cv2.fillPoly(image_out, [arrow_points], color=(255, 255, 255))
 
-        chaosheng_img_centers = []
+        chaosheng_img_pts = np.empty((0, 2), dtype=np.float32)
         if chaosheng_pixel_radius is not None:
-            chaosheng_img_centers = self._precompute_chaosheng_img_centers(
+            chaosheng_img_pts = self._precompute_chaosheng_img_points(
                 chaosheng, ground_param, virtual_camera_focal_length,
                 virtual_camera_height, image_height, image_width)
 
@@ -825,9 +772,9 @@ class PanoramicProjector:
             sensor_type = obstacle.get('sensorType', 0)
             if sensor_type == 'CAMERA':
                 if chaosheng_pixel_radius is not None and \
-                        (not chaosheng_img_centers or
+                        (len(chaosheng_img_pts) == 0 or
                          not self._obstacle_near_chaosheng_pixels(
-                             obstacle, chaosheng_img_centers, chaosheng_pixel_radius,
+                             obstacle, chaosheng_img_pts, chaosheng_pixel_radius,
                              ground_param, virtual_camera_focal_length,
                              virtual_camera_height, image_height, image_width)):
                     continue
@@ -888,17 +835,14 @@ class PanoramicProjector:
                         u2, v2 = int(pt2[0]), int(pt2[1])
                         # 画线
                         cv2.line(image_out, (u1, v1), (u2, v2), color, 2)
-                if (obj_type == 'PARK_FREESPACE' and fs_type == 'FS_CAR') or (
-                        obj_type == 'PARK_FREESPACE' and fs_type == 'FS_BIGCAR'):
-                    # 获取颜色（统一函数）
-                    color = (0, 255, 0)
+                if obj_type == 'PARK_FREESPACE':
+                    color = (0, 255, 255)  # 黄色 (BGR)
+                    is_fs_car = fs_type in ('FS_CAR', 'FS_BIGCAR')
 
-                    # 获取polygon_area
                     polygon_area = obstacle.get("polygonArea", {}).get("point", [])
                     if polygon_area is None or len(polygon_area) == 0:
                         continue
 
-                    # 提取所有点的坐标
                     points_3d = []
                     for point in polygon_area:
                         x = point.get('x', 0)
@@ -911,7 +855,6 @@ class PanoramicProjector:
                     if len(points_3d) == 0:
                         continue
 
-                    # 转换到图像坐标系
                     try:
                         points_2d = self.transform_sensor_to_avm_image(
                             points_3d,
@@ -925,66 +868,19 @@ class PanoramicProjector:
                         print(f"Warning: Failed to transform points for obstacle {obstacle.get('id', 'unknown')}: {e}")
                         continue
 
-                    box = []
-                    for i in range(len(points_2d)):
-                        pt = points_2d[i]
-                        u, v = int(pt[0]), int(pt[1])
-                        box.append([u, v])
-                    box_list.append(box)
+                    if is_fs_car:
+                        box = []
+                        for i in range(len(points_2d)):
+                            pt = points_2d[i]
+                            u, v = int(pt[0]), int(pt[1])
+                            box.append([u, v])
+                        box_list.append(box)
 
-                    # 绘制连线（不连接首尾）
                     for i in range(len(points_2d) - 1):
                         pt1 = points_2d[i]
                         pt2 = points_2d[i + 1]
                         u1, v1 = int(pt1[0]), int(pt1[1])
                         u2, v2 = int(pt2[0]), int(pt2[1])
-                        # 画线
-                        cv2.line(image_out, (u1, v1), (u2, v2), color, 2)
-
-                if (obj_type == 'PARK_FREESPACE' and fs_type == 'FS_WALL') or (
-                        obj_type == 'PARK_FREESPACE' and fs_type == 'FS_PILLAR'):
-                    # 获取颜色（统一函数）
-                    color = (0, 0, 0)
-
-                    # 获取polygon_area
-                    polygon_area = obstacle.get("polygonArea", {}).get("point", [])
-                    if polygon_area is None or len(polygon_area) == 0:
-                        continue
-
-                    # 提取所有点的坐标
-                    points_3d = []
-                    for point in polygon_area:
-                        x = point.get('x', 0)
-                        y = point.get('y', 0)
-                        z = point.get('z', 0)
-                        points_3d.append([x, y, z])
-
-                    points_3d = np.array(points_3d, dtype=np.float32)
-
-                    if len(points_3d) == 0:
-                        continue
-
-                    # 转换到图像坐标系
-                    try:
-                        points_2d = self.transform_sensor_to_avm_image(
-                            points_3d,
-                            ground_param,
-                            virtual_camera_focal_length=virtual_camera_focal_length,
-                            virtual_camera_height=virtual_camera_height,
-                            image_height=image_height,
-                            image_width=image_width
-                        )
-                    except Exception as e:
-                        print(f"Warning: Failed to transform points for obstacle {obstacle.get('id', 'unknown')}: {e}")
-                        continue
-
-                    # 绘制连线（不连接首尾）
-                    for i in range(len(points_2d) - 1):
-                        pt1 = points_2d[i]
-                        pt2 = points_2d[i + 1]
-                        u1, v1 = int(pt1[0]), int(pt1[1])
-                        u2, v2 = int(pt2[0]), int(pt2[1])
-                        # 画线
                         cv2.line(image_out, (u1, v1), (u2, v2), color, 2)
 
         for obstacle in chaosheng:
