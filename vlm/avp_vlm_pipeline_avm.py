@@ -220,14 +220,16 @@ def draw_single_tag(tag_id, args):
             planning_point_df = planning_point_df.drop_duplicates()
             planning_point = planning_point_df.values.tolist()
             bev_img_with_obstacles, pos = projector.draw_obstacles_on_bev(
-                avm_image, obstacle, chaosheng, ground, focal_length, camera_height, planning_point
+                avm_image, obstacle, chaosheng, ground, focal_length, camera_height, planning_point,
+                chaosheng_pixel_radius=100
             )
             index = {"avm": pos}
             cv2.imwrite(item_save_path + '/avm.jpg', bev_img_with_obstacles)
             with open(item_save_path + "/index_avm.json", 'w', encoding='utf-8') as f:
                 json.dump(index, f, indent=2)
             bev_img_with_fs_car, box_list, point_list = projector.draw_fs_car_on_bev(
-                avm_image, obstacle, chaosheng, ground, focal_length, camera_height, planning_point
+                avm_image, obstacle, chaosheng, ground, focal_length, camera_height, planning_point,
+                chaosheng_pixel_radius=100
             )
             cv2.imwrite(item_save_path + '/avm_fs_car.jpg', bev_img_with_fs_car)
             with open(item_save_path + "/box_list_avm.json", 'w', encoding='utf-8') as f:

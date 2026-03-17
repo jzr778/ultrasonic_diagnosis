@@ -325,6 +325,63 @@ class PanoramicProjector:
         
         return {'camera': cameras}
 
+    @staticmethod
+    def _point_to_segment_dist_2d(px, py, x1, y1, x2, y2):
+        """点 (px,py) 到线段 (x1,y1)-(x2,y2) 的 2D 最短距离。"""
+        dx, dy = x2 - x1, y2 - y1
+        len_sq = dx * dx + dy * dy
+        if len_sq == 0:
+            return math.sqrt((px - x1) ** 2 + (py - y1) ** 2)
+        t = max(0.0, min(1.0, ((px - x1) * dx + (py - y1) * dy) / len_sq))
+        proj_x = x1 + t * dx
+        proj_y = y1 + t * dy
+        return math.sqrt((px - proj_x) ** 2 + (py - proj_y) ** 2)
+
+    def _precompute_chaosheng_img_centers(self, chaosheng, ground_param,
+                                          focal_length, camera_height,
+                                          image_height, image_width):
+        """将所有超声障碍物质心投影到图像坐标系，返回 [(cx_px, cy_px), ...]。"""
+        centers = []
+        for obs in chaosheng:
+            polygon = obs.get("polygonArea", {}).get("point", [])
+            if not polygon:
+                continue
+            pts = np.array(
+                [[p.get('x', 0), p.get('y', 0), p.get('z', 0)] for p in polygon],
+                dtype=np.float32)
+            try:
+                pts_2d = self.transform_sensor_to_avm_image(
+                    pts, ground_param, focal_length, camera_height,
+                    image_height, image_width)
+                c = np.mean(pts_2d, axis=0)
+                centers.append((float(c[0]), float(c[1])))
+            except Exception:
+                continue
+        return centers
+
+    def _obstacle_near_chaosheng_pixels(self, obstacle, chaosheng_img_centers,
+                                        pixel_threshold, ground_param,
+                                        focal_length, camera_height,
+                                        image_height, image_width):
+        """判断相机障碍物质心投影到图像后是否在任一超声中心 pixel_threshold 像素内。"""
+        polygon_area = obstacle.get("polygonArea", {}).get("point", [])
+        if not polygon_area:
+            return False
+        cx = float(np.mean([p.get('x', 0) for p in polygon_area]))
+        cy = float(np.mean([p.get('y', 0) for p in polygon_area]))
+        centroid_3d = np.array([[cx, cy, 0.0]], dtype=np.float32)
+        try:
+            centroid_2d = self.transform_sensor_to_avm_image(
+                centroid_3d, ground_param, focal_length, camera_height,
+                image_height, image_width)
+        except Exception:
+            return False
+        ox, oy = float(centroid_2d[0][0]), float(centroid_2d[0][1])
+        for cc in chaosheng_img_centers:
+            if math.sqrt((ox - cc[0]) ** 2 + (oy - cc[1]) ** 2) <= pixel_threshold:
+                return True
+        return False
+
     def transform_sensor_to_avm_image(self, sensing_points, ground_param, virtual_camera_focal_length, virtual_camera_height,
                                       image_height, image_width):
         """
@@ -389,7 +446,7 @@ class PanoramicProjector:
 
 
     def draw_obstacles_on_bev(self, image, obstacles, chaosheng, ground_param, virtual_camera_focal_length, virtual_camera_height,
-                              planning_point):
+                              planning_point, chaosheng_pixel_radius=None):
         """
         在BEV图像上绘制障碍物的polygon
 
@@ -399,6 +456,7 @@ class PanoramicProjector:
             ground_param: 地面参数
             virtual_camera_focal_length: 虚拟相机焦距
             virtual_camera_height: 虚拟相机高度
+            chaosheng_pixel_radius: 若非 None，仅绘制质心在超声障碍图像中心 <= 该像素距离内的相机障碍物
 
         Returns:
             绘制了障碍物的图像
@@ -464,9 +522,22 @@ class PanoramicProjector:
                 arrow_points = np.array([arrow_tip, left_point, right_point], dtype=np.int32)
                 cv2.fillPoly(image_out, [arrow_points], color=(255, 255, 255))
 
+        chaosheng_img_centers = []
+        if chaosheng_pixel_radius is not None:
+            chaosheng_img_centers = self._precompute_chaosheng_img_centers(
+                chaosheng, ground_param, virtual_camera_focal_length,
+                virtual_camera_height, image_height, image_width)
+
         for obstacle in obstacles:
             sensor_type = obstacle.get('sensorType', 0)
             if sensor_type == 'CAMERA':
+                if chaosheng_pixel_radius is not None and \
+                        (not chaosheng_img_centers or
+                         not self._obstacle_near_chaosheng_pixels(
+                             obstacle, chaosheng_img_centers, chaosheng_pixel_radius,
+                             ground_param, virtual_camera_focal_length,
+                             virtual_camera_height, image_height, image_width)):
+                    continue
                 obj_type = obstacle.get('type', 0)
                 model_type = obstacle.get('modelType', 0)
                 fs_type = obstacle.get('freespaceType', 0)
@@ -646,82 +717,27 @@ class PanoramicProjector:
                     print(f"Warning: Failed to transform points for obstacle {obstacle.get('id', 'unknown')}: {e}")
                     continue
                 points_2d_int = points_2d.astype(np.int32)
-                # 绘制多边形线条（不闭合，BEV也是不闭合的）
-                # 只考虑前四个点（第一个和第五个点相同）
-                valid_points = points_2d_int[:-1]
+                valid_points = points_2d_int[:-1] if len(points_2d_int) > 1 and np.array_equal(points_2d_int[0], points_2d_int[-1]) else points_2d_int
 
-                if len(valid_points) >= 4:
-                    # 计算第二个点和第三个点之间的距离
-                    pt2 = tuple(valid_points[1])
-                    pt3 = tuple(valid_points[2])
-
-                    # 计算欧几里得距离
-                    distance = np.linalg.norm(np.array(pt2) - np.array(pt3))
-
-                    if distance > 20.0:
-                        # 情况1：距离超过50像素，分开绘制两条线
-                        # 第一条线：第一个点和第二个点
-                        pt1 = tuple(valid_points[0])
-                        pt2 = tuple(valid_points[1])
-
-                        # 绘制第一条线的点和线
+                if len(valid_points) >= 2:
+                    for i in range(len(valid_points) - 1):
+                        pt1 = tuple(valid_points[i])
+                        pt2 = tuple(valid_points[i + 1])
                         u1, v1 = int(pt1[0]), int(pt1[1])
                         u2, v2 = int(pt2[0]), int(pt2[1])
-
-                        # 画点
                         if 0 <= u1 < image_width and 0 <= v1 < image_height:
                             cv2.circle(image_out, (u1, v1), 2, color, -1)
                         if 0 <= u2 < image_width and 0 <= v2 < image_height:
                             cv2.circle(image_out, (u2, v2), 2, color, -1)
-                        cv2.line(image_out, pt1, pt2, color=color, thickness=2)
+                        cv2.line(image_out, (u1, v1), (u2, v2), color, 2)
 
-                        # 计算第一条线的中心点
-                        line1_points = [valid_points[0], valid_points[1]]
-                        center1 = np.mean(line1_points, axis=0)
-                        pos.append([int(center1[0]), int(center1[1])])
-
-                        # 第二条线：第三个点和第四个点
-                        pt3 = tuple(valid_points[2])
-                        pt4 = tuple(valid_points[3])
-
-                        # 绘制第二条线的点和线
-                        u3, v3 = int(pt3[0]), int(pt3[1])
-                        u4, v4 = int(pt4[0]), int(pt4[1])
-
-                        # 画点
-                        if 0 <= u3 < image_width and 0 <= v3 < image_height:
-                            cv2.circle(image_out, (u3, v3), 2, color, -1)
-                        if 0 <= u4 < image_width and 0 <= v4 < image_height:
-                            cv2.circle(image_out, (u4, v4), 2, color, -1)
-                        cv2.line(image_out, pt3, pt4, color=color, thickness=2)
-
-                        # 计算第二条线的中心点
-                        line2_points = [valid_points[2], valid_points[3]]
-                        center2 = np.mean(line2_points, axis=0)
-                        pos.append([int(center2[0]), int(center2[1])])
-
-                    else:
-                        # 情况2：距离不超过10像素，绘制一条连续的线
-                        for i in range(len(valid_points) - 1):
-                            pt1 = tuple(valid_points[i])
-                            pt2 = tuple(valid_points[i + 1])
-                            u1, v1 = int(pt1[0]), int(pt1[1])
-                            u2, v2 = int(pt2[0]), int(pt2[1])
-
-                            # 画点
-                            if 0 <= u1 < image_width and 0 <= v1 < image_height:
-                                cv2.circle(image_out, (u1, v1), 2, color, -1)
-                            if 0 <= u2 < image_width and 0 <= v2 < image_height:
-                                cv2.circle(image_out, (u2, v2), 2, color, -1)
-                            cv2.line(image_out, pt1, pt2, color=color, thickness=2)
-
-                        # 计算所有四个点的中心点
-                        center = np.mean(valid_points, axis=0)
-                        pos.append([int(center[0]), int(center[1])])
+                    center = np.mean(valid_points, axis=0)
+                    pos.append([int(center[0]), int(center[1])])
 
         return image_out, pos
 
-    def draw_fs_car_on_bev(self, image, obstacles, chaosheng, ground_param, virtual_camera_focal_length, virtual_camera_height, planning_point):
+    def draw_fs_car_on_bev(self, image, obstacles, chaosheng, ground_param, virtual_camera_focal_length, virtual_camera_height,
+                           planning_point, chaosheng_pixel_radius=None):
         """
         在BEV图像上绘制障碍物的polygon
 
@@ -731,6 +747,7 @@ class PanoramicProjector:
             ground_param: 地面参数
             virtual_camera_focal_length: 虚拟相机焦距
             virtual_camera_height: 虚拟相机高度
+            chaosheng_pixel_radius: 若非 None，仅绘制质心在超声障碍图像中心 <= 该像素距离内的相机障碍物
 
         Returns:
             绘制了障碍物的图像
@@ -795,11 +812,25 @@ class PanoramicProjector:
                 # 绘制箭头（填充三角形）
                 arrow_points = np.array([arrow_tip, left_point, right_point], dtype=np.int32)
                 cv2.fillPoly(image_out, [arrow_points], color=(255, 255, 255))
+
+        chaosheng_img_centers = []
+        if chaosheng_pixel_radius is not None:
+            chaosheng_img_centers = self._precompute_chaosheng_img_centers(
+                chaosheng, ground_param, virtual_camera_focal_length,
+                virtual_camera_height, image_height, image_width)
+
         box_list = []
         point_list = []
         for obstacle in obstacles:
             sensor_type = obstacle.get('sensorType', 0)
             if sensor_type == 'CAMERA':
+                if chaosheng_pixel_radius is not None and \
+                        (not chaosheng_img_centers or
+                         not self._obstacle_near_chaosheng_pixels(
+                             obstacle, chaosheng_img_centers, chaosheng_pixel_radius,
+                             ground_param, virtual_camera_focal_length,
+                             virtual_camera_height, image_height, image_width)):
+                    continue
                 obj_type = obstacle.get('type', 0)
                 model_type = obstacle.get('modelType', 0)
                 fs_type = obstacle.get('freespaceType', 0)
