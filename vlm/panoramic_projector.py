@@ -629,6 +629,8 @@ class PanoramicProjector:
 
         pos = []
         for obstacle in chaosheng:
+            if obstacle.get("freespaceType", "") == "FS_CAR":
+                continue
             color = (0, 0, 255)
             polygon_area = obstacle.get("polygonArea", {}).get("point", [])
             if polygon_area is None or len(polygon_area) == 0:
@@ -676,6 +678,91 @@ class PanoramicProjector:
                 pos.append([int(center[0]), int(center[1])])
 
         return image_out, pos
+
+    def compute_fs_car_data(self, obstacles, chaosheng, ground_param, virtual_camera_focal_length,
+                            virtual_camera_height, image_height, image_width):
+        """计算 FS_CAR 规则校验所需数据（box_list, point_list），不绘图。
+
+        Returns:
+            box_list:  相机端 FS_CAR/FS_BIGCAR 及 VEHICLE/TRUCK+MODEL_PARKING 的投影多边形顶点
+            point_list: 超声端 FS_CAR 的投影多边形顶点
+        """
+        box_list = []
+        point_list = []
+
+        for obstacle in obstacles:
+            if obstacle.get('sensorType', 0) != 'CAMERA':
+                continue
+            obj_type = obstacle.get('type', 0)
+            model_type = obstacle.get('modelType', 0)
+            fs_type = obstacle.get('freespaceType', 0)
+
+            need_box = False
+            if (obj_type == 'VEHICLE' and model_type == 'MODEL_PARKING') or \
+               (obj_type == 'TRUCK' and model_type == 'MODEL_PARKING'):
+                need_box = True
+            elif obj_type == 'PARK_FREESPACE' and fs_type in ('FS_CAR', 'FS_BIGCAR'):
+                need_box = True
+
+            if not need_box:
+                continue
+
+            polygon_area = obstacle.get("polygonArea", {}).get("point", [])
+            if not polygon_area:
+                continue
+
+            z_default = 0.0 if obj_type == 'PARK_FREESPACE' else None
+            points_3d = []
+            for point in polygon_area:
+                x = point.get('x', 0)
+                y = point.get('y', 0)
+                z = z_default if z_default is not None else point.get('z', 0)
+                points_3d.append([x, y, z])
+            points_3d = np.array(points_3d, dtype=np.float32)
+            if len(points_3d) == 0:
+                continue
+            if obj_type != 'PARK_FREESPACE' and len(points_3d) <= 5:
+                continue
+
+            try:
+                points_2d = self.transform_sensor_to_avm_image(
+                    points_3d, ground_param,
+                    virtual_camera_focal_length=virtual_camera_focal_length,
+                    virtual_camera_height=virtual_camera_height,
+                    image_height=image_height, image_width=image_width)
+            except Exception:
+                continue
+
+            box = [[int(pt[0]), int(pt[1])] for pt in points_2d]
+            box_list.append(box)
+
+        for obstacle in chaosheng:
+            if obstacle.get("freespaceType", "") != "FS_CAR":
+                continue
+            polygon_area = obstacle.get("polygonArea", {}).get("point", [])
+            if not polygon_area:
+                continue
+            points_3d = np.array(
+                [[p.get('x', 0), p.get('y', 0), p.get('z', 0)] for p in polygon_area],
+                dtype=np.float32)
+            if len(points_3d) == 0:
+                continue
+            try:
+                points_2d = self.transform_sensor_to_avm_image(
+                    points_3d, ground_param,
+                    virtual_camera_focal_length=virtual_camera_focal_length,
+                    virtual_camera_height=virtual_camera_height,
+                    image_height=image_height, image_width=image_width)
+            except Exception:
+                continue
+            p_list = []
+            for pt in points_2d:
+                u, v = int(pt[0]), int(pt[1])
+                if 0 <= u < image_width and 0 <= v < image_height:
+                    p_list.append([u, v])
+            point_list.append(p_list)
+
+        return box_list, point_list
 
 
 
