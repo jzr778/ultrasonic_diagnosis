@@ -144,8 +144,8 @@ def draw_single_tag(tag_id, args):
         dict: 包含以下可能的 key（互斥，每次只出现一组）:
             - missing_files:  [(tag_id, [缺失文件列表])]
             - no_ultrasonic:  [tag_id]
-            - no_avm_match:   [tag_id]
-            - draw_success:   [tag_id]
+            - no_avm_match:   [(tag_id, ts_total, ts_matched)]
+            - draw_success:   [(tag_id, ts_total, ts_matched)]
     """
     data_path = os.path.join(args.data_path, str(tag_id))
     required_files = ['vehicle2sensing.json', 'ground.json', 'cameras_parameters.json', 'car_config.json']
@@ -174,7 +174,7 @@ def draw_single_tag(tag_id, args):
     if not all_items:
         logger.info(f"[绘图] tag={tag_id} 无时间戳目录（无超声波事件），跳过")
         return {"no_ultrasonic": [tag_id]}
-    AVM_MATCH_TOLERANCE = 200000  # 200ms，单位微秒
+    AVM_MATCH_TOLERANCE = 50000  # 50ms，单位微秒
     avm_path_list = {}
     meta_data = get_meta_data(tag_id=tag_id)
     bag_list = meta_data['body'][0]['bagsName']
@@ -240,11 +240,12 @@ def draw_single_tag(tag_id, args):
             drawn_count += 1
         else:
             logger.warning(f"[绘图] tag={tag_id}, ts={item} 未匹配到 AVM 图像文件（容差{AVM_MATCH_TOLERANCE}μs），跳过")
+    ts_total = len(all_items)
     if drawn_count == 0:
-        logger.warning(f"[绘图] tag={tag_id} 共 {len(all_items)} 个时间戳均未匹配到 AVM 图像，无绘图输出")
-        return {"no_avm_match": [tag_id]}
-    logger.info(f"[绘图] tag={tag_id} 完成，共 {len(all_items)} 个时间戳，成功绘制 {drawn_count} 个")
-    return {"draw_success": [tag_id]}
+        logger.warning(f"[绘图] tag={tag_id} 共 {ts_total} 个时间戳均未匹配到 AVM 图像，无绘图输出")
+        return {"no_avm_match": [(tag_id, ts_total, 0)]}
+    logger.info(f"[绘图] tag={tag_id} 完成，共 {ts_total} 个时间戳，成功绘制 {drawn_count} 个")
+    return {"draw_success": [(tag_id, ts_total, drawn_count)]}
 
 
 def diagnose_single_tag(tag_id, feishu_id, args):
@@ -460,9 +461,13 @@ def _print_summary(logger, mode, total_tags, stats):
         n_draw_ok = len(stats["draw_success"])
         n_fail = n_missing + n_no_avm
 
-        logger.info(f"  绘图成功:       {n_draw_ok} 个 tag")
-        for tag_id in stats["draw_success"]:
-            logger.info(f"    tag={tag_id}")
+        ok_ts_total = sum(t for _, t, _ in stats["draw_success"])
+        ok_ts_drawn = sum(d for _, _, d in stats["draw_success"])
+        no_avm_ts = sum(t for _, t, _ in stats["no_avm_match"])
+
+        logger.info(f"  绘图成功:       {n_draw_ok} 个 tag ({ok_ts_drawn}/{ok_ts_total} 个时间戳)")
+        for tag_id, ts_total, ts_drawn in stats["draw_success"]:
+            logger.info(f"    tag={tag_id}  ({ts_drawn}/{ts_total} 个时间戳)")
 
         logger.info(f"  绘图失败:       {n_fail} 个 tag")
         if n_missing:
@@ -470,9 +475,9 @@ def _print_summary(logger, mode, total_tags, stats):
             for tag_id, missing in stats["missing_files"]:
                 logger.info(f"      tag={tag_id}  缺少: {', '.join(missing)}")
         if n_no_avm:
-            logger.info(f"    无 AVM 匹配:  {n_no_avm} 个")
-            for tag_id in stats["no_avm_match"]:
-                logger.info(f"      tag={tag_id}")
+            logger.info(f"    无 AVM 匹配:  {n_no_avm} 个 ({no_avm_ts} 个时间戳)")
+            for tag_id, ts_total, _ in stats["no_avm_match"]:
+                logger.info(f"      tag={tag_id}  ({ts_total} 个时间戳均未匹配)")
 
         logger.info(f"  无超声波事件:   {n_no_us} 个 tag")
         for tag_id in stats["no_ultrasonic"]:
@@ -525,7 +530,10 @@ def _print_summary(logger, mode, total_tags, stats):
         n_no_avm = len(stats["no_avm_match"])
         n_draw_ok = len(stats["draw_success"])
         n_fail = n_missing + n_no_avm
-        logger.info(f"  绘图: 成功 {n_draw_ok} / 失败 {n_fail} (缺文件 {n_missing} + 无AVM {n_no_avm}) / 无超声 {n_no_us}")
+        ok_ts_total = sum(t for _, t, _ in stats["draw_success"])
+        ok_ts_drawn = sum(d for _, _, d in stats["draw_success"])
+        no_avm_ts = sum(t for _, t, _ in stats["no_avm_match"])
+        logger.info(f"  绘图: 成功 {ok_ts_drawn}/{ok_ts_total} 个时间戳 ({n_draw_ok} tag) / 失败 {n_fail} tag (缺文件 {n_missing} tag + 无AVM {no_avm_ts} 个时间戳 {n_no_avm} tag) / 无超声 {n_no_us} tag")
     if mode in ("diagnose", "all"):
         n_misdet = len(stats["misdetected"])
         n_normal = len(stats["normal"])
