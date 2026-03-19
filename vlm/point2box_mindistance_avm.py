@@ -143,6 +143,28 @@ def calculate_segment_center(segment_points: List[List[int]]) -> List[float]:
     return [int(sum_x / count), int(sum_y / count)]
 
 
+def is_segment_misdetected(segment_points: List[List[int]], boxes: List[List[List[float]]],
+                           threshold: float = 8.0) -> bool:
+    """判断超声 FS_CAR 线段是否为误检。
+    如果 >= 一半的顶点到最近相机框的距离 <= threshold，则认为不是误检。
+    多边形闭合时首尾顶点相同，去重后再判断。
+    """
+    if len(segment_points) == 0:
+        return False
+    seen = set()
+    unique_pts = []
+    for pt in segment_points:
+        key = (pt[0], pt[1])
+        if key not in seen:
+            seen.add(key)
+            unique_pts.append(pt)
+    within = sum(
+        1 for pt in unique_pts
+        if min_distance_point_to_all_boxes([float(pt[0]), float(pt[1])], boxes) <= threshold
+    )
+    return within < len(unique_pts) / 2
+
+
 def get_max_distance_for_segment(segment_points: List[List[int]], boxes: List[List[List[float]]]) -> float:
     """
     计算单个线段上所有像素点到边框的最大最小距离

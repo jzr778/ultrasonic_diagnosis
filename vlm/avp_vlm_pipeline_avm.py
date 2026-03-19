@@ -32,7 +32,7 @@ import config
 from vlm.panoramic_projector import PanoramicProjector
 
 from vlm.VLM_API import analyze_scenario_from_images
-from vlm.point2box_mindistance_avm import get_max_distance_for_segment, calculate_segment_center
+from vlm.point2box_mindistance_avm import is_segment_misdetected, calculate_segment_center
 from get_data.get_meta_data import get_meta_data
 from prompts_engine.prompt_gen import prompt_gen
 from comment.add_comment import FeishuCommentTester
@@ -304,9 +304,8 @@ def diagnose_single_tag(tag_id, feishu_id, args):
             with open(point_list_path, 'r', encoding='utf-8') as f:
                 point_list = json.load(f)
             for segment_points in point_list:
-                max_distance = get_max_distance_for_segment(segment_points, box_list)
-                center_point = calculate_segment_center(segment_points)
-                if max_distance > 8:
+                if is_segment_misdetected(segment_points, box_list, threshold=8.0):
+                    center_point = calculate_segment_center(segment_points)
                     result_fs_car.append([center_point[0], center_point[1]])
         if result_fs_car:
             logger.info(f"[诊断] tag={tag_id}, ts={item} fs_car规则校验误检: {result_fs_car}")
