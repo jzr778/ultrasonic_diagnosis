@@ -144,9 +144,10 @@ def calculate_segment_center(segment_points: List[List[int]]) -> List[float]:
 
 
 def is_segment_misdetected(segment_points: List[List[int]], boxes: List[List[List[float]]],
-                           threshold: float = 8.0) -> bool:
+                           threshold: float = 8.0, max_threshold: float = 20.0) -> bool:
     """判断超声 FS_CAR 线段是否为误检。
-    如果 >= 一半的顶点到最近相机框的距离 <= threshold，则认为不是误检。
+    规则1: 如果 >= 一半的顶点到最近相机框的距离 <= threshold，则认为不是误检。
+    规则2: 即使满足规则1，若任意顶点距离 > max_threshold，仍算误检。
     多边形闭合时首尾顶点相同，去重后再判断。
     """
     if len(segment_points) == 0:
@@ -158,10 +159,13 @@ def is_segment_misdetected(segment_points: List[List[int]], boxes: List[List[Lis
         if key not in seen:
             seen.add(key)
             unique_pts.append(pt)
-    within = sum(
-        1 for pt in unique_pts
-        if min_distance_point_to_all_boxes([float(pt[0]), float(pt[1])], boxes) <= threshold
-    )
+    distances = [
+        min_distance_point_to_all_boxes([float(pt[0]), float(pt[1])], boxes)
+        for pt in unique_pts
+    ]
+    if max(distances) > max_threshold:
+        return True
+    within = sum(1 for d in distances if d <= threshold)
     return within < len(unique_pts) / 2
 
 
