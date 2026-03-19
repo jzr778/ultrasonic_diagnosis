@@ -679,66 +679,128 @@ class PanoramicProjector:
 
         return image_out, pos
 
-    def compute_fs_car_data(self, obstacles, chaosheng, ground_param, virtual_camera_focal_length,
-                            virtual_camera_height, image_height, image_width):
-        """计算 FS_CAR 规则校验所需数据（box_list, point_list），不绘图。
+    def draw_fs_car_on_bev(self, image, obstacles, chaosheng, ground_param, virtual_camera_focal_length,
+                           virtual_camera_height, planning_point, chaosheng_pixel_radius=None):
+        """在 BEV 图像上绘制 FS_CAR 相关障碍物，同时返回规则校验所需数据。
 
         Returns:
+            image_out: 绘制后的图像
             box_list:  相机端 FS_CAR/FS_BIGCAR 及 VEHICLE/TRUCK+MODEL_PARKING 的投影多边形顶点
             point_list: 超声端 FS_CAR 的投影多边形顶点
         """
+        image_out = image.copy()
+        image_height, image_width = image.shape[:2]
+
+        if len(planning_point) > 0:
+            planning_point = np.array(planning_point, dtype=np.float32)
+            planning_point = self.transform_sensor_to_avm_image(
+                planning_point, ground_param,
+                virtual_camera_focal_length=virtual_camera_focal_length,
+                virtual_camera_height=virtual_camera_height,
+                image_height=image_height, image_width=image_width)
+            transformed_tail_points = planning_point
+            start = transformed_tail_points[0]
+            end = transformed_tail_points[-1]
+            if end[1] - start[1] >= 5.0:
+                for i in range(len(transformed_tail_points) - 1):
+                    p1 = transformed_tail_points[i]
+                    p2 = transformed_tail_points[i + 1]
+                    cv2.line(image_out, (int(p1[0]), int(p1[1])), (int(p2[0]), int(p2[1])),
+                             color=(255, 255, 255), thickness=2)
+                p1 = transformed_tail_points[-2]
+                p2 = transformed_tail_points[-1]
+                dx = p2[0] - p1[0]
+                dy = p2[1] - p1[1]
+                angle = math.atan2(dy, dx)
+                arrow_tip = (int(p2[0]), int(p2[1]))
+                arrow_length = 5
+                left_point = (int(p2[0] + arrow_length * math.cos(angle + math.pi * 0.75)),
+                              int(p2[1] + arrow_length * math.sin(angle + math.pi * 0.75)))
+                right_point = (int(p2[0] + arrow_length * math.cos(angle - math.pi * 0.75)),
+                               int(p2[1] + arrow_length * math.sin(angle - math.pi * 0.75)))
+                arrow_points = np.array([arrow_tip, left_point, right_point], dtype=np.int32)
+                cv2.fillPoly(image_out, [arrow_points], color=(255, 255, 255))
+
+        chaosheng_img_pts = np.empty((0, 2), dtype=np.float32)
+        if chaosheng_pixel_radius is not None:
+            chaosheng_img_pts = self._precompute_chaosheng_img_points(
+                chaosheng, ground_param, virtual_camera_focal_length,
+                virtual_camera_height, image_height, image_width)
+
         box_list = []
         point_list = []
 
         for obstacle in obstacles:
-            if obstacle.get('sensorType', 0) != 'CAMERA':
-                continue
-            obj_type = obstacle.get('type', 0)
-            model_type = obstacle.get('modelType', 0)
-            fs_type = obstacle.get('freespaceType', 0)
+            sensor_type = obstacle.get('sensorType', 0)
+            if sensor_type == 'CAMERA':
+                if chaosheng_pixel_radius is not None and \
+                        (len(chaosheng_img_pts) == 0 or
+                         not self._obstacle_near_chaosheng_pixels(
+                             obstacle, chaosheng_img_pts, chaosheng_pixel_radius,
+                             ground_param, virtual_camera_focal_length,
+                             virtual_camera_height, image_height, image_width)):
+                    continue
+                obj_type = obstacle.get('type', 0)
+                model_type = obstacle.get('modelType', 0)
+                fs_type = obstacle.get('freespaceType', 0)
+                if (obj_type == 'VEHICLE' and model_type == 'MODEL_PARKING') or \
+                   (obj_type == 'TRUCK' and model_type == 'MODEL_PARKING'):
+                    color = (0, 255, 0)
+                    polygon_area = obstacle.get("polygonArea", {}).get("point", [])
+                    if not polygon_area:
+                        continue
+                    points_3d = []
+                    for point in polygon_area:
+                        points_3d.append([point.get('x', 0), point.get('y', 0), point.get('z', 0)])
+                    points_3d = np.array(points_3d, dtype=np.float32)
+                    if len(points_3d) <= 5:
+                        continue
+                    try:
+                        points_2d = self.transform_sensor_to_avm_image(
+                            points_3d, ground_param,
+                            virtual_camera_focal_length=virtual_camera_focal_length,
+                            virtual_camera_height=virtual_camera_height,
+                            image_height=image_height, image_width=image_width)
+                    except Exception:
+                        continue
+                    box = [[int(pt[0]), int(pt[1])] for pt in points_2d]
+                    box_list.append(box)
+                    for i in range(len(points_2d) - 1):
+                        pt1, pt2 = points_2d[i], points_2d[i + 1]
+                        cv2.line(image_out, (int(pt1[0]), int(pt1[1])),
+                                 (int(pt2[0]), int(pt2[1])), color, 2)
 
-            need_box = False
-            if (obj_type == 'VEHICLE' and model_type == 'MODEL_PARKING') or \
-               (obj_type == 'TRUCK' and model_type == 'MODEL_PARKING'):
-                need_box = True
-            elif obj_type == 'PARK_FREESPACE' and fs_type in ('FS_CAR', 'FS_BIGCAR'):
-                need_box = True
-
-            if not need_box:
-                continue
-
-            polygon_area = obstacle.get("polygonArea", {}).get("point", [])
-            if not polygon_area:
-                continue
-
-            z_default = 0.0 if obj_type == 'PARK_FREESPACE' else None
-            points_3d = []
-            for point in polygon_area:
-                x = point.get('x', 0)
-                y = point.get('y', 0)
-                z = z_default if z_default is not None else point.get('z', 0)
-                points_3d.append([x, y, z])
-            points_3d = np.array(points_3d, dtype=np.float32)
-            if len(points_3d) == 0:
-                continue
-            if obj_type != 'PARK_FREESPACE' and len(points_3d) <= 5:
-                continue
-
-            try:
-                points_2d = self.transform_sensor_to_avm_image(
-                    points_3d, ground_param,
-                    virtual_camera_focal_length=virtual_camera_focal_length,
-                    virtual_camera_height=virtual_camera_height,
-                    image_height=image_height, image_width=image_width)
-            except Exception:
-                continue
-
-            box = [[int(pt[0]), int(pt[1])] for pt in points_2d]
-            box_list.append(box)
+                if obj_type == 'PARK_FREESPACE':
+                    color = (0, 255, 255)
+                    is_fs_car = fs_type in ('FS_CAR', 'FS_BIGCAR')
+                    polygon_area = obstacle.get("polygonArea", {}).get("point", [])
+                    if not polygon_area:
+                        continue
+                    points_3d = np.array(
+                        [[p.get('x', 0), p.get('y', 0), 0.0] for p in polygon_area],
+                        dtype=np.float32)
+                    if len(points_3d) == 0:
+                        continue
+                    try:
+                        points_2d = self.transform_sensor_to_avm_image(
+                            points_3d, ground_param,
+                            virtual_camera_focal_length=virtual_camera_focal_length,
+                            virtual_camera_height=virtual_camera_height,
+                            image_height=image_height, image_width=image_width)
+                    except Exception:
+                        continue
+                    if is_fs_car:
+                        box = [[int(pt[0]), int(pt[1])] for pt in points_2d]
+                        box_list.append(box)
+                    for i in range(len(points_2d) - 1):
+                        pt1, pt2 = points_2d[i], points_2d[i + 1]
+                        cv2.line(image_out, (int(pt1[0]), int(pt1[1])),
+                                 (int(pt2[0]), int(pt2[1])), color, 2)
 
         for obstacle in chaosheng:
             if obstacle.get("freespaceType", "") != "FS_CAR":
                 continue
+            color = (0, 0, 255)
             polygon_area = obstacle.get("polygonArea", {}).get("point", [])
             if not polygon_area:
                 continue
@@ -761,8 +823,17 @@ class PanoramicProjector:
                 if 0 <= u < image_width and 0 <= v < image_height:
                     p_list.append([u, v])
             point_list.append(p_list)
+            for i in range(len(points_2d) - 1):
+                pt1, pt2 = points_2d[i], points_2d[i + 1]
+                u1, v1 = int(pt1[0]), int(pt1[1])
+                u2, v2 = int(pt2[0]), int(pt2[1])
+                if 0 <= u1 < image_width and 0 <= v1 < image_height:
+                    cv2.circle(image_out, (u1, v1), 2, color, -1)
+                if 0 <= u2 < image_width and 0 <= v2 < image_height:
+                    cv2.circle(image_out, (u2, v2), 2, color, -1)
+                cv2.line(image_out, (u1, v1), (u2, v2), color, 2)
 
-        return box_list, point_list
+        return image_out, box_list, point_list
 
 
 

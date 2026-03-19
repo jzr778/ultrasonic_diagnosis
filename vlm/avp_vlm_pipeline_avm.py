@@ -230,21 +230,27 @@ def draw_single_tag(tag_id, args):
             planning_point_df = pd.DataFrame(planning_point, columns=['x', 'y', 'z'])
             planning_point_df = planning_point_df.drop_duplicates()
             planning_point = planning_point_df.values.tolist()
-            bev_img_with_obstacles, pos = projector.draw_obstacles_on_bev(
-                avm_image, obstacle, chaosheng, ground, focal_length, camera_height, planning_point,
-                chaosheng_pixel_radius=50
-            )
-            index = {"avm": pos}
-            cv2.imwrite(item_save_path + '/avm.jpg', bev_img_with_obstacles)
-            with open(item_save_path + "/index_avm.json", 'w', encoding='utf-8') as f:
-                json.dump(index, f, indent=2)
-            box_list, point_list = projector.compute_fs_car_data(
-                obstacle, chaosheng, ground, focal_length, camera_height,
-                avm_image.shape[0], avm_image.shape[1])
-            with open(item_save_path + "/box_list_avm.json", 'w', encoding='utf-8') as f:
-                json.dump(box_list, f, indent=2)
-            with open(item_save_path + "/point_list_avm.json", 'w', encoding='utf-8') as f:
-                json.dump(point_list, f, indent=2)
+            has_non_fs_car = any(o.get("freespaceType", "") != "FS_CAR" for o in chaosheng)
+            has_fs_car = any(o.get("freespaceType", "") == "FS_CAR" for o in chaosheng)
+            if has_non_fs_car:
+                bev_img_with_obstacles, pos = projector.draw_obstacles_on_bev(
+                    avm_image, obstacle, chaosheng, ground, focal_length, camera_height, planning_point,
+                    chaosheng_pixel_radius=50
+                )
+                index = {"avm": pos}
+                cv2.imwrite(item_save_path + '/avm.jpg', bev_img_with_obstacles)
+                with open(item_save_path + "/index_avm.json", 'w', encoding='utf-8') as f:
+                    json.dump(index, f, indent=2)
+            if has_fs_car:
+                bev_img_with_fs_car, box_list, point_list = projector.draw_fs_car_on_bev(
+                    avm_image, obstacle, chaosheng, ground, focal_length, camera_height, planning_point,
+                    chaosheng_pixel_radius=50
+                )
+                cv2.imwrite(item_save_path + '/avm_fs_car.jpg', bev_img_with_fs_car)
+                with open(item_save_path + "/box_list_avm.json", 'w', encoding='utf-8') as f:
+                    json.dump(box_list, f, indent=2)
+                with open(item_save_path + "/point_list_avm.json", 'w', encoding='utf-8') as f:
+                    json.dump(point_list, f, indent=2)
             drawn_count += 1
         else:
             logger.warning(f"[绘图] tag={tag_id}, ts={item} 未匹配到 AVM 图像文件（容差{AVM_MATCH_TOLERANCE}μs），跳过")
@@ -285,14 +291,14 @@ def diagnose_single_tag(tag_id, feishu_id, args):
         avm_img_path = os.path.join(item_save_path, "avm.jpg")
         box_list_path = os.path.join(item_save_path, "box_list_avm.json")
         point_list_path = os.path.join(item_save_path, "point_list_avm.json")
-        if not os.path.isfile(index_path) or not os.path.isfile(avm_img_path):
+        has_avm = os.path.isfile(index_path) and os.path.isfile(avm_img_path)
+        has_fs_car_data = os.path.isfile(box_list_path) and os.path.isfile(point_list_path)
+        if not has_avm and not has_fs_car_data:
             logger.warning(f"[诊断] tag={tag_id}, ts={item} 缺少绘图输出，跳过")
             continue
         logger.info(f"[诊断] tag={tag_id}, ts={item}")
-        with open(index_path, 'r', encoding='utf-8') as f:
-            index = json.load(f)
         result_fs_car = []
-        if os.path.isfile(box_list_path) and os.path.isfile(point_list_path):
+        if has_fs_car_data:
             with open(box_list_path, 'r', encoding='utf-8') as f:
                 box_list = json.load(f)
             with open(point_list_path, 'r', encoding='utf-8') as f:
@@ -304,19 +310,21 @@ def diagnose_single_tag(tag_id, feishu_id, args):
                     result_fs_car.append([center_point[0], center_point[1]])
         if result_fs_car:
             logger.info(f"[诊断] tag={tag_id}, ts={item} fs_car规则校验误检: {result_fs_car}")
-        if len(index.get('avm', [])) == 0:
-            analysis_result = {'positions': []}
-        else:
-            bev_img = cv2.imread(avm_img_path)
-            panoramic_1 = cv2.cvtColor(bev_img, cv2.COLOR_BGR2RGB)
-            image_list = {'panoramic_1': panoramic_1}
-            prompt_config = args.prompt_config
-            prompt = prompt_gen(index, prompt_config)
-            analysis_result = analyze_scenario_from_images(image_list, prompt, args.model)
-            if "error" in analysis_result:
-                logger.warning(f"[诊断] tag={tag_id}, ts={item} API 返回异常: {analysis_result['error']}")
-                stats["api_error"].append((tag_id, item))
-                continue
+        analysis_result = {'positions': []}
+        if has_avm:
+            with open(index_path, 'r', encoding='utf-8') as f:
+                index = json.load(f)
+            if len(index.get('avm', [])) > 0:
+                bev_img = cv2.imread(avm_img_path)
+                panoramic_1 = cv2.cvtColor(bev_img, cv2.COLOR_BGR2RGB)
+                image_list = {'panoramic_1': panoramic_1}
+                prompt_config = args.prompt_config
+                prompt = prompt_gen(index, prompt_config)
+                analysis_result = analyze_scenario_from_images(image_list, prompt, args.model)
+                if "error" in analysis_result:
+                    logger.warning(f"[诊断] tag={tag_id}, ts={item} API 返回异常: {analysis_result['error']}")
+                    stats["api_error"].append((tag_id, item))
+                    continue
         result = {
             "fs_others": analysis_result['positions'],
             "fs_car": result_fs_car,
