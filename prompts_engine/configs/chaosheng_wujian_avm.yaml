@@ -27,7 +27,7 @@ inputs:
 # 任务列表（动态组合并生成 Schema）
 # 每个任务对应最终输出 JSON 的一个字段
 tasks:
-  - name: "**判断给定的检测点是否是误检 (Determine whether the given detection point is a false detection)**"
+  - name: "**判断红色超声标记是否是误检 (Determine whether the given detection point is a false detection)**"
     template: "layer3_analysis/chaosheng_wujian_avm.jinja2"
     description: "任务流程"
 
