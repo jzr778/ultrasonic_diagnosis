@@ -278,6 +278,8 @@ def diagnose_single_tag(tag_id, feishu_id, args):
     stats = {"misdetected": [], "normal": [], "api_error": []}
     pre_comment_record = '大模型诊断结果：\n'
     comment_record = ''
+    debug_thinking = getattr(args, 'debug_thinking', False)
+    debug_thinking_path = getattr(args, 'debug_thinking_path', None)
     image_save_path = os.path.join(config.DRAW_IMAGE_DIR, str(tag_id))
     if not os.path.isdir(image_save_path):
         logger.warning(f"[诊断] tag={tag_id} 无绘图结果目录，跳过")
@@ -322,7 +324,21 @@ def diagnose_single_tag(tag_id, feishu_id, args):
                 image_list = {'panoramic_1': panoramic_1}
                 prompt_config = args.prompt_config
                 prompt = prompt_gen(index, prompt_config)
+                if getattr(args, 'debug_thinking', False):
+                    prompt += ("\n\n#### ⚠️ 调试模式\n"
+                               "请先**详细输出你对每个检测点的完整分析推理过程**"
+                               "（包括定位、关联性筛选、真伪判断的每一步思考），"
+                               "然后再输出最终的JSON结果。")
                 analysis_result = analyze_scenario_from_images(image_list, prompt, args.model)
+                raw_responses = analysis_result.pop("_raw_responses", {})
+                if debug_thinking_path and raw_responses:
+                    with open(debug_thinking_path, 'a', encoding='utf-8') as df:
+                        df.write(f"\n{'=' * 60}\n")
+                        df.write(f"tag={tag_id}, ts={item}\n")
+                        df.write(f"{'=' * 60}\n")
+                        for model_name, resp in raw_responses.items():
+                            df.write(f"\n--- model: {model_name} ---\n")
+                            df.write(str(resp) + "\n")
                 if "error" in analysis_result:
                     logger.warning(f"[诊断] tag={tag_id}, ts={item} API 返回异常: {analysis_result['error']}")
                     stats["api_error"].append((tag_id, item))
@@ -370,9 +386,9 @@ def diagnose_single_tag(tag_id, feishu_id, args):
     if comment_record:
         comment_record = pre_comment_record + comment_record
         logger.info(f"[诊断] tag={tag_id} 飞书评论:\n{comment_record}")
-        tester = FeishuCommentTester()
-        test_url = f"https://project.feishu.cn/{config.FEISHU_PROJECT_KEY}/case/detail/{feishu_id}"
-        tester.test_comment(test_url, comment_record)
+        # tester = FeishuCommentTester()
+        # test_url = f"https://project.feishu.cn/{config.FEISHU_PROJECT_KEY}/case/detail/{feishu_id}"
+        # tester.test_comment(test_url, comment_record)
     logger.info(f"[诊断] tag={tag_id} 完成 (误检={len(stats['misdetected'])}, 正常={len(stats['normal'])}, API异常={len(stats['api_error'])})")
     return stats
 
@@ -439,9 +455,22 @@ def main():
         default=[],
         help="绘图时忽略的超声 freespaceType 列表，如 --ignore-fs-types FS_CURB FS_CHOCK"
     )
+    parser.add_argument(
+        "--debug-thinking",
+        action="store_true",
+        default=False,
+        help="记录 VLM 模型的原始回复（含思考过程）到 logs/debug_thinking/"
+    )
     args = parser.parse_args()
 
-    setup_logging()
+    log_file = setup_logging()
+    if args.debug_thinking:
+        debug_thinking_path = log_file.replace("vlm_avm_", "debug_thinking_").replace(".log", ".txt")
+        args.debug_thinking_path = debug_thinking_path
+        open(debug_thinking_path, 'w', encoding='utf-8').close()  # 清空/创建文件
+        logger.info(f"思考过程将记录到: {debug_thinking_path}")
+    else:
+        args.debug_thinking_path = None
 
     with open(args.id_mapping, "r", encoding="utf-8") as f:
         id_mapping = json.load(f)

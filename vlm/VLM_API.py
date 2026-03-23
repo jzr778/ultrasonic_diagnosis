@@ -186,9 +186,10 @@ def analyze_scenario_from_images(image_list, prompt, model_list):
         )
         return {"error": failed_details, "raw_responses": raw_responses}
 
-    results = majority_coordinate_voting_with_empty(results)
+    voted = majority_coordinate_voting_with_empty(results)
+    voted["_raw_responses"] = raw_responses
 
-    return results
+    return voted
 
 
 if __name__ == "__main__":
