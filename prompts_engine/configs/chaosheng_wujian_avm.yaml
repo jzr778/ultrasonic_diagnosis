@@ -19,6 +19,9 @@ system_components:
 # 输入数据组件（动态组合）
 # 类似 tasks，支持条件渲染和自动编号
 inputs:
+  - name: "**黄色 PARK_FREESPACE 障碍（类别与质心）**"
+    template: "layer2_input/yellow_freespace_avm.jinja2"
+    description: "已绘制黄线的 freespaceType 与质心像素坐标"
   - name: "**检测点位置信息 (Location Information of Detection Points)**"
     template: "layer2_input/detection_point_avm.jinja2"
     description: "图像上检测点像素坐标"

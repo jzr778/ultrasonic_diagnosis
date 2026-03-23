@@ -236,11 +236,12 @@ def draw_single_tag(tag_id, args):
             has_non_fs_car = any(o.get("freespaceType", "") != "FS_CAR" for o in chaosheng)
             has_fs_car = any(o.get("freespaceType", "") == "FS_CAR" for o in chaosheng)
             if has_non_fs_car:
-                bev_img_with_obstacles, pos = projector.draw_obstacles_on_bev(
+                bev_img_with_obstacles, pos, yellow_fs = projector.draw_obstacles_on_bev(
                     avm_image, obstacle, chaosheng, ground, focal_length, camera_height, planning_point,
-                    chaosheng_pixel_radius=50
+                    chaosheng_pixel_radius=50,
+                    ignore_camera_freespace_types=ignore_fs if ignore_fs else None,
                 )
-                index = {"avm": pos}
+                index = {"avm": pos, "yellow_freespace": yellow_fs}
                 cv2.imwrite(item_save_path + '/avm.jpg', bev_img_with_obstacles)
                 with open(item_save_path + "/index_avm.json", 'w', encoding='utf-8') as f:
                     json.dump(index, f, indent=2)

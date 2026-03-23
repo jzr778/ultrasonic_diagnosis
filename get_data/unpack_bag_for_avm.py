@@ -3,6 +3,9 @@
 仅解包超声波触发停车事件(MODEL_PARKING + PLANNING_STOP_OBSTACLE + ULTRASONIC)
 对应时刻的最近邻图像帧。
 
+P01T 车型 bag（名称中含 ``-P01T-<车号>``，如 ``YR-P01T-4_...``）在
+``BagReader.scan_ultrasonic_events`` 中会被跳过，不参与解包与事件关联。
+
 输出目录结构（兼容 /mnt/public-data/training/avp/mighty/samples 格式）:
   output_root/
   ├── config/YYYYMM/{bag_name}/

@@ -447,7 +447,7 @@ class PanoramicProjector:
 
 
     def draw_obstacles_on_bev(self, image, obstacles, chaosheng, ground_param, virtual_camera_focal_length, virtual_camera_height,
-                              planning_point, chaosheng_pixel_radius=None):
+                              planning_point, chaosheng_pixel_radius=None, ignore_camera_freespace_types=None):
         """
         在BEV图像上绘制障碍物的polygon
 
@@ -458,12 +458,16 @@ class PanoramicProjector:
             virtual_camera_focal_length: 虚拟相机焦距
             virtual_camera_height: 虚拟相机高度
             chaosheng_pixel_radius: 若非 None，仅绘制质心在超声障碍图像中心 <= 该像素距离内的相机障碍物
+            ignore_camera_freespace_types: 若为 set/list，相机 PARK_FREESPACE 中 freespaceType 命中的条目不绘制、不写入 yellow 元数据
 
         Returns:
-            绘制了障碍物的图像
+            tuple: (绘制后的图像, 红色超声质心列表, 黄色 PARK_FREESPACE 元数据列表)
+            黄色列表每项: {"freespaceType": str, "centroid": [u, v]} 像素坐标
         """
         image_out = image.copy()
         image_height, image_width = image.shape[:2]
+        yellow_freespace_meta = []
+        skip_fs = set(ignore_camera_freespace_types or [])
         # 画planing
         if len(planning_point) > 0:
             planning_point = np.array(planning_point, dtype=np.float32)
@@ -589,6 +593,8 @@ class PanoramicProjector:
                         cv2.line(image_out, (u1, v1), (u2, v2), color, 2)
 
                 if obj_type == 'PARK_FREESPACE':
+                    if fs_type in skip_fs:
+                        continue
                     color = (0, 255, 255)  # 黄色 (BGR)
 
                     polygon_area = obstacle.get("polygonArea", {}).get("point", [])
@@ -626,6 +632,13 @@ class PanoramicProjector:
                         u1, v1 = int(pt1[0]), int(pt1[1])
                         u2, v2 = int(pt2[0]), int(pt2[1])
                         cv2.line(image_out, (u1, v1), (u2, v2), color, 2)
+
+                    c = np.mean(points_2d, axis=0)
+                    ft = fs_type if fs_type else "(未标注)"
+                    yellow_freespace_meta.append({
+                        "freespaceType": str(ft),
+                        "centroid": [int(round(c[0])), int(round(c[1]))],
+                    })
 
         pos = []
         for obstacle in chaosheng:
@@ -677,7 +690,7 @@ class PanoramicProjector:
                 center = np.mean(valid_points, axis=0)
                 pos.append([int(center[0]), int(center[1])])
 
-        return image_out, pos
+        return image_out, pos, yellow_freespace_meta
 
     def draw_fs_car_on_bev(self, image, obstacles, chaosheng, ground_param, virtual_camera_focal_length,
                            virtual_camera_height, planning_point, chaosheng_pixel_radius=None):

@@ -11,6 +11,7 @@
 """
 
 import os
+import re
 import sys
 
 import cv2
@@ -69,6 +70,9 @@ class BagReader:
         同时填充 self.event_light_bags / self.event_heavy_bags。
         """
         for bag_name in self.all_light_bags:
+            if is_p01t_vehicle_bag(bag_name):
+                print(f"    [SKIP] P01T 车型 bag，跳过: {os.path.basename(bag_name)}")
+                continue
             try:
                 with DpBag(bag=bag_name) as bag:
                     for _, msg, _ in bag.read_messages(
