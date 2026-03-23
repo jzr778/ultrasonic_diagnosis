@@ -211,6 +211,9 @@ def draw_single_tag(tag_id, args):
         item_save_path = os.path.join(image_save_path, item)
         with open(item_path + '/chaosheng.json', 'r', encoding='utf-8') as f:
             chaosheng = json.load(f)
+        ignore_fs = set(getattr(args, 'ignore_fs_types', []) or [])
+        if ignore_fs:
+            chaosheng = [o for o in chaosheng if o.get("freespaceType", "") not in ignore_fs]
         with open(item_path + '/obstacle.json', 'r', encoding='utf-8') as f:
             obstacle = json.load(f)
         with open(item_path + '/pose.json', 'r', encoding='utf-8') as f:
@@ -354,7 +357,7 @@ def diagnose_single_tag(tag_id, feishu_id, args):
                 d = get_direction_from_position(int(coor[0]), int(coor[1]))
                 direction.append(d)
             if direction:
-                direction_text = direction_text + 'FS_OTHERS_STATIC误检点相对于车的位置：' + ', '.join(direction)
+                direction_text = direction_text + 'FS_OTHERS误检点相对于车的位置：' + ', '.join(direction)
 
             comment_record = comment_record + '时间戳' + str(item) + ': ' + direction_text + "\n"
         else:
@@ -367,9 +370,9 @@ def diagnose_single_tag(tag_id, feishu_id, args):
     if comment_record:
         comment_record = pre_comment_record + comment_record
         logger.info(f"[诊断] tag={tag_id} 飞书评论:\n{comment_record}")
-        # tester = FeishuCommentTester()
-        # test_url = f"https://project.feishu.cn/{config.FEISHU_PROJECT_KEY}/case/detail/{feishu_id}"
-        # tester.test_comment(test_url, comment_record)
+        tester = FeishuCommentTester()
+        test_url = f"https://project.feishu.cn/{config.FEISHU_PROJECT_KEY}/case/detail/{feishu_id}"
+        tester.test_comment(test_url, comment_record)
     logger.info(f"[诊断] tag={tag_id} 完成 (误检={len(stats['misdetected'])}, 正常={len(stats['normal'])}, API异常={len(stats['api_error'])})")
     return stats
 
@@ -428,6 +431,13 @@ def main():
         choices=["all", "draw", "diagnose"],
         default="all",
         help="运行模式: all=全流程, draw=仅绘图, diagnose=仅诊断 (默认: all)"
+    )
+    parser.add_argument(
+        "--ignore-fs-types",
+        type=str,
+        nargs="*",
+        default=[],
+        help="绘图时忽略的超声 freespaceType 列表，如 --ignore-fs-types FS_CURB FS_CHOCK"
     )
     args = parser.parse_args()
 

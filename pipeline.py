@@ -227,7 +227,7 @@ def step5_generate_avm(samples_dir, generate_dir):
 
 
 # ── Step 6 ──────────────────────────────────────────────────
-def step6_draw_images(id_mapping_path, read_data_dir):
+def step6_draw_images(id_mapping_path, read_data_dir, ignore_fs_types=None):
     banner(6, "绘制 AVM 标注图像")
 
     cmd = [
@@ -236,12 +236,14 @@ def step6_draw_images(id_mapping_path, read_data_dir):
         "--data-path", read_data_dir,
         "--mode", "draw",
     ]
+    if ignore_fs_types:
+        cmd.extend(["--ignore-fs-types"] + ignore_fs_types)
     run(cmd)
     log.info(f"  ✅ 绘图完成")
 
 
 # ── Step 7 ──────────────────────────────────────────────────
-def step7_run_vlm(id_mapping_path, read_data_dir, model=None):
+def step7_run_vlm(id_mapping_path, read_data_dir, model=None, ignore_fs_types=None):
     banner(7, "运行 VLM 大模型诊断")
 
     cmd = [
@@ -252,6 +254,8 @@ def step7_run_vlm(id_mapping_path, read_data_dir, model=None):
     ]
     if model:
         cmd.extend(["--model"] + model)
+    if ignore_fs_types:
+        cmd.extend(["--ignore-fs-types"] + ignore_fs_types)
     run(cmd)
     log.info(f"  ✅ VLM 诊断完成")
 
@@ -281,6 +285,8 @@ def main():
     parser.add_argument("--id-mapping",
                         default=os.path.join(PROJECT_ROOT, "get_data", "id_mapping.json"),
                         help="tag_id → feishu_id 映射文件 (默认: get_data/id_mapping.json)")
+    parser.add_argument("--ignore-fs-types", nargs="*", default=[],
+                        help="绘图/诊断时忽略的超声 freespaceType，如 --ignore-fs-types FS_CURB FS_CHOCK")
     parser.add_argument("--log-dir", default=os.path.join(PROJECT_ROOT, "logs"),
                         help="日志输出目录 (默认: logs/)")
     args = parser.parse_args()
@@ -343,13 +349,15 @@ def main():
 
     # Step 6
     if 6 not in skip:
-        step6_draw_images(id_mapping_path, args.read_data_dir)
+        step6_draw_images(id_mapping_path, args.read_data_dir,
+                          ignore_fs_types=args.ignore_fs_types)
     else:
         log.info(f"[跳过 Step 6]")
 
     # Step 7
     if 7 not in skip:
-        step7_run_vlm(id_mapping_path, args.read_data_dir, model=args.model)
+        step7_run_vlm(id_mapping_path, args.read_data_dir, model=args.model,
+                      ignore_fs_types=args.ignore_fs_types)
     else:
         log.info(f"[跳过 Step 7]")
 

@@ -305,7 +305,7 @@ if __name__ == "__main__":
     # 示例：直接测试特定URL
     tester = FeishuCommentTester()
     test_url = "https://project.feishu.cn/iffcom/case/detail/6727594922"
-    comment = "时间戳1640997795700000: 障碍物误检点相对于车的位置：正后方\n时间戳1640997795900000: FS_OTHERS_STATIC误检点相对于车的位置：正后方"
+    comment = "时间戳1640997795700000: 障碍物误检点相对于车的位置：正后方\n时间戳1640997795900000: FS_OTHERS误检点相对于车的位置：正后方"
     tester.test_comment(test_url, comment)
     
     # 交互式模式

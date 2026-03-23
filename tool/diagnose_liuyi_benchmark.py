@@ -159,7 +159,7 @@ def diagnose_single_tag(tag_id, args):
                 d = get_direction_from_position(int(coor[0]), int(coor[1]))
                 direction.append(d)
             if direction:
-                direction_text = direction_text + 'FS_OTHERS_STATIC误检点相对于车的位置：' + ', '.join(direction)
+                direction_text = direction_text + 'FS_OTHERS误检点相对于车的位置：' + ', '.join(direction)
 
             comment_record += f"  ts={item}: {direction_text}\n"
         else:
