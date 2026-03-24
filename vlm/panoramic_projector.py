@@ -13,6 +13,8 @@ import pandas as pd
 from scipy.spatial.transform import Rotation as R
 from typing import Dict, List, Optional, Tuple
 
+from prompts_engine.context.freespace_catalog import normalize_freespace_label
+
 
 CAMERA_NAME_TO_INDEX = {
     "panoramic_1": 0,
@@ -20,7 +22,6 @@ CAMERA_NAME_TO_INDEX = {
     "panoramic_3": 2,
     "panoramic_4": 3,
 }
-
 
 class PanoramicProjector:
     """
@@ -458,11 +459,12 @@ class PanoramicProjector:
             virtual_camera_focal_length: 虚拟相机焦距
             virtual_camera_height: 虚拟相机高度
             chaosheng_pixel_radius: 若非 None，仅绘制质心在超声障碍图像中心 <= 该像素距离内的相机障碍物
-            ignore_camera_freespace_types: 若为 set/list，相机 PARK_FREESPACE 中 freespaceType 命中的条目不绘制、不写入 yellow 元数据
+            ignore_camera_freespace_types: 若为 set/list，规范化后的枚举名（如 FS_CURB）命中的条目不绘制、不写入 yellow 元数据。
+                freespaceType 缺省、无法解析或整型不在 0–16 时规范为 FS_OTHERS_STATIC。
 
         Returns:
             tuple: (绘制后的图像, 红色超声质心列表, 黄色 PARK_FREESPACE 元数据列表)
-            黄色列表每项: {"freespaceType": str, "centroid": [u, v]} 像素坐标
+            黄色列表每项: {"freespaceType": str, "centroid": [u, v]}（组 prompt 时由 ContextBuilder 补全 freespaceTypeZh）
         """
         image_out = image.copy()
         image_height, image_width = image.shape[:2]
@@ -545,7 +547,6 @@ class PanoramicProjector:
                     continue
                 obj_type = obstacle.get('type', 0)
                 model_type = obstacle.get('modelType', 0)
-                fs_type = obstacle.get('freespaceType', 0)
                 if (obj_type == 'VEHICLE' and model_type == 'MODEL_PARKING') or (
                         obj_type == 'TRUCK' and model_type == 'MODEL_PARKING'):
                     color = (0, 255, 0)
@@ -593,7 +594,9 @@ class PanoramicProjector:
                         cv2.line(image_out, (u1, v1), (u2, v2), color, 2)
 
                 if obj_type == 'PARK_FREESPACE':
-                    if fs_type in skip_fs:
+                    fs_raw = obstacle.get("freespaceType")
+                    fs_label = normalize_freespace_label(fs_raw)
+                    if fs_label in skip_fs:
                         continue
                     color = (0, 255, 255)  # 黄色 (BGR)
 
@@ -634,9 +637,8 @@ class PanoramicProjector:
                         cv2.line(image_out, (u1, v1), (u2, v2), color, 2)
 
                     c = np.mean(points_2d, axis=0)
-                    ft = fs_type if fs_type else "(未标注)"
                     yellow_freespace_meta.append({
-                        "freespaceType": str(ft),
+                        "freespaceType": fs_label,
                         "centroid": [int(round(c[0])), int(round(c[1]))],
                     })
 
@@ -755,7 +757,6 @@ class PanoramicProjector:
                     continue
                 obj_type = obstacle.get('type', 0)
                 model_type = obstacle.get('modelType', 0)
-                fs_type = obstacle.get('freespaceType', 0)
                 if (obj_type == 'VEHICLE' and model_type == 'MODEL_PARKING') or \
                    (obj_type == 'TRUCK' and model_type == 'MODEL_PARKING'):
                     color = (0, 255, 0)
@@ -784,8 +785,9 @@ class PanoramicProjector:
                                  (int(pt2[0]), int(pt2[1])), color, 2)
 
                 if obj_type == 'PARK_FREESPACE':
+                    fs_label = normalize_freespace_label(obstacle.get("freespaceType"))
                     color = (0, 255, 255)
-                    is_fs_car = fs_type in ('FS_CAR', 'FS_BIGCAR')
+                    is_fs_car = fs_label in ('FS_CAR', 'FS_BIGCAR')
                     polygon_area = obstacle.get("polygonArea", {}).get("point", [])
                     if not polygon_area:
                         continue

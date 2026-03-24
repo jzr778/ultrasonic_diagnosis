@@ -1,7 +1,20 @@
 """
 Context Builder - 上下文构建器
 """
-from typing import Dict, List, Any, Optional
+from typing import Any, Dict
+
+from .freespace_catalog import normalize_freespace_label, zh_for_freespace_label
+
+
+def _enrich_yellow_freespace_item(item: Any) -> Any:
+    if not isinstance(item, dict):
+        return item
+    d = dict(item)
+    label = normalize_freespace_label(d.get("freespaceType"))
+    d["freespaceType"] = label
+    d["freespaceTypeZh"] = zh_for_freespace_label(label)
+    return d
+
 
 class ContextBuilder:
     """
@@ -23,6 +36,10 @@ class ContextBuilder:
         Returns:
             一个纯字典，包含所有 Prompt 模板需要的变量
         """
-        context = context
-        
-        return context
+        out = dict(context)
+        yf = out.get("yellow_freespace")
+        if yf:
+            out["yellow_freespace"] = [
+                _enrich_yellow_freespace_item(x) for x in yf
+            ]
+        return out

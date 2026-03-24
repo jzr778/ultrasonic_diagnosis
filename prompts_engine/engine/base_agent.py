@@ -156,7 +156,7 @@ class BaseAgent:
             return ""
         
         # 2. 组装输入数据部分
-        return "#### 输入数据\n" + "\n".join(input_parts)
+        return "## 输入数据\n" + "\n".join(input_parts)
     
     def _render_tasks(self, context: Dict[str, Any]) -> str:
         """

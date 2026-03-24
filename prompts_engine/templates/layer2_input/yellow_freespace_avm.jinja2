@@ -1,13 +1,11 @@
 {% if yellow_freespace %}
-本帧图中绘制的**黄色边缘线**对应相机感知 **PARK_FREESPACE** 障碍。下列为每条已绘制黄线的 **freespaceType**（与数据字段一致）及其多边形在 AVM 上的**质心像素坐标** `[u, v]`（图像 640×800，原点左上）：
+本帧图中绘制的**黄色边缘线**对应相机感知 **PARK_FREESPACE** 障碍。下列为每条已绘制黄线的 **freespaceType**（规范化枚举名）及其在 AVM 上的**质心像素坐标** `[u, v]`（图像 640×800，原点左上）：
 
 {% for item in yellow_freespace %}
-- 第 {{ loop.index }} 条：freespaceType = **{{ item.freespaceType }}**，质心 [u, v] = **[{{ item.centroid[0] }}, {{ item.centroid[1] }}]**
+- 第 {{ loop.index }} 条：freespaceType = **{{ item.freespaceType }}**（{{ item.freespaceTypeZh }}），质心 [u, v] = **[{{ item.centroid[0] }}, {{ item.centroid[1] }}]**
 {% endfor %}
 
-**常见 freespaceType 含义**：`FS_WALL` 墙体；`FS_PILLAR` 柱；`FS_CAR` / `FS_BIGCAR` 邻车轮廓；`FS_CHOCK` 轮挡相关；`FS_CURB` 路缘；`FS_OTHERS_STATIC` 其他静态障碍；`FS_BUSH` 灌木等。
-
-请注意：根据黄色质心像素坐标在图像中找到对应的黄线，再结合freespaceType判断障碍物的类型，但是必须根据真实图像实体进行判断
+请注意：根据黄色质心像素坐标在图像中找到对应的黄线，再结合 freespaceType 判断障碍物的类型，但是必须根据真实图像实体进行判断
 
 {% else %}
 本帧未附带黄色障碍结构化列表（可能无相机障碍通过距离筛选）。请直接依据图像中的黄色边缘线分析。
