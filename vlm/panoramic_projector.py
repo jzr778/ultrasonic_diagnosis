@@ -458,7 +458,8 @@ class PanoramicProjector:
             ground_param: 地面参数
             virtual_camera_focal_length: 虚拟相机焦距
             virtual_camera_height: 虚拟相机高度
-            chaosheng_pixel_radius: 若非 None，仅绘制质心在超声障碍图像中心 <= 该像素距离内的相机障碍物
+            chaosheng_pixel_radius: 若非 None，仅保留「相机障碍多边形任一顶点到任一超声障碍多边形顶点」的
+                欧氏像素距离最小值 <= 该阈值的条目后再绘制；超声侧点为各 chaosheng 多边形全部顶点（非质心）。
             ignore_camera_freespace_types: 若为 set/list，规范化后的枚举名（如 FS_CURB）命中的条目不绘制、不写入 yellow 元数据。
                 freespaceType 缺省、无法解析或整型不在 0–16 时规范为 FS_OTHERS_STATIC。
 
