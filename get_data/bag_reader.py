@@ -41,6 +41,12 @@ from google.protobuf.json_format import MessageToDict
 from get_data.get_meta_data import get_meta_data
 
 
+def is_p01t_vehicle_bag(bag_name):
+    """P01T 车型 bag：名称中含 ``-P01T-<车号>``，如 ``YR-P01T-4_...``。"""
+    base = os.path.basename(bag_name)
+    return re.search(r"-P01T-", base, re.IGNORECASE) is not None
+
+
 class BagReader:
     """对一个 tag_id 对应的所有 bag 进行统一读取。"""
 

@@ -28,6 +28,8 @@ _project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _project_root not in sys.path:
     sys.path.insert(0, _project_root)
 
+from collections import OrderedDict
+
 import config
 from vlm.panoramic_projector import PanoramicProjector
 
@@ -138,6 +140,63 @@ def get_direction_from_position(target_x: int, target_y: int,
         return "左前方"
 
 
+# AVM 八方位 → 与超声主证据最相关的单路鱼眼（前/右/后/左）
+_AVM_DIRECTION_TO_YUYAN_CAM = {
+    "正前方": "panoramic_1",
+    "左前方": "panoramic_1",
+    "右前方": "panoramic_1",
+    "正右方": "panoramic_2",
+    "右后方": "panoramic_2",
+    "正后方": "panoramic_3",
+    "左后方": "panoramic_4",
+    "正左方": "panoramic_4",
+}
+
+YUYAN_CAMERA_LABEL_ZH = {
+    "panoramic_1": "前视鱼眼（车辆正前）",
+    "panoramic_2": "右视鱼眼（车辆右侧）",
+    "panoramic_3": "后视鱼眼（车辆正后）",
+    "panoramic_4": "左视鱼眼（车辆左侧）",
+}
+
+
+def avm_positions_to_yuyan_camera(positions):
+    """由 AVM 上红色超声质心集合估计主方位并选取一路鱼眼。"""
+    if not positions:
+        return None, None
+    mx = int(round(sum(p[0] for p in positions) / len(positions)))
+    my = int(round(sum(p[1] for p in positions) / len(positions)))
+    direction = get_direction_from_position(mx, my)
+    cam = _AVM_DIRECTION_TO_YUYAN_CAM.get(direction, "panoramic_1")
+    return cam, direction
+
+
+def select_yuyan_camera_from_fisheye_markers(index_fisheye, bev_chaosheng_positions):
+    """在 plot_polygon 标红之后，选一路鱼眼送进 VLM。
+
+    - 仅一路有红色超声标记 → 用该路。
+    - 多路有标记：若 BEV 主方位对应相机也在其中 → 与 AVM 一致；否则取标记点最多的那路。
+    - 无路有标记：回退 BEV 主方位相机；无 BEV 点时回退 panoramic_1。
+    """
+    order = ["panoramic_1", "panoramic_2", "panoramic_3", "panoramic_4"]
+    non_empty = [c for c in order if index_fisheye.get(c)]
+    if len(non_empty) == 1:
+        cam = non_empty[0]
+        _, direction = avm_positions_to_yuyan_camera(bev_chaosheng_positions or [])
+        return cam, direction
+    if len(non_empty) > 1:
+        bev_cam, direction = avm_positions_to_yuyan_camera(bev_chaosheng_positions or [])
+        if bev_cam and bev_cam in non_empty:
+            return bev_cam, direction
+        best = max(non_empty, key=lambda c: len(index_fisheye[c]))
+        _, direction = avm_positions_to_yuyan_camera(bev_chaosheng_positions or [])
+        return best, direction
+    bev_cam, direction = avm_positions_to_yuyan_camera(bev_chaosheng_positions or [])
+    if bev_cam:
+        return bev_cam, direction
+    return "panoramic_1", None
+
+
 def draw_single_tag(tag_id, args):
     """处理单个 tag_id 的绘图流程：生成 AVM 标注图像及中间数据。
 
@@ -165,6 +224,7 @@ def draw_single_tag(tag_id, args):
     focal_length = 162.6
     camera_height = 3.44
     projector = PanoramicProjector()
+    camera_name_to_trans_mat = projector.get_transform(cameras_parameters, projector.cameras)
     all_items = os.listdir(data_path)
     folders = []
     for item in all_items:
@@ -221,6 +281,8 @@ def draw_single_tag(tag_id, args):
         with open(item_path + '/plan.json', 'r', encoding='utf-8') as f:
             planning_point = json.load(f)
         obstacle, ULTRASONIC_z = projector.world2vehicle2sensing(obstacle, pose, vehicle2sensing)
+        # TODO:
+        # 用视角障碍的z拟合地面方程，来替代chaosheng的z
         chaosheng = projector.world2vehicle2sensing_chaosheng(chaosheng, pose, vehicle2sensing, ULTRASONIC_z)
         avm_path = avm_path_list[item]
         if avm_path:
@@ -242,6 +304,79 @@ def draw_single_tag(tag_id, args):
                     ignore_camera_freespace_types=ignore_fs if ignore_fs else None,
                 )
                 index = {"avm": pos, "yellow_freespace": yellow_fs}
+                if getattr(args, "yuyan", True):
+                    index_fisheye = {}
+                    for cam in projector.cameras:
+                        fish_src = os.path.join(item_path, f"{cam}.jpg")
+                        trans = camera_name_to_trans_mat.get(cam)
+                        if not os.path.isfile(fish_src):
+                            logger.warning(
+                                f"[绘图] tag={tag_id}, ts={item} 无鱼眼原图 {fish_src}，"
+                                f"该路跳过"
+                            )
+                            index_fisheye[cam] = []
+                            continue
+                        if trans is None:
+                            logger.warning(
+                                f"[绘图] tag={tag_id}, ts={item} 无相机标定 {cam}，该路跳过"
+                            )
+                            index_fisheye[cam] = []
+                            continue
+                        raw_fish = cv2.imread(fish_src)
+                        if raw_fish is None:
+                            logger.warning(
+                                f"[绘图] tag={tag_id}, ts={item} 鱼眼读图失败 {fish_src}"
+                            )
+                            index_fisheye[cam] = []
+                            continue
+                        fish_drawn, fish_pts = projector.plot_polygon(
+                            raw_fish.copy(),
+                            obstacle,
+                            chaosheng,
+                            trans["extrinsics"],
+                            trans["distortion_coeff"],
+                            trans["intrinsics"],
+                            cam,
+                            raw_fish.shape[:2],
+                            resize=True,
+                            ground_param=ground,
+                            virtual_camera_focal_length=focal_length,
+                            virtual_camera_height=camera_height,
+                            chaosheng_pixel_radius=30,
+                            bev_height=800,
+                            bev_width=640,
+                        )
+                        out_fish = os.path.join(item_save_path, f"{cam}.jpg")
+                        cv2.imwrite(out_fish, fish_drawn)
+                        index_fisheye[cam] = fish_pts
+                    with open(
+                        os.path.join(item_save_path, "index_fisheye.json"),
+                        "w",
+                        encoding="utf-8",
+                    ) as f:
+                        json.dump(index_fisheye, f, indent=2)
+                    y_cam, y_dir = select_yuyan_camera_from_fisheye_markers(
+                        index_fisheye, pos
+                    )
+                    index["yuyan_camera"] = y_cam
+                    index["yuyan_direction"] = y_dir
+                    index["yuyan_fish_points"] = index_fisheye.get(y_cam) or []
+                    index["yuyan_camera_label"] = YUYAN_CAMERA_LABEL_ZH.get(
+                        y_cam, y_cam
+                    )
+                    candidates = [c for c in index_fisheye if index_fisheye[c]]
+                    index["yuyan_marker_cameras"] = candidates
+                    selected_drawn = os.path.join(item_save_path, f"{y_cam}.jpg")
+                    if os.path.isfile(selected_drawn):
+                        shutil.copy2(
+                            selected_drawn,
+                            os.path.join(item_save_path, "yuyan_draw.jpg"),
+                        )
+                    else:
+                        logger.warning(
+                            f"[绘图] tag={tag_id}, ts={item} 选中 {y_cam} 但无输出图，"
+                            f"未生成 yuyan_draw.jpg"
+                        )
                 cv2.imwrite(item_save_path + '/avm.jpg', bev_img_with_obstacles)
                 with open(item_save_path + "/index_avm.json", 'w', encoding='utf-8') as f:
                     json.dump(index, f, indent=2)
@@ -321,10 +456,24 @@ def diagnose_single_tag(tag_id, feishu_id, args):
                 index = json.load(f)
             if len(index.get('avm', [])) > 0:
                 bev_img = cv2.imread(avm_img_path)
-                panoramic_1 = cv2.cvtColor(bev_img, cv2.COLOR_BGR2RGB)
-                image_list = {'panoramic_1': panoramic_1}
+                image_list = OrderedDict()
+                image_list["avm"] = cv2.cvtColor(bev_img, cv2.COLOR_BGR2RGB)
+                yuyan_draw_path = os.path.join(item_save_path, "yuyan_draw.jpg")
+                if getattr(args, "yuyan", True) and not os.path.isfile(yuyan_draw_path):
+                    yc = index.get("yuyan_camera")
+                    if yc:
+                        alt = os.path.join(item_save_path, f"{yc}.jpg")
+                        if os.path.isfile(alt):
+                            yuyan_draw_path = alt
+                ctx = dict(index)
+                ctx["vlm_yuyan_image_included"] = False
+                if getattr(args, "yuyan", True) and os.path.isfile(yuyan_draw_path):
+                    yb = cv2.imread(yuyan_draw_path)
+                    if yb is not None:
+                        image_list["yuyan_fisheye"] = cv2.cvtColor(yb, cv2.COLOR_BGR2RGB)
+                        ctx["vlm_yuyan_image_included"] = True
                 prompt_config = args.prompt_config
-                prompt = prompt_gen(index, prompt_config)
+                prompt = prompt_gen(ctx, prompt_config)
                 if getattr(args, 'debug_thinking', False):
                     prompt += ("\n\n#### ⚠️ 调试模式\n"
                                "请先**详细输出你对每个检测点的完整分析推理过程**"
@@ -462,6 +611,13 @@ def main():
         default=False,
         help="记录 VLM 模型的原始回复（含思考过程）到 logs/debug_thinking/"
     )
+    parser.add_argument(
+        "--no-yuyan",
+        dest="yuyan",
+        action="store_false",
+        help="关闭鱼眼抽帧保存、鱼眼标注与 VLM 双图输入（默认开启鱼眼链路）",
+    )
+    parser.set_defaults(yuyan=True)
     args = parser.parse_args()
 
     log_file = setup_logging()
@@ -630,8 +786,8 @@ if __name__ == "__main__":
     # import sys
     # sys.argv = [
     #     "avp_vlm_pipeline_avm.py",
-    #     "--id-mapping", os.path.join(str(config.PROJECT_ROOT), "get_data", "liuyi_benchmark.json"),
-    #     "--model", "gemini-3-pro-preview",
-    #     "--mode", "diagnose",
+    #     "--id-mapping", "/tmp/test_debug.json",
+    #     "--mode", "draw",  # 调试鱼眼/绘图时先只跑 draw，避免走 VLM
+    #     # "--model", "gemini-3-pro-preview",
     # ]
     main()

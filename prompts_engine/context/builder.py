@@ -37,6 +37,7 @@ class ContextBuilder:
             一个纯字典，包含所有 Prompt 模板需要的变量
         """
         out = dict(context)
+        out.setdefault("vlm_yuyan_image_included", False)
         yf = out.get("yellow_freespace")
         if yf:
             out["yellow_freespace"] = [

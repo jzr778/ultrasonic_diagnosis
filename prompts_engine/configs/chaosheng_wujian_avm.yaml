@@ -19,6 +19,10 @@ system_components:
 # 输入数据组件（动态组合）
 # 类似 tasks，支持条件渲染和自动编号
 inputs:
+  - name: "**输入图像（AVM / 鱼眼）**"
+    template: "layer2_input/images_avm_yuyan.jinja2"
+    description: "多视角图像说明（含可选鱼眼）"
+
   - name: "**黄色 PARK_FREESPACE 障碍（类别与质心）**"
     template: "layer2_input/yellow_freespace_avm.jinja2"
     description: "已绘制黄线的 freespaceType 与质心像素坐标"

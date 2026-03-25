@@ -6,7 +6,7 @@ AVP 全流程 Pipeline
   1. get_id_mapping.py         → get_data/id_mapping.json  ({tag_id: feishu_id})
   2. bag.py                    → offline_avm_generate_release/bag_list.txt
   3. unpack_bag_for_avm.py     解包 bag 为鱼眼图输入
-  4. save_bag_data.py          准备 read_data (vehicle2sensing / obstacle / pose 等)
+  4. save_bag_data.py          准备 read_data（含各时间戳鱼眼原图 panoramic_*.jpg，默认开启）
   5. run_standalone.sh          拼接鱼眼图
   6. avp_vlm_pipeline_avm.py   绘制 AVM 标注图像
   7. avp_vlm_pipeline_avm.py   大模型诊断
@@ -17,6 +17,7 @@ AVP 全流程 Pipeline
   python pipeline.py -p iffcom -v U9zPLpFvR --model gemini-3-pro-preview
   python pipeline.py -p iffcom -v U9zPLpFvR --skip-steps 1 2
   python pipeline.py -p iffcom -v U9zPLpFvR --log-dir my_logs
+  python pipeline.py ... --no-yuyan   # 关闭鱼眼抽帧与双图 VLM
 """
 
 import argparse
@@ -149,7 +150,7 @@ def step3_unpack_bags(tag_ids, samples_dir):
 
 
 # ── Step 4 ──────────────────────────────────────────────────
-def step4_save_bag_data(tag_ids, read_data_dir):
+def step4_save_bag_data(tag_ids, read_data_dir, extract_fisheye=True):
     banner(4, "准备 read_data (save_bag_data)")
 
     from get_data.save_bag_data import save_data
@@ -165,7 +166,7 @@ def step4_save_bag_data(tag_ids, read_data_dir):
             continue
         log.info(f"  保存 tag_id={tag_id} 数据 ...")
         try:
-            save_data(tag_id, output_root=read_data_dir)
+            save_data(tag_id, output_root=read_data_dir, extract_fisheye=extract_fisheye)
             success += 1
             log.info(f"  tag_id={tag_id} ✅")
         except Exception as e:
@@ -227,7 +228,7 @@ def step5_generate_avm(samples_dir, generate_dir):
 
 
 # ── Step 6 ──────────────────────────────────────────────────
-def step6_draw_images(id_mapping_path, read_data_dir, ignore_fs_types=None):
+def step6_draw_images(id_mapping_path, read_data_dir, ignore_fs_types=None, yuyan=True):
     banner(6, "绘制 AVM 标注图像")
 
     cmd = [
@@ -238,13 +239,15 @@ def step6_draw_images(id_mapping_path, read_data_dir, ignore_fs_types=None):
     ]
     if ignore_fs_types:
         cmd.extend(["--ignore-fs-types"] + ignore_fs_types)
+    if not yuyan:
+        cmd.append("--no-yuyan")
     run(cmd)
     log.info(f"  ✅ 绘图完成")
 
 
 # ── Step 7 ──────────────────────────────────────────────────
 def step7_run_vlm(id_mapping_path, read_data_dir, model=None, ignore_fs_types=None,
-                  debug_thinking=False):
+                  debug_thinking=False, yuyan=True):
     banner(7, "运行 VLM 大模型诊断")
 
     cmd = [
@@ -259,6 +262,8 @@ def step7_run_vlm(id_mapping_path, read_data_dir, model=None, ignore_fs_types=No
         cmd.extend(["--ignore-fs-types"] + ignore_fs_types)
     if debug_thinking:
         cmd.append("--debug-thinking")
+    if not yuyan:
+        cmd.append("--no-yuyan")
     run(cmd)
     log.info(f"  ✅ VLM 诊断完成")
 
@@ -294,6 +299,13 @@ def main():
                         help="Step7 记录 VLM 原始回复到 logs/MMDD/debug_thinking_*.txt")
     parser.add_argument("--log-dir", default=os.path.join(PROJECT_ROOT, "logs"),
                         help="日志输出目录 (默认: logs/)")
+    parser.add_argument(
+        "--no-yuyan",
+        dest="yuyan",
+        action="store_false",
+        help="关闭鱼眼解包与 VLM 鱼眼辅助（默认开启）",
+    )
+    parser.set_defaults(yuyan=True)
     args = parser.parse_args()
 
     if args.list_models:
@@ -314,7 +326,7 @@ def main():
 
     log.info(f"项目根目录: {PROJECT_ROOT}")
     log.info(f"参数: project={args.project_key}, view={args.view_id}, "
-             f"skip={args.skip_steps or '无'}")
+             f"yuyan={args.yuyan}, skip={args.skip_steps or '无'}")
 
     # Step 1
     if 1 not in skip:
@@ -342,7 +354,7 @@ def main():
 
     # Step 4
     if 4 not in skip:
-        step4_save_bag_data(tag_ids, args.read_data_dir)
+        step4_save_bag_data(tag_ids, args.read_data_dir, extract_fisheye=args.yuyan)
     else:
         log.info(f"[跳过 Step 4]")
 
@@ -355,7 +367,7 @@ def main():
     # Step 6
     if 6 not in skip:
         step6_draw_images(id_mapping_path, args.read_data_dir,
-                          ignore_fs_types=args.ignore_fs_types)
+                          ignore_fs_types=args.ignore_fs_types, yuyan=args.yuyan)
     else:
         log.info(f"[跳过 Step 6]")
 
@@ -363,7 +375,8 @@ def main():
     if 7 not in skip:
         step7_run_vlm(id_mapping_path, args.read_data_dir, model=args.model,
                       ignore_fs_types=args.ignore_fs_types,
-                      debug_thinking=args.debug_thinking)
+                      debug_thinking=args.debug_thinking,
+                      yuyan=args.yuyan)
     else:
         log.info(f"[跳过 Step 7]")
 
@@ -375,4 +388,12 @@ def main():
 
 
 if __name__ == "__main__":
+    # import sys
+    # sys.argv = [
+    #     "avp_vlm_pipeline_avm.py",
+    #     "--id-mapping", "/tmp/test_debug.json",
+    #     "--model", "gemini-3-pro-preview",
+    #     "--mode", "diagnose",
+    #     "--skip-steps", "1", "2"
+    # ]
     main()

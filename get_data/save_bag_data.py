@@ -8,16 +8,20 @@
   ├── car_config.json
   ├── ground.json
   ├── cameras_parameters.json
-  └── {timestamp}/
+  └── {timestamp}/          （仅当该目录下 JSON 齐全，且在 extract_fisheye 时四路 jpg 齐全时才保留）
       ├── chaosheng.json
       ├── obstacle.json
       ├── pose.json
-      └── plan.json
+      ├── plan.json
+      └── panoramic_*.jpg    （extract_fisheye=True 时）
 """
 
 import json
 import os
+import shutil
 import sys
+
+import cv2
 
 _project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _project_root not in sys.path:
@@ -30,8 +34,30 @@ from get_data.get_vehicle2sensing import get_vehicle2sensing
 from get_data.get_car_config import get_car_config
 from get_data.get_ground import get_ground
 
+# 时间戳子目录须同时具备（绘图 / VLM 缺一不可则整目录不落盘）
+_REQUIRED_JSON = (
+    "chaosheng.json",
+    "obstacle.json",
+    "pose.json",
+    "plan.json",
+)
 
-def save_data(tag_id, output_root=None):
+
+def _timestamp_payload_complete(ts_dir, require_fisheye):
+    """返回 (是否完整, 首个缺失或空文件名)。"""
+    for name in _REQUIRED_JSON:
+        p = os.path.join(ts_dir, name)
+        if not os.path.isfile(p) or os.path.getsize(p) == 0:
+            return False, name
+    if require_fisheye:
+        for cam in config.CAMERA_NAMES:
+            p = os.path.join(ts_dir, f"{cam}.jpg")
+            if not os.path.isfile(p) or os.path.getsize(p) == 0:
+                return False, f"{cam}.jpg"
+    return True, None
+
+
+def save_data(tag_id, output_root=None, extract_fisheye=True):
     if output_root is None:
         output_root = config.READ_DATA_DIR
 
@@ -113,6 +139,38 @@ def save_data(tag_id, output_root=None):
         with open(path, 'w', encoding='utf-8') as f:
             json.dump(plan_data, f, indent=2, ensure_ascii=False)
     print("plan_data")
+
+    if extract_fisheye:
+        print("  提取鱼眼最近邻帧（Heavy bag）...")
+        image_results = reader.extract_nearest_images()
+        n_img = 0
+        for t in reader.perception_time_list:
+            sub = image_results.get(t) or {}
+            ts_dir = os.path.join(data_path, str(int(t)))
+            for cam in config.CAMERA_NAMES:
+                ent = sub.get(cam)
+                if ent and ent.get("image") is not None:
+                    fp = os.path.join(ts_dir, f"{cam}.jpg")
+                    cv2.imwrite(fp, ent["image"])
+                    n_img += 1
+        print(f"  鱼眼图写入完成（共 {n_img} 张）")
+
+    removed = []
+    for t in reader.perception_time_list:
+        ts_dir = os.path.join(data_path, str(int(t)))
+        if not os.path.isdir(ts_dir):
+            continue
+        ok, missing = _timestamp_payload_complete(ts_dir, extract_fisheye)
+        if not ok:
+            shutil.rmtree(ts_dir, ignore_errors=True)
+            removed.append((int(t), missing))
+    if removed:
+        for ts_val, missing in removed:
+            print(f"  [SKIP] ts={ts_val} 缺少或为空: {missing}，已删除不完整目录")
+        print(
+            f"  时间戳目录: 保留 {len(reader.perception_time_list) - len(removed)} 个 / "
+            f"删除不完整 {len(removed)} 个"
+        )
 
 if __name__ == "__main__":
     tag_id_list = [

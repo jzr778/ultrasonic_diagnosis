@@ -19,6 +19,7 @@ import os
 import sys
 import shutil
 import argparse
+from collections import OrderedDict
 import cv2
 import logging
 from datetime import datetime
@@ -119,9 +120,23 @@ def diagnose_single_tag(tag_id, args):
             analysis_result = {'positions': []}
         else:
             bev_img = cv2.imread(avm_img_path)
-            panoramic_1 = cv2.cvtColor(bev_img, cv2.COLOR_BGR2RGB)
-            image_list = {'panoramic_1': panoramic_1}
-            prompt = prompt_gen(index, args.prompt_config)
+            image_list = OrderedDict()
+            image_list["avm"] = cv2.cvtColor(bev_img, cv2.COLOR_BGR2RGB)
+            ctx = dict(index)
+            ctx["vlm_yuyan_image_included"] = False
+            yuyan_draw_path = os.path.join(item_path, "yuyan_draw.jpg")
+            if getattr(args, "yuyan", True) and not os.path.isfile(yuyan_draw_path):
+                yc = index.get("yuyan_camera")
+                if yc:
+                    alt = os.path.join(item_path, f"{yc}.jpg")
+                    if os.path.isfile(alt):
+                        yuyan_draw_path = alt
+            if getattr(args, "yuyan", True) and os.path.isfile(yuyan_draw_path):
+                yb = cv2.imread(yuyan_draw_path)
+                if yb is not None:
+                    image_list["yuyan_fisheye"] = cv2.cvtColor(yb, cv2.COLOR_BGR2RGB)
+                    ctx["vlm_yuyan_image_included"] = True
+            prompt = prompt_gen(ctx, args.prompt_config)
             analysis_result = analyze_scenario_from_images(image_list, prompt, args.model)
             if "error" in analysis_result:
                 logger.warning(f"[诊断] tag={tag_id}, ts={item} API 返回异常: {analysis_result['error']}")
@@ -189,6 +204,13 @@ def main():
                         help="prompt 配置文件名 (默认: chaosheng_wujian_avm)")
     parser.add_argument("--workers", type=int, default=8,
                         help="并行线程数 (默认: 8)")
+    parser.add_argument(
+        "--no-yuyan",
+        dest="yuyan",
+        action="store_false",
+        help="忽略 yuyan_draw.jpg，仅单张 AVM 诊断",
+    )
+    parser.set_defaults(yuyan=True)
     args = parser.parse_args()
 
     setup_logging()
