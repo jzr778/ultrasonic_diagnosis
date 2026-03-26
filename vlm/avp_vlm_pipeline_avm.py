@@ -280,8 +280,8 @@ def draw_single_tag(tag_id, args):
             pose = json.load(f)
         with open(item_path + '/plan.json', 'r', encoding='utf-8') as f:
             planning_point = json.load(f)
+        projector.apply_chaosheng_z_from_camera_ground_plane(chaosheng, obstacle)
         obstacle = projector.world2vehicle2sensing(obstacle, pose, vehicle2sensing)
-        # TODO: 可用 CAMERA 障碍的 z 拟合地面方程，替代 chaosheng 各点 z
         chaosheng = projector.world2vehicle2sensing_chaosheng(chaosheng, pose, vehicle2sensing)
         avm_path = avm_path_list[item]
         if avm_path:

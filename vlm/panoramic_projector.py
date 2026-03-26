@@ -39,6 +39,52 @@ class PanoramicProjector:
             "panoramic_4",
         ]
 
+    @staticmethod
+    def _fit_ground_plane_z_from_xy_points(xs, ys, zs):
+        """在世界系下用 (x,y,z) 点拟合 z = a*x + b*y + c。
+
+        - 点数 >= 3：最小二乘平面；
+        - 点数 1～2：退化为常数 z = median(z)，即 a=b=0, c=median；
+        - 0 点：返回 None。
+        """
+        xs = np.asarray(xs, dtype=np.float64).ravel()
+        ys = np.asarray(ys, dtype=np.float64).ravel()
+        zs = np.asarray(zs, dtype=np.float64).ravel()
+        n = xs.size
+        if n == 0:
+            return None
+        if n < 3:
+            return 0.0, 0.0, float(np.median(zs))
+        A = np.column_stack([xs, ys, np.ones(n)])
+        coef, *_ = np.linalg.lstsq(A, zs, rcond=None)
+        return float(coef[0]), float(coef[1]), float(coef[2])
+
+    def apply_chaosheng_z_from_camera_ground_plane(self, chaosheng, obstacle):
+        """世界系下：用 ``obstacle`` 中 CAMERA 多边形顶点拟合地面 z(x,y)，写回 ``chaosheng`` 里 ULTRASONIC 各点 z。
+
+        须在 ``world2vehicle2sensing*`` 之前调用；``obstacle`` / ``chaosheng`` 须与定位同一坐标系。
+        """
+        xs, ys, zs = [], [], []
+        for item in obstacle or []:
+            if item.get("sensorType") != "CAMERA":
+                continue
+            for pt in (item.get("polygonArea") or {}).get("point") or []:
+                xs.append(float(pt.get("x", 0.0)))
+                ys.append(float(pt.get("y", 0.0)))
+                zs.append(float(pt.get("z", 0.0)))
+        plane = self._fit_ground_plane_z_from_xy_points(xs, ys, zs)
+        if plane is None:
+            return chaosheng
+        a, b, c = plane
+        for item in chaosheng or []:
+            if item.get("sensorType") != "ULTRASONIC":
+                continue
+            for pt in (item.get("polygonArea") or {}).get("point") or []:
+                x = float(pt.get("x", 0.0))
+                y = float(pt.get("y", 0.0))
+                pt["z"] = a * x + b * y + c
+        return chaosheng
+
     def world2vehicle2sensing(self, obstacle, pose, vehicle2sensing):
         translation_m2v, roll_pitch_yaw = pose['position'], pose['euler_angles']
         vehicle_to_sensing = vehicle2sensing['position']
