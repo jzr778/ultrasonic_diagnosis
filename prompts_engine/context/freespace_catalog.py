@@ -1,5 +1,5 @@
 """
-FreespaceType 整型 / 枚举名 / 中文释义（与 deeproute_perception_obstacle.proto 一致，0–16）。
+FreespaceType 整型 / 枚举名 / 中文释义（与 get_data/proto/perception/deeproute_perception_obstacle.proto 一致，0–20）。
 """
 
 from typing import Any, Dict, Tuple
@@ -23,6 +23,10 @@ _FREESPACE_DEFINITIONS: Tuple[Tuple[int, str, str], ...] = (
     (14, "FS_CURB", "路沿"),
     (15, "FS_PILLAR", "柱子"),
     (16, "FS_BUSH", "灌木"),
+    (17, "FS_TREE", "树木"),
+    (18, "FS_U_TUBE", "U型挡"),
+    (19, "FS_ELECTRIC_WIRE", "电线"),
+    (20, "FS_DEPTH", "深度区域"),
 )
 
 FREESPACE_TYPE_INT_TO_NAME: Dict[int, str] = {v: n for v, n, _ in _FREESPACE_DEFINITIONS}
@@ -31,7 +35,7 @@ FREESPACE_ENUM_NAMES = frozenset(FREESPACE_TYPE_INT_TO_NAME.values())
 
 
 def normalize_freespace_label(fs_type: Any) -> str:
-    """将数据中的 freespaceType 规范为枚举名；缺省、无法解析或整型不在 0–16 时视为 FS_OTHERS_STATIC。"""
+    """将数据中的 freespaceType 规范为枚举名；缺省、无法解析或整型不在 proto 表内时视为 FS_OTHERS_STATIC。"""
     if fs_type is None:
         return "FS_OTHERS_STATIC"
     if isinstance(fs_type, bool):

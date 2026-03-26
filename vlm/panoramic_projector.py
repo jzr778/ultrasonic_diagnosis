@@ -41,7 +41,7 @@ class PanoramicProjector:
 
     @staticmethod
     def _fit_ground_plane_z_from_xy_points(xs, ys, zs):
-        """在世界系下用 (x,y,z) 点拟合 z = a*x + b*y + c。
+        """在同一坐标系下用 (x,y,z) 点拟合 z = a*x + b*y + c。
 
         - 点数 >= 3：最小二乘平面；
         - 点数 1～2：退化为常数 z = median(z)，即 a=b=0, c=median；
@@ -59,19 +59,39 @@ class PanoramicProjector:
         coef, *_ = np.linalg.lstsq(A, zs, rcond=None)
         return float(coef[0]), float(coef[1]), float(coef[2])
 
-    def apply_chaosheng_z_from_camera_ground_plane(self, chaosheng, obstacle):
-        """世界系下：用 ``obstacle`` 中 CAMERA 多边形顶点拟合地面 z(x,y)，写回 ``chaosheng`` 里 ULTRASONIC 各点 z。
+    @staticmethod
+    def _park_freespace_points_for_ground_plane_fit(obstacles):
+        """供 z=a*x+b*y+c 拟合用的采样点：仅 PARK_FREESPACE + CAMERA 的多边形顶点。
 
-        须在 ``world2vehicle2sensing*`` 之前调用；``obstacle`` / ``chaosheng`` 须与定位同一坐标系。
+        排除：freespaceType 为 FS_SPEEDBUMP 的整条障碍；FS_TREE 且 polygon 顶点数为 5 的整条障碍。
         """
         xs, ys, zs = [], [], []
-        for item in obstacle or []:
+        for item in obstacles or []:
             if item.get("sensorType") != "CAMERA":
                 continue
-            for pt in (item.get("polygonArea") or {}).get("point") or []:
+            if item.get("type") != "PARK_FREESPACE":
+                continue
+            poly = (item.get("polygonArea") or {}).get("point") or []
+            n = len(poly)
+            if n == 0:
+                continue
+            fs_label = normalize_freespace_label(item.get("freespaceType"))
+            if fs_label == "FS_SPEEDBUMP":
+                continue
+            if fs_label == "FS_TREE" and n == 5:
+                continue
+            for pt in poly:
                 xs.append(float(pt.get("x", 0.0)))
                 ys.append(float(pt.get("y", 0.0)))
                 zs.append(float(pt.get("z", 0.0)))
+        return xs, ys, zs
+
+    def apply_chaosheng_z_from_camera_ground_plane(self, chaosheng, obstacle):
+        """世界系下：用 ``obstacle`` 中 CAMERA 的 PARK_FREESPACE（经筛选）多边形顶点拟合地面 z(x,y)，写回 ``chaosheng`` 里 ULTRASONIC 各点 z。
+
+        须在 ``world2vehicle2sensing*`` 之前调用；``obstacle`` / ``chaosheng`` 须与定位同一坐标系。
+        """
+        xs, ys, zs = self._park_freespace_points_for_ground_plane_fit(obstacle)
         plane = self._fit_ground_plane_z_from_xy_points(xs, ys, zs)
         if plane is None:
             return chaosheng
@@ -441,7 +461,7 @@ class PanoramicProjector:
         """鱼眼上对齐 draw_obstacles_on_bev：绿=泊车车、黄=PARK_FREESPACE（含 ignore_fs）、红=超声非 FS_CAR。
 
         resize 为 True 时将图缩至 1920×1440，并按比例缩放内参 K；相机多边形顶点 z 取自 json；超声顶点 z 由
-        当前 sensing 系下全部 CAMERA 多边形顶点拟合 z=a*x+b*y+c（无相机顶点时退化为 json 的 z）。
+        当前 sensing 系下经筛选的 PARK_FREESPACE（CAMERA）顶点拟合 z=a*x+b*y+c；无可用顶点时退化为 json 的 z。
         chaosheng_pixel_radius / ground_param 为 None 时不做 BEV 距离过滤。
         """
         orig_h, orig_w = int(img.shape[0]), int(img.shape[1])
@@ -467,14 +487,8 @@ class PanoramicProjector:
         extrinsics_inv = np.linalg.inv(extrinsics)
         p_world = np.matmul(extrinsics_inv, p_cam)
 
-        xs_fit, ys_fit, zs_fit = [], [], []
-        for obstacle in obstacles:
-            if obstacle.get("sensorType", 0) != "CAMERA":
-                continue
-            for p in (obstacle.get("polygonArea") or {}).get("point") or []:
-                xs_fit.append(float(p.get("x", 0.0)))
-                ys_fit.append(float(p.get("y", 0.0)))
-                zs_fit.append(float(p.get("z", 0.0)))
+        xs_fit, ys_fit, zs_fit = self._park_freespace_points_for_ground_plane_fit(
+            obstacles)
         plane_abc = (
             self._fit_ground_plane_z_from_xy_points(xs_fit, ys_fit, zs_fit)
             if xs_fit
@@ -747,7 +761,7 @@ class PanoramicProjector:
             chaosheng_pixel_radius: 若非 None，仅保留「相机障碍多边形任一顶点到任一超声障碍多边形顶点」的
                 欧氏像素距离最小值 <= 该阈值的条目后再绘制；超声侧点为各 chaosheng 多边形全部顶点（非质心）。
             ignore_camera_freespace_types: 若为 set/list，规范化后的枚举名（如 FS_CURB）命中的条目不绘制、不写入 yellow 元数据。
-                freespaceType 缺省、无法解析或整型不在 0–16 时规范为 FS_OTHERS_STATIC。
+                freespaceType 缺省、无法解析或整型不在 proto 表内时规范为 FS_OTHERS_STATIC。
 
         Returns:
             tuple: (绘制后的图像, 红色超声质心列表, 黄色 PARK_FREESPACE 元数据列表)
