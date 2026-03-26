@@ -11,7 +11,7 @@ import json
 import math
 import pandas as pd
 from scipy.spatial.transform import Rotation as R
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 from prompts_engine.context.freespace_catalog import normalize_freespace_label
 
@@ -420,189 +420,6 @@ class PanoramicProjector:
                 thickness=thickness,
             )
 
-    def plot_polygon(
-        self,
-        img: np.ndarray,
-        obstacles: List,
-        chaosheng: List,
-        extrinsics: np.ndarray,
-        distortion_coeff: np.ndarray,
-        intrinsics: np.ndarray,
-        cam: str,
-        _img_size: Tuple[int, int],
-        resize: bool,
-        ground_param=None,
-        virtual_camera_focal_length: float = 162.6,
-        virtual_camera_height: float = 3.44,
-        chaosheng_pixel_radius: Optional[float] = 30,
-        bev_height: int = 800,
-        bev_width: int = 640,
-    ) -> Tuple[np.ndarray, List[List[int]]]:
-        """四路鱼眼：CAMERA 多边形画黄线（可选 BEV 上与超声 ≤chaosheng_pixel_radius 筛选）；超声非 FS_CAR 画红。
-        chaosheng_pixel_radius / ground_param 为 None 时不做 BEV 距离过滤。resize 时同步缩放 K。
-        """
-        orig_h, orig_w = int(img.shape[0]), int(img.shape[1])
-        K = intrinsics[:3, :3].astype(np.float64)
-        D = np.asarray(distortion_coeff[:4], dtype=np.float64)
-        if resize:
-            target_w, target_h = 1920, 1440
-            sx = target_w / float(orig_w)
-            sy = target_h / float(orig_h)
-            K = K.copy()
-            K[0, 0] *= sx
-            K[1, 1] *= sy
-            K[0, 2] *= sx
-            K[1, 2] *= sy
-            img = cv2.resize(img, (target_w, target_h))
-        height, width = int(img.shape[0]), int(img.shape[1])
-
-        rvec = R.from_matrix(extrinsics[:3, :3]).as_rotvec()
-        tvec = extrinsics[:3, 3].astype(np.float64)
-
-        p_cam = np.array([0.0, 0.0, 0.0, 1.0], dtype=np.float64)
-        extrinsics_inv = np.linalg.inv(extrinsics)
-        p_world = np.matmul(extrinsics_inv, p_cam)
-
-        chaosheng_img_pts = np.empty((0, 2), dtype=np.float32)
-        if chaosheng_pixel_radius is not None and ground_param is not None:
-            chaosheng_img_pts = self._precompute_chaosheng_img_points(
-                chaosheng,
-                ground_param,
-                virtual_camera_focal_length,
-                virtual_camera_height,
-                bev_height,
-                bev_width,
-            )
-
-        camera_line_color = (0, 255, 255)  # BGR 黄
-        for obstacle in obstacles:
-            if obstacle.get("sensorType", 0) != "CAMERA":
-                continue
-            if chaosheng_pixel_radius is not None and ground_param is not None:
-                if len(chaosheng_img_pts) == 0 or not self._obstacle_near_chaosheng_pixels(
-                    obstacle,
-                    chaosheng_img_pts,
-                    chaosheng_pixel_radius,
-                    ground_param,
-                    virtual_camera_focal_length,
-                    virtual_camera_height,
-                    bev_height,
-                    bev_width,
-                ):
-                    continue
-            polygon_area = obstacle.get("polygonArea", {}).get("point", [])
-            if not polygon_area:
-                continue
-            points_3d = [
-                [point.get("x", 0), point.get("y", 0), point.get("z", 0)]
-                for point in polygon_area
-            ]
-            if not points_3d:
-                continue
-            pts_np = np.ascontiguousarray(
-                np.array(points_3d, dtype=np.float32).reshape(-1, 1, 3)
-            )
-            if cam == "panoramic_1":
-                mask_xy = pts_np[:, 0, 0] > p_world[0]
-            elif cam == "panoramic_2":
-                mask_xy = pts_np[:, 0, 1] < p_world[1]
-            elif cam == "panoramic_3":
-                mask_xy = pts_np[:, 0, 0] < p_world[0]
-            elif cam == "panoramic_4":
-                mask_xy = pts_np[:, 0, 1] > p_world[1]
-            else:
-                mask_xy = np.ones(len(pts_np), dtype=bool)
-            pts_np = pts_np[mask_xy]
-            if pts_np.shape[0] == 0:
-                continue
-            proj, _ = cv2.fisheye.projectPoints(
-                pts_np, rvec=rvec, tvec=tvec, K=K, D=D
-            )
-            points_2d = proj.reshape(-1, 2)
-            u = points_2d[:, 0]
-            v = points_2d[:, 1]
-            mask = (u >= 0) & (u < width) & (v >= 0) & (v < height)
-            points_2d_int = np.round(points_2d[mask]).astype(np.int32)
-            if len(points_2d_int) == 0:
-                continue
-            for i in range(len(points_2d_int) - 1):
-                pt1 = tuple(points_2d_int[i])
-                pt2 = tuple(points_2d_int[i + 1])
-                cv2.line(
-                    img, pt1, pt2, color=camera_line_color, thickness=2
-                )
-
-        pos: List[List[int]] = []
-        for obstacle in chaosheng:
-            ultrasonic_type = obstacle.get("freespaceType", "")
-            color = (0, 0, 255)
-            if ultrasonic_type == "FS_CAR":
-                continue
-            polygon_area = obstacle.get("polygonArea", {}).get("point", [])
-            if not polygon_area:
-                continue
-            points_3d = [
-                [point.get("x", 0), point.get("y", 0), point.get("z", 0)]
-                for point in polygon_area
-            ]
-            if not points_3d:
-                continue
-            pts_np = np.ascontiguousarray(
-                np.array(points_3d, dtype=np.float32).reshape(-1, 1, 3)
-            )
-            if cam == "panoramic_1":
-                mask_xy = pts_np[:, 0, 0] > p_world[0]
-            elif cam == "panoramic_2":
-                mask_xy = pts_np[:, 0, 1] < p_world[1]
-            elif cam == "panoramic_3":
-                mask_xy = pts_np[:, 0, 0] < p_world[0]
-            elif cam == "panoramic_4":
-                mask_xy = pts_np[:, 0, 1] > p_world[1]
-            else:
-                mask_xy = np.ones(len(pts_np), dtype=bool)
-            pts_np = pts_np[mask_xy]
-            if pts_np.shape[0] == 0:
-                continue
-            proj, _ = cv2.fisheye.projectPoints(pts_np, rvec=rvec, tvec=tvec, K=K, D=D)
-            points_2d = proj.reshape(-1, 2)
-            u = points_2d[:, 0]
-            v = points_2d[:, 1]
-            mask = (u >= 0) & (u < width) & (v >= 0) & (v < height)
-            points_2d_int = np.round(points_2d[mask]).astype(np.int32)
-            if len(points_2d_int) == 0:
-                continue
-            x_max = np.max(points_2d_int[:, 0])
-            x_min = np.min(points_2d_int[:, 0])
-            y_max = np.max(points_2d_int[:, 1])
-            y_min = np.min(points_2d_int[:, 1])
-            # yuyan_v3 原先用「任一边超半幅就丢」，鱼眼上超声四边形常呈「很宽但不高」，
-            # 会误杀合法投影；仅当 x/y 两个方向跨度都超过半幅时才视为退化跳过。
-            # if (x_max - x_min) > width / 2.0 and (y_max - y_min) > height / 2.0:
-            #     continue
-            valid_points = (
-                points_2d_int[:-1]
-                if len(points_2d_int) > 1
-                and np.array_equal(points_2d_int[0], points_2d_int[-1])
-                else points_2d_int
-            )
-            # 与 draw_obstacles_on_bev 一致：整框顶点质心，每障碍仅 1 点；整框连线绘制
-            if len(valid_points) < 2:
-                continue
-            for i in range(len(valid_points) - 1):
-                pt1 = tuple(valid_points[i])
-                pt2p = tuple(valid_points[i + 1])
-                u1, v1 = int(pt1[0]), int(pt1[1])
-                u2, v2 = int(pt2p[0]), int(pt2p[1])
-                if 0 <= u1 < width and 0 <= v1 < height:
-                    cv2.circle(img, (u1, v1), 4, color, -1)
-                if 0 <= u2 < width and 0 <= v2 < height:
-                    cv2.circle(img, (u2, v2), 4, color, -1)
-                cv2.line(img, pt1, pt2p, color=color, thickness=4)
-            center = np.mean(valid_points, axis=0)
-            pos.append([int(center[0]), int(center[1])])
-
-        return img, pos
-
     def plot_fisheye_polygon(
         self,
         img: np.ndarray,
@@ -623,7 +440,7 @@ class PanoramicProjector:
     ) -> Tuple[np.ndarray, List[List[int]]]:
         """鱼眼上对齐 draw_obstacles_on_bev：绿=泊车车、黄=PARK_FREESPACE（含 ignore_fs）、红=超声非 FS_CAR。
 
-        resize 时与 plot_polygon 相同，按比例缩放内参 K；相机多边形顶点 z 取自 json；超声顶点 z 由
+        resize 为 True 时将图缩至 1920×1440，并按比例缩放内参 K；相机多边形顶点 z 取自 json；超声顶点 z 由
         当前 sensing 系下全部 CAMERA 多边形顶点拟合 z=a*x+b*y+c（无相机顶点时退化为 json 的 z）。
         chaosheng_pixel_radius / ground_param 为 None 时不做 BEV 距离过滤。
         """
