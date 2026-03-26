@@ -621,12 +621,25 @@ class PanoramicProjector:
         bev_width: int = 640,
         resize: bool = True,
     ) -> Tuple[np.ndarray, List[List[int]]]:
-        """鱼眼上对齐 draw_obstacles_on_bev：绿=泊车车、黄=PARK_FREESPACE（含 ignore_fs）、红=超声非 FS_CAR；相机选择与 BEV 相同距离阈值筛选。"""
+        """鱼眼上对齐 draw_obstacles_on_bev：绿=泊车车、黄=PARK_FREESPACE（含 ignore_fs）、红=超声非 FS_CAR。
+
+        resize 时与 plot_polygon 相同，按比例缩放内参 K；相机多边形顶点 z 取自 json；超声顶点 z 由
+        当前 sensing 系下全部 CAMERA 多边形顶点拟合 z=a*x+b*y+c（无相机顶点时退化为 json 的 z）。
+        chaosheng_pixel_radius / ground_param 为 None 时不做 BEV 距离过滤。
+        """
+        orig_h, orig_w = int(img.shape[0]), int(img.shape[1])
         K = intrinsics[:3, :3].astype(np.float64)
         D = np.asarray(distortion_coeff[:4], dtype=np.float64)
-
         if resize:
-            img = cv2.resize(img, (1920, 1440))
+            target_w, target_h = 1920, 1440
+            sx = target_w / float(orig_w)
+            sy = target_h / float(orig_h)
+            K = K.copy()
+            K[0, 0] *= sx
+            K[1, 1] *= sy
+            K[0, 2] *= sx
+            K[1, 2] *= sy
+            img = cv2.resize(img, (target_w, target_h))
 
         rvec = R.from_matrix(extrinsics[:3, :3]).as_rotvec()
         tvec = extrinsics[:3, 3].astype(np.float64)
@@ -637,18 +650,34 @@ class PanoramicProjector:
         extrinsics_inv = np.linalg.inv(extrinsics)
         p_world = np.matmul(extrinsics_inv, p_cam)
 
+        xs_fit, ys_fit, zs_fit = [], [], []
+        for obstacle in obstacles:
+            if obstacle.get("sensorType", 0) != "CAMERA":
+                continue
+            for p in (obstacle.get("polygonArea") or {}).get("point") or []:
+                xs_fit.append(float(p.get("x", 0.0)))
+                ys_fit.append(float(p.get("y", 0.0)))
+                zs_fit.append(float(p.get("z", 0.0)))
+        plane_abc = (
+            self._fit_ground_plane_z_from_xy_points(xs_fit, ys_fit, zs_fit)
+            if xs_fit
+            else None
+        )
+
         skip_fs = set(ignore_camera_freespace_types or [])
         chaosheng_img_pts = np.empty((0, 2), dtype=np.float32)
-        if chaosheng_pixel_radius is not None:
+        if chaosheng_pixel_radius is not None and ground_param is not None:
             chaosheng_img_pts = self._precompute_chaosheng_img_points(
                 chaosheng, ground_param, virtual_camera_focal_length,
-                virtual_camera_height, bev_height, bev_width)
+                virtual_camera_height, bev_height, bev_width,
+                plane_abc=plane_abc,
+            )
 
         for obstacle in obstacles:
             sensor_type = obstacle.get('sensorType', 0)
             if sensor_type != 'CAMERA':
                 continue
-            if chaosheng_pixel_radius is not None and (
+            if chaosheng_pixel_radius is not None and ground_param is not None and (
                     len(chaosheng_img_pts) == 0 or
                     not self._obstacle_near_chaosheng_pixels(
                         obstacle, chaosheng_img_pts, chaosheng_pixel_radius,
@@ -662,7 +691,10 @@ class PanoramicProjector:
                 polygon_area = obstacle.get("polygonArea", {}).get("point", [])
                 if not polygon_area:
                     continue
-                points_3d = [[p.get('x', 0), p.get('y', 0), 0.0] for p in polygon_area]
+                points_3d = [
+                    [p.get('x', 0), p.get('y', 0), float(p.get('z', 0))]
+                    for p in polygon_area
+                ]
                 if len(points_3d) <= 5:
                     continue
                 self._fisheye_draw_polyline_edges(
@@ -675,7 +707,10 @@ class PanoramicProjector:
                 polygon_area = obstacle.get("polygonArea", {}).get("point", [])
                 if not polygon_area:
                     continue
-                points_3d = [[p.get('x', 0), p.get('y', 0), 0.0] for p in polygon_area]
+                points_3d = [
+                    [p.get('x', 0), p.get('y', 0), float(p.get('z', 0))]
+                    for p in polygon_area
+                ]
                 self._fisheye_draw_polyline_edges(
                     img, points_3d, (0, 255, 255), 2,
                     rvec, tvec, K, D, cam, p_world, width, height)
@@ -688,7 +723,21 @@ class PanoramicProjector:
             polygon_area = obstacle.get("polygonArea", {}).get("point", [])
             if not polygon_area:
                 continue
-            points_3d = [[p.get('x', 0), p.get('y', 0), p.get('z', 0)] for p in polygon_area]
+            if plane_abc is not None:
+                a, b, c = plane_abc
+                points_3d = [
+                    [
+                        float(p.get("x", 0)),
+                        float(p.get("y", 0)),
+                        a * float(p.get("x", 0)) + b * float(p.get("y", 0)) + c,
+                    ]
+                    for p in polygon_area
+                ]
+            else:
+                points_3d = [
+                    [p.get('x', 0), p.get('y', 0), float(p.get('z', 0))]
+                    for p in polygon_area
+                ]
             pts_np = np.ascontiguousarray(np.array(points_3d, dtype=np.float32).reshape(-1, 1, 3))
             if cam == "panoramic_1":
                 mask_xy = pts_np[:, 0, 0] > p_world[0]
@@ -747,16 +796,29 @@ class PanoramicProjector:
 
     def _precompute_chaosheng_img_points(self, chaosheng, ground_param,
                                          focal_length, camera_height,
-                                         image_height, image_width):
-        """将所有超声障碍物顶点投影到图像坐标系，返回 np.ndarray (M, 2)。"""
+                                         image_height, image_width,
+                                         plane_abc=None):
+        """将所有超声障碍物顶点投影到图像坐标系，返回 np.ndarray (M, 2)。
+
+        plane_abc 为 (a, b, c) 时，各顶点 z 采用拟合平面 z = a*x + b*y + c（与 sensing 系下
+        相机多边形顶点最小二乘一致）；为 None 时用 json 中的 z。
+        """
         all_pts = []
         for obs in chaosheng:
             polygon = obs.get("polygonArea", {}).get("point", [])
             if not polygon:
                 continue
-            pts = np.array(
-                [[p.get('x', 0), p.get('y', 0), p.get('z', 0)] for p in polygon],
-                dtype=np.float32)
+            rows = []
+            for p in polygon:
+                x = float(p.get("x", 0))
+                y = float(p.get("y", 0))
+                if plane_abc is not None:
+                    a, b, c = plane_abc
+                    z = a * x + b * y + c
+                else:
+                    z = float(p.get("z", 0))
+                rows.append([x, y, z])
+            pts = np.array(rows, dtype=np.float32)
             try:
                 pts_2d = self.transform_sensor_to_avm_image(
                     pts, ground_param, focal_length, camera_height,

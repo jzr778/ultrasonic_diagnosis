@@ -172,7 +172,7 @@ def avm_positions_to_yuyan_camera(positions):
 
 
 def select_yuyan_camera_from_fisheye_markers(index_fisheye, bev_chaosheng_positions):
-    """在 plot_polygon 标红之后，选一路鱼眼送进 VLM。
+    """在 plot_fisheye_polygon 标红之后，选一路鱼眼送进 VLM。
 
     - 仅一路有红色超声标记 → 用该路。
     - 多路有标记：若 BEV 主方位对应相机也在其中 → 与 AVM 一致；否则取标记点最多的那路。
@@ -328,7 +328,7 @@ def draw_single_tag(tag_id, args):
                             )
                             index_fisheye[cam] = []
                             continue
-                        fish_drawn, fish_pts = projector.plot_polygon(
+                        fish_drawn, fish_pts = projector.plot_fisheye_polygon(
                             raw_fish.copy(),
                             obstacle,
                             chaosheng,
@@ -336,14 +336,16 @@ def draw_single_tag(tag_id, args):
                             trans["distortion_coeff"],
                             trans["intrinsics"],
                             cam,
-                            raw_fish.shape[:2],
-                            resize=True,
-                            ground_param=ground,
-                            virtual_camera_focal_length=focal_length,
-                            virtual_camera_height=camera_height,
+                            ground,
+                            focal_length,
+                            camera_height,
                             chaosheng_pixel_radius=30,
+                            ignore_camera_freespace_types=ignore_fs
+                            if ignore_fs
+                            else None,
                             bev_height=800,
                             bev_width=640,
+                            resize=True,
                         )
                         out_fish = os.path.join(item_save_path, f"{cam}.jpg")
                         cv2.imwrite(out_fish, fish_drawn)
