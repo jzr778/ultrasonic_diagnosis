@@ -280,10 +280,9 @@ def draw_single_tag(tag_id, args):
             pose = json.load(f)
         with open(item_path + '/plan.json', 'r', encoding='utf-8') as f:
             planning_point = json.load(f)
-        obstacle, ULTRASONIC_z = projector.world2vehicle2sensing(obstacle, pose, vehicle2sensing)
-        # TODO:
-        # 用视角障碍的z拟合地面方程，来替代chaosheng的z
-        chaosheng = projector.world2vehicle2sensing_chaosheng(chaosheng, pose, vehicle2sensing, ULTRASONIC_z)
+        obstacle = projector.world2vehicle2sensing(obstacle, pose, vehicle2sensing)
+        # TODO: 可用 CAMERA 障碍的 z 拟合地面方程，替代 chaosheng 各点 z
+        chaosheng = projector.world2vehicle2sensing_chaosheng(chaosheng, pose, vehicle2sensing)
         avm_path = avm_path_list[item]
         if avm_path:
             os.makedirs(item_save_path, exist_ok=True)
@@ -783,11 +782,11 @@ def _print_summary(logger, mode, total_tags, stats):
 
 
 if __name__ == "__main__":
-    # import sys
-    # sys.argv = [
-    #     "avp_vlm_pipeline_avm.py",
-    #     "--id-mapping", "/tmp/test_debug.json",
-    #     "--mode", "draw",  # 调试鱼眼/绘图时先只跑 draw，避免走 VLM
-    #     # "--model", "gemini-3-pro-preview",
-    # ]
+    import sys
+    sys.argv = [
+        "avp_vlm_pipeline_avm.py",
+        "--id-mapping", "/tmp/test_debug.json",
+        "--mode", "draw",  # 调试鱼眼/绘图时先只跑 draw，避免走 VLM
+        # "--model", "gemini-3-pro-preview",
+    ]
     main()

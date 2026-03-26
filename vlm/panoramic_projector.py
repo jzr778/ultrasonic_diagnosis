@@ -46,53 +46,45 @@ class PanoramicProjector:
         rotation_m2v = self.get_rotation_matrix(roll_pitch_yaw)
         rotation_m2v_inv = np.linalg.inv(rotation_m2v)
         vehicle_to_sensing = np.asarray(vehicle_to_sensing).reshape(1, -1)
-        ULTRASONIC_z = 0.0
-        # 障碍物坐标变换
         for item in obstacle:
-            sensor_type = item.get('sensorType', 0)
-            if sensor_type in ['ULTRASONIC', 'CAMERA']:
-                polygon_points_sensing = []
-                for poly_point in item['polygonArea']['point']:
-                    if sensor_type == 'ULTRASONIC':
-                        ULTRASONIC_z = poly_point['z']
-                    point_poly_w = np.array([[poly_point['x'], poly_point['y'], poly_point['z']]])
-                    point_poly_s = (
-                            rotation_m2v_inv.dot((point_poly_w - translation_m2v).T).T - vehicle_to_sensing
-                    )
-                    polygon_points_sensing.append({
-                        "x": point_poly_s[0][0],
-                        "y": point_poly_s[0][1],
-                        "z": point_poly_s[0][2]
-                    })
-                item['polygonArea']['point'] = polygon_points_sensing
-        return obstacle, ULTRASONIC_z
+            if item.get('sensorType', 0) != 'CAMERA':
+                continue
+            polygon_points_sensing = []
+            for poly_point in item['polygonArea']['point']:
+                point_poly_w = np.array([[poly_point['x'], poly_point['y'], poly_point['z']]])
+                point_poly_s = (
+                        rotation_m2v_inv.dot((point_poly_w - translation_m2v).T).T - vehicle_to_sensing
+                )
+                polygon_points_sensing.append({
+                    "x": point_poly_s[0][0],
+                    "y": point_poly_s[0][1],
+                    "z": point_poly_s[0][2]
+                })
+            item['polygonArea']['point'] = polygon_points_sensing
+        return obstacle
 
-    def world2vehicle2sensing_chaosheng(self, obstacle, pose, vehicle2sensing, ULTRASONIC_z):
+    def world2vehicle2sensing_chaosheng(self, obstacle, pose, vehicle2sensing):
         translation_m2v, roll_pitch_yaw = pose['position'], pose['euler_angles']
         vehicle_to_sensing = vehicle2sensing['position']
         translation_m2v = np.asarray(translation_m2v).reshape(1, -1)
         rotation_m2v = self.get_rotation_matrix(roll_pitch_yaw)
         rotation_m2v_inv = np.linalg.inv(rotation_m2v)
         vehicle_to_sensing = np.asarray(vehicle_to_sensing).reshape(1, -1)
-        # 障碍物坐标变换
         for item in obstacle:
-            sensor_type = item.get('sensorType', 0)
-            if sensor_type == 'ULTRASONIC':
-                polygon_points_sensing = []
-                for poly_point in item['polygonArea']['point']:
-                    if ULTRASONIC_z == 0.0:
-                        point_poly_w = np.array([[poly_point['x'], poly_point['y'], poly_point['z']]])
-                    else:
-                        point_poly_w = np.array([[poly_point['x'], poly_point['y'], ULTRASONIC_z]])
-                    point_poly_s = (
-                            rotation_m2v_inv.dot((point_poly_w - translation_m2v).T).T - vehicle_to_sensing
-                    )
-                    polygon_points_sensing.append({
-                        "x": point_poly_s[0][0],
-                        "y": point_poly_s[0][1],
-                        "z": point_poly_s[0][2]
-                    })
-                item['polygonArea']['point'] = polygon_points_sensing
+            if item.get('sensorType', 0) != 'ULTRASONIC':
+                continue
+            polygon_points_sensing = []
+            for poly_point in item['polygonArea']['point']:
+                point_poly_w = np.array([[poly_point['x'], poly_point['y'], poly_point['z']]])
+                point_poly_s = (
+                        rotation_m2v_inv.dot((point_poly_w - translation_m2v).T).T - vehicle_to_sensing
+                )
+                polygon_points_sensing.append({
+                    "x": point_poly_s[0][0],
+                    "y": point_poly_s[0][1],
+                    "z": point_poly_s[0][2]
+                })
+            item['polygonArea']['point'] = polygon_points_sensing
         return obstacle
 
     def world2vehicle2sensing_planning(self, planning_points, pose, vehicle2sensing):
