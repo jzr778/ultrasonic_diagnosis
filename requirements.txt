@@ -8,7 +8,8 @@ matplotlib
 langchain
 jinja2
 google
-protobuf
+# 与 get_data/proto 下 protoc 6.31 生成代码一致；低于 5.26 会缺 runtime_version
+protobuf>=6.30.0,<7
 pandas
 scipy
 # drmlp  # 单独安装命令 -i https://nexus.deeproute.ai/repository/pypi-group/simple

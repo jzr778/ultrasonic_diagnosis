@@ -4,12 +4,14 @@
 统一封装对远端 DpBag 的读取逻辑，避免多个脚本重复打开 / 解析同一份 bag。
 提供以下能力：
   1. scan_ultrasonic_events  — 扫描 Light bag 中的超声波停车事件
-  2. extract_nearest_images  — 从 Heavy bag 提取与事件最近邻的 4 路鱼眼图（内存）
+  2. extract_nearest_images  — 从 Heavy bag 提取与事件最近邻的 4 路鱼眼图（内存）；丢弃
+     ``/canbus/car_state`` 中 misc.rear_view_mirror 表示折叠的候选帧（不参与最近邻替换）
   3. extract_obstacles       — 从 Light bag 提取 /perception/objects
   4. extract_poses           — 从 Light bag 提取 /localization/pose
   5. extract_planning        — 从 Light bag 提取 /planner/trajectory
 """
 
+import bisect
 import os
 import re
 import sys
@@ -25,6 +27,9 @@ import config
 
 sys.path.insert(0, config.PROTO_LOCAL_DIR)
 
+# 截断的 deeproute_perception_obstacle_pb2 缺少 PerceptionObstacles，需先注册
+import get_data.perception_obstacles_compat  # noqa: F401
+
 from dpbag import strip_header
 from dpbag.bag.bag import DpBag
 
@@ -37,8 +42,135 @@ except ImportError as e:
     print(f"Proto import error: {e}")
     sys.exit(1)
 
+try:
+    from canbus.car_info_pb2 import CarInfo
+except ImportError:
+    CarInfo = None
+
 from google.protobuf.json_format import MessageToDict
 from get_data.get_meta_data import get_meta_data
+
+# 鱼眼帧与 car_state 对齐容差（微秒）；超出则不作为「折叠」依据（避免误杀）
+_CAR_STATE_MIRROR_MAX_SKEW_US = 300_000
+
+
+def _bag_meta_timestamp_us(meta):
+    """从 dpbag read_messages 第三项解析墙钟时间（微秒），若无法解析则 None。"""
+    if meta is None:
+        return None
+    if isinstance(meta, (int, float)):
+        v = int(meta)
+        if v > 10**15:
+            return v // 1000
+        if v > 10**12:
+            return v
+        if v > 10**9:
+            return v * 1000
+        return None
+    if isinstance(meta, dict):
+        for key in ("timestamp_ns", "time_ns", "t_ns"):
+            v = meta.get(key)
+            if v is not None:
+                return int(v) // 1000
+        for key in ("timestamp_us", "time_us", "t_us"):
+            v = meta.get(key)
+            if v is not None:
+                return int(v)
+        for key in ("timestamp_sec", "time_sec"):
+            v = meta.get(key)
+            if v is not None:
+                return int(float(v) * 1e6)
+    return None
+
+
+def _car_info_timestamp_us(car_info_pb, meta=None):
+    """CarInfo → 微秒时间戳；优先 meta，其次 time_system / time_meas 等常见字段。"""
+    t_meta = _bag_meta_timestamp_us(meta)
+    if t_meta is not None:
+        return t_meta
+    ts = int(getattr(car_info_pb, "time_system", 0) or 0)
+    if ts > 10**15:
+        return ts // 1000
+    if ts > 10**12:
+        return ts
+    if ts > 10**9:
+        return ts * 1000
+    tm = int(getattr(car_info_pb, "time_meas", 0) or 0)
+    if tm > 10**12:
+        return tm
+    if tm > 10**9:
+        return tm * 1000
+    if tm > 0:
+        return tm * 1000
+    tmg = int(getattr(car_info_pb, "time_mgmt_plane", 0) or 0)
+    if tmg > 10**12:
+        return tmg
+    if tmg > 10**9:
+        return tmg * 1000
+    return None
+
+
+def _misc_rear_view_mirror_all_open(car_info_pb):
+    """misc.rear_view_mirror：全 True/1 视为展开；任一 False/0 为折叠；无字段则 None（不据此筛）。"""
+    m = car_info_pb.misc
+    if not m.rear_view_mirror:
+        return None
+    for x in m.rear_view_mirror:
+        if not bool(x):
+            return False
+    return True
+
+
+def _collect_rear_view_mirror_timeline(heavy_bags, topic):
+    """[(ts_us, mirrors_all_open), ...]，已按 ts_us 排序。"""
+    if CarInfo is None or not topic:
+        return [], []
+    samples = []
+    for heavy_bag in heavy_bags:
+        try:
+            with DpBag(bag=heavy_bag) as bag:
+                for _, msg, meta in bag.read_messages(
+                    topics=[topic],
+                    dpbag_name=heavy_bag,
+                    force_get_data_by_raw=True,
+                ):
+                    obj = CarInfo()
+                    raw_msg = strip_header(msg.data)
+                    try:
+                        obj.ParseFromString(raw_msg)
+                    except Exception:
+                        continue
+                    ts_us = _car_info_timestamp_us(obj, meta)
+                    if ts_us is None:
+                        continue
+                    open_ok = _misc_rear_view_mirror_all_open(obj)
+                    if open_ok is None:
+                        continue
+                    samples.append((ts_us, open_ok))
+        except Exception as e:
+            print(f"      [WARN] car_state 读取跳过 {heavy_bag}: {e}")
+    if not samples:
+        return [], []
+    samples.sort(key=lambda x: x[0])
+    tss = [s[0] for s in samples]
+    oks = [s[1] for s in samples]
+    return tss, oks
+
+
+def _mirror_open_at_image_ts(timeline_ts, timeline_open, image_ts_us, max_skew_us):
+    """在 image_ts_us 邻近的 car_state 上判断是否全部展开；无可靠样本则 None。"""
+    if not timeline_ts:
+        return None
+    idx = bisect.bisect_left(timeline_ts, image_ts_us)
+    cand = []
+    if idx < len(timeline_ts):
+        cand.append(idx)
+    if idx > 0:
+        cand.append(idx - 1)
+    best = min(cand, key=lambda i: abs(timeline_ts[i] - image_ts_us))
+    if abs(timeline_ts[best] - image_ts_us) > max_skew_us:
+        return None
+    return timeline_open[best]
 
 
 def is_p01t_vehicle_bag(bag_name):
@@ -128,9 +260,24 @@ class BagReader:
             for t in self.perception_time_list
         }
 
+        mirror_ts, mirror_open = _collect_rear_view_mirror_timeline(
+            self.event_heavy_bags, getattr(config, "CAR_STATE_TOPIC", "") or ""
+        )
+        if mirror_ts:
+            print(
+                f"    car_state 后视镜样本 {len(mirror_ts)} 条，"
+                f"折叠帧不参与鱼眼最近邻匹配（topic={config.CAR_STATE_TOPIC}）"
+            )
+        elif getattr(config, "CAR_STATE_TOPIC", ""):
+            print(
+                f"    [INFO] 未从 Heavy bag 读到 {config.CAR_STATE_TOPIC} 有效后视镜字段，"
+                f"鱼眼提取不叠加后视镜折叠过滤"
+            )
+
         for topic, cam_name in zip(config.CAMERA_TOPICS, config.CAMERA_NAMES):
             print(f"    提取 {cam_name} ...")
             count = 0
+            mirror_fold_skips = 0
 
             for heavy_bag in self.event_heavy_bags:
                 try:
@@ -148,6 +295,15 @@ class BagReader:
                             for evt_t in self.perception_time_list:
                                 diff = abs(ts_us - evt_t)
                                 if diff < min_diffs[evt_t][cam_name]:
+                                    mir = _mirror_open_at_image_ts(
+                                        mirror_ts,
+                                        mirror_open,
+                                        ts_us,
+                                        _CAR_STATE_MIRROR_MAX_SKEW_US,
+                                    )
+                                    if mir is False:
+                                        mirror_fold_skips += 1
+                                        continue
                                     min_diffs[evt_t][cam_name] = diff
                                     img = cv2.imdecode(
                                         np.frombuffer(obj.data, np.uint8),
@@ -163,6 +319,11 @@ class BagReader:
                     print(f"      [WARN] 跳过 {heavy_bag}: {e}")
 
             print(f"      -> 更新 {count} 次匹配")
+            if mirror_fold_skips:
+                print(
+                    f"      -> 后视镜折叠: 跳过 {mirror_fold_skips} 个鱼眼候选帧"
+                    f"（不参与该路最近邻；topic={config.CAR_STATE_TOPIC}）"
+                )
 
         return image_results
 

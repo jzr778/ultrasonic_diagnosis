@@ -5,8 +5,8 @@ AVP 全流程 Pipeline
 步骤:
   1. get_id_mapping.py         → get_data/id_mapping.json  ({tag_id: feishu_id})
   2. bag.py                    → offline_avm_generate_release/bag_list.txt
-  3. unpack_bag_for_avm.py     解包 bag 为鱼眼图输入
-  4. save_bag_data.py          准备 read_data（含各时间戳鱼眼原图 panoramic_*.jpg，默认开启）
+  3. unpack_bag_for_avm.py     解包 bag 为鱼眼图输入（BagReader.extract_nearest_images，可据 car_state 跳过后视镜折叠帧）
+  4. save_bag_data.py          准备 read_data（含各时间戳鱼眼原图 panoramic_*.jpg；同样走 extract_nearest_images）
   5. run_standalone.sh          拼接鱼眼图
   6. avp_vlm_pipeline_avm.py   绘制 AVM 标注图像
   7. avp_vlm_pipeline_avm.py   大模型诊断
