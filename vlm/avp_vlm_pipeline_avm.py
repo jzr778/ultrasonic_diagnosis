@@ -536,9 +536,9 @@ def diagnose_single_tag(tag_id, feishu_id, args):
     if comment_record:
         comment_record = pre_comment_record + comment_record
         logger.info(f"[诊断] tag={tag_id} 飞书评论:\n{comment_record}")
-        # tester = FeishuCommentTester()
-        # test_url = f"https://project.feishu.cn/{config.FEISHU_PROJECT_KEY}/case/detail/{feishu_id}"
-        # tester.test_comment(test_url, comment_record)
+        tester = FeishuCommentTester()
+        test_url = f"https://project.feishu.cn/{config.FEISHU_PROJECT_KEY}/case/detail/{feishu_id}"
+        tester.test_comment(test_url, comment_record)
     logger.info(f"[诊断] tag={tag_id} 完成 (误检={len(stats['misdetected'])}, 正常={len(stats['normal'])}, API异常={len(stats['api_error'])})")
     return stats
 
