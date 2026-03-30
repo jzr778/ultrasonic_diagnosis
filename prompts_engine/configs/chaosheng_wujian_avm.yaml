@@ -4,7 +4,7 @@
 # 所有组件都通过模板文件定义，实现了配置与代码的完全分离
 
 version: "1.0.0"
-description: "超声波检测点是否误检场景分析 Agent"
+description: "超声波检测是否误检场景分析 Agent"
 
 # System 消息组件（基础层）
 # 这些组件定义了 AI 的角色、术语和分析原则
@@ -26,9 +26,9 @@ inputs:
   - name: "**黄色 PARK_FREESPACE 障碍（类别与质心）**"
     template: "layer2_input/yellow_freespace_avm.jinja2"
     description: "已绘制黄线的 freespaceType 与质心像素坐标"
-  - name: "**检测点位置信息 (Location Information of Detection Points)**"
+  - name: "**红色超声检测质心位置信息 (Location Information of Red Ultrasonic Centroids)**"
     template: "layer2_input/detection_point_avm.jinja2"
-    description: "图像上检测点像素坐标"
+    description: "AVM 图像上红色超声标记质心像素坐标"
 
 
 # 任务列表（动态组合并生成 Schema）
