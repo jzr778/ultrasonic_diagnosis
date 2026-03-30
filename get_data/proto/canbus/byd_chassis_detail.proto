@@ -1,0 +1,2642 @@
+syntax = "proto2";
+
+package deeproute.canbus.byd;
+
+message BydChassisDetail {
+  // adas send can data
+  optional ADS_0x295 ads_0x295 = 1;
+  optional ADS_0x291 ads_0x291 = 2;
+  optional ADS_0x2AC ads_0x2ac = 3;
+  optional ADS_0x297 ads_0x297 = 4;
+
+  // adas receive data
+  optional Media_0x4EF media_0x4ef = 51;
+  optional BMS_0x445 bms_0x445 = 52;
+  optional EPS_0x135 eps_0x135 = 53;
+  optional Left_BCM_0x294 left_bcm_0x294 = 54;
+  optional Left_BCM_0x407 left_bcm_0x407 = 55;
+  optional Left_BCM_0x3CD left_bcm_0x3cd = 56;
+  optional Left_BCM_0x38A left_bcm_0x38a = 57;
+  optional Left_BCM_0x12D left_bcm_0x12d = 58;
+  optional Left_BCM_0x151 left_bcm_0x151 = 59;
+  optional Left_BCM_0x323 left_bcm_0x323 = 60;
+  optional Left_BCM_0x3D9 left_bcm_0x3d9 = 61;
+  optional Left_BCM_0x4A5 left_bcm_0x4a5 = 62;
+  optional Left_BCM_0x475 left_bcm_0x475 = 63;
+  optional Rear_BCM_0x218 rear_bcm_0x218 = 64;
+  optional Left_BCM_0x496 left_bcm_0x496 = 65;
+  optional Left_BCM_0x48E left_bcm_0x48e = 66;
+  optional Left_BCM_0x388 left_bcm_0x388 = 67;
+  optional Right_BCM_0x41A right_bcm_0x41a = 68;
+  optional Rear_BCM_0x219 rear_bcm_0x219 = 69;
+  optional LTE4G_0x49A lte4g_0x49a = 70;
+  optional SCU_0x35C scu_0x35c = 71;
+  optional Media_0x4DE media_0x4de = 72;
+  optional Media_0x3B7 media_0x3b7 = 73;
+  optional Media_0x2EC media_0x2ec = 74;
+  optional Media_0x25C media_0x25c = 75;
+  optional SEC_0x23F sec_0x23f = 76;
+  optional CS_0x133 cs_0x133 = 77;
+  optional SWS_0x3B0 sws_0x3b0 = 78;
+  optional VCU_0x341 vcu_0x341 = 79;
+  optional VCU_0x240 vcu_0x240 = 80;
+  optional VCU_0x342 vcu_0x342 = 81;
+  optional VCU_0x242 vcu_0x242 = 82;
+  optional BMS_0x344 bms_0x344 = 83;
+  optional BMS_0x345 bms_0x345 = 84;
+  optional SRS_0x08C srs_0x08c = 85;
+  optional MSR_DRV_0x481 msr_drv_0x481 = 86;
+  optional EPS_0x24C eps_0x24c = 87;
+  optional EPS_0x11F eps_0x11f = 88;
+  optional EPS_0x318 eps_0x318 = 89;
+  optional EPS_0x1FC eps_0x1fc = 90;
+  optional IPB_0x0D5 ipb_0x0d5 = 91;
+  optional IPB_0x121 ipb_0x121 = 92;
+  optional IPB_0x122 ipb_0x122 = 93;
+  optional IPB_0x123 ipb_0x123 = 94;
+  optional IPB_0x222 ipb_0x222 = 95;
+  optional IPB_0x223 ipb_0x223 = 96;
+  optional IPB_0x321 ipb_0x321 = 97;
+  optional IPB_0x220 ipb_0x220 = 98;
+  optional IPB_0x1F0 ipb_0x1f0 = 99;
+  optional IPB_0x173 ipb_0x173 = 100;
+  optional IPB_0x322 ipb_0x322 = 101;
+  optional IPB_0x075 ipb_0x075 = 102;
+  optional RBU_0x07A rbu_0x07a = 103;
+  optional RBU_0x07E rbu_0x07e = 104;
+  optional RBU_0x0EC rbu_0x0ec = 105;
+  optional IPB_0x082 ipb_0x082 = 106;
+  optional IPB_0x083 ipb_0x083 = 107;
+  optional RBU_0x084 rbu_0x084 = 108;
+  optional DiSus_0x258 disus_0x258 = 109;
+  optional Disus_0x109 disus_0x109 = 110;
+  optional FMCU_0x254 fmcu_0x254 = 111;
+  optional BDC_0x339 bdc_0x339 = 112;
+  optional VCU_0x44D vcu_0x44d = 113;
+  optional VCU_0x44E vcu_0x44e = 114;
+  optional BMS_0x244 bms_0x244 = 115;
+  optional BMS_0x444 bms_0x444 = 116;
+  optional LBMS_2_0x2C7 lbms_2_0x2c7 = 117;
+  optional DCDC_0x26C dcdc_0x26c = 118;
+
+  //lost monitor
+  optional bool adas_lost = 119;
+  optional bool hmi_lost = 120;
+  optional bool ipb_lost = 121;
+
+  optional MRR_0x12B mrr_0x12b = 122;
+  optional LBMS_0x449 lbms_0x449 = 123;
+  optional Left_BCM_0x3B4 left_bcm_0x3b4 = 124;
+  optional Pbox_0x631 pbox_0x631 = 125;
+  optional Left_BCM_0x4B3 left_bcm_0x4b3 = 126;
+  optional RCR_R_0x418 rcr_r_0x418 = 127;
+  optional Right_BCM_0x404 right_bcm_0x404 = 128;
+  optional Media_0x385 media_0x385 = 129;
+
+  optional bool eps_lost = 130;
+  optional bool ch_lost = 131;
+
+}
+
+// adas send can data
+message Byd_Obj {
+  enum TargetWarning {
+    REMAND = 0x1;
+    LOW_WARNING = 0x2;
+    MEDIUM_WARNING = 0x3;
+    HIGH_WARNING = 0x4;
+    RESERVED = 0x5;
+    RESERVED_1 = 0x6;
+    RESERVED_2 = 0x7;
+  }
+
+  enum TargetState {
+    NO_TARGET = 0x0;
+    TARGET_LOCKED = 0x1;
+  }
+
+  enum TargetType {
+    INVALID = 0x0;
+    FOUR_WHEELED_VEHICLE = 0x1;
+    LARGE_VEHICLE = 0x2;
+    TWO_WHEELED_VEHICLE_BICYCLE = 0x3;
+    PEDESTRIAN = 0x4;
+    SPECIAL_VEHICLE = 0x5;
+    THREE_WHEELED_VEHICLE = 0x6;
+    CONE_BARREL = 0x7;
+    TWO_WHEELED_VEHICLE_ELECTRIC_VEHICLE_MOTORCYCLE = 0x8;
+    DOG = 0x9;
+    BUS = 0xA;
+    SUV = 0xB;
+    ANTI_COLLISION_DRUM = 0xC;
+    CONSTRUCTION_SIGN = 0xD;
+    TRIPOD = 0xE;
+    WATER_HORSE = 0xF;
+  }
+
+  // 锁定目标_横坐标
+  optional double lock_target_abscissa = 1;
+  // 目标状态等级
+  optional TargetWarning target_warning = 2;
+  // 目标状态
+  optional TargetState target_state_b1 = 3;
+  // 目标类型
+  optional TargetType target_type = 4;
+  // 锁定目标_纵向相对速度
+  optional double goal_length_relative_spd = 5;
+  // 锁定目标_横向相对速度
+  optional double goal_late_relative_spd = 6;
+  // 锁定目标_纵坐标
+  optional double lock_target_ordinate = 7;
+}
+
+// 前方目标
+message ADS_0x295 {
+  // 左相邻车道车前目标1
+  optional Byd_Obj left_obj = 1;
+  // 自车道正前方目标1
+  optional Byd_Obj front_obj_1 = 2;
+  // 右相邻车道车前目标1
+  optional Byd_Obj right_obj = 3;
+  // 自车道正前方目标2
+  optional Byd_Obj front_obj_2 = 4;
+}
+
+// 后方目标
+message ADS_0x291 {
+  // 左相邻车道车后目标
+  optional Byd_Obj left_obj = 1;
+  // 自车道正后方目标
+  optional Byd_Obj rear_obj = 2;
+  // 右相邻车道车后目标
+  optional Byd_Obj right_obj = 3;
+}
+
+// 目标
+message ADS_0x2AC {
+  // 左相邻车道车前目标2
+  optional Byd_Obj left_adjacent_lane_vehicle_front_target2 = 1;
+  // 右相邻车道车前目标2
+  optional Byd_Obj right_adjacent_lane_vehicle_front_target2 = 2;
+  // 左相邻车道自车正左方目标
+  optional Byd_Obj left_adjacent_lane_from_vehicle_to_left_target = 3;
+  // 右相邻车道自车正右方目标
+  optional Byd_Obj right_adjacent_lane_from_vehicle_to_right_target = 4;
+}
+
+message Lane_Line_Obj {
+  enum LeftLaneLineTypeS {
+    NO_DISPLAY = 0x0;
+    SOLID_LINE = 0x1;
+    DASHED_LINE = 0x2;
+    ROADSIDE = 0x3;
+  }
+
+  // 车道线类型
+  optional LeftLaneLineTypeS left_lane_line_type_s = 1;
+  // 车道线Y向距离
+  optional double left_lane_line_y_distance_s = 2;
+  // 车道线曲率
+  optional double left_lane_line_curvature_s = 3;
+}
+
+// 车道线目标
+message ADS_0x297 {
+  optional Lane_Line_Obj left_lane_line_obj = 1;
+  optional Lane_Line_Obj right_lane_line_obj = 2;
+  optional Lane_Line_Obj left_lane_line_obj_2 = 3;
+  optional Lane_Line_Obj right_lane_line_obj_2 = 4;
+}
+
+// ADS TJP状态机、控制信号
+message ADS_0x11E {
+  enum AdsTjpTakeOverReqS {
+    INACTIVE = 0x0;
+    WARNING_LEVEL1 = 0x1;
+    WARNING_LEVEL2 = 0x2;
+    WARNING_LEVEL3 = 0x3;
+    SAFE_STOP = 0x4;
+    EXIT = 0x5;
+    RECOVERY_TAKEOVER_CAPACITY = 0x6;
+    EMERGENCY_HEDGING = 0x7;
+  }
+
+  enum AdsTjpStatsS {
+    OFF = 0X0;
+    PASSIVE = 0X1;
+    READY = 0X2;
+    TJP_ACTIVE = 0X3;
+    FAULT = 0X4;
+    MRC = 0X5;
+    FORBIDDEN = 0X6;
+  }
+
+  enum AdsRequestEpbStatusS {
+    NO_REQUEST = 0x0;
+    RELEASE = 0x1;
+    APPLY = 0x2;
+    RESERVED = 0x3;
+  }
+
+  enum AdsReqMode {
+    ADS_NONE = 0x0;
+    ADS_L1_2 = 0x1;
+    ADS_L3 = 0x2;
+  }
+
+  enum AdsTjpWarningTextInfo {
+    NOT_DISPLAY = 0x00;
+    PLEASE_PUT_IN_P_GEAR_AND_TRY = 0x01;
+    PLEASE_POWER_ON_AND_OFF_AND_TRY = 0x02;
+    FRONT_TJP_FUNC_ACTIVATED = 0x03;
+    TJP_FUNC_IS_UNAVAILABLE = 0x04;
+    TJP_FUNC_ACTIVATED_ATTENT_TO_SAFETY = 0x05;
+    THE_1000M_TJP_FUNC_EXIT_PLEASE_TAKEOVER = 0x06;
+    THE_300M_TJP_FUNC_EXIT_PLEASE_TAKEOVER = 0x07;
+    THE_100M_TJP_FUNC_EXIT_PLEASE_TAKEOVER = 0x08;
+    TJP_FUNC_EXIT_PLEASE_FOCUS_ON_DRIVING = 0x09;
+    EMERGENCY_AHEAD_IN_DANGER = 0x0A;
+    RESTORE_TAKEOVER_CAPABILITY = 0x0B;
+    TJP_WILL_EXIT_PLEASE_NOTE_TAKEOVER = 0x0C;
+    TJP_WILL_EXIT_PLEASE_IMMED_TAKEOVER = 0x0D;
+    EMERG_SAFE_STOP_PLEASE_IMMED_TAKEOVER = 0x0E;
+    CAREFUL_CONSTRUCTION = 0x0F;
+    PLEASE_NOTE_SURROUND_VEHS_AND_PED_STS = 0x10;
+    ACCELERATED_OVERPASS = 0x11;
+    TURN_ON_DMS_AND_TRY = 0x12;
+    TJP_SYSTEM_FAULTY = 0x13;
+  }
+
+  enum AdsCtrlAvailability {
+    NOTAVAILABLE = 0x0;
+    AVAILABLE = 0x1;
+  }
+
+  enum AdsReqType {
+    ADS_COMFORT = 0x0;
+    ADS_EMERGENCY = 0x1;
+  }
+
+  enum AdsDriveOffReq {
+    DRIVE_OFF_NO_REQUEST = 0x0;
+    DRIVE_OFF_REQUEST = 0x1;
+  }
+
+  enum AdsVehStopReq {
+    VEH_STOP_NO_REQUEST = 0x0;
+    VEH_STOP_REQUEST = 0x1;
+  }
+
+  enum AdsDriverOverride {
+    FALSE = 0x0;
+    TRUE = 0x1;
+  }
+
+  optional AdsTjpTakeOverReqS ads_tjp_takeover_req_s = 1;
+  optional AdsTjpStatsS ads_tjp_stats_s = 2;
+  optional AdsRequestEpbStatusS ads_request_epb_status_s = 3;
+  optional AdsReqMode ads_req_mode = 4;
+  optional AdsTjpWarningTextInfo ads_tjp_warning_text_info = 5;
+  optional AdsCtrlAvailability ads_ctrl_availability = 6;
+  optional AdsReqType ads_req_type = 7;
+  optional AdsDriveOffReq ads_drive_off_req = 8;
+  optional AdsVehStopReq ads_veh_stop_req = 9;
+  optional AdsDriverOverride ads_driver_override = 10;
+  optional double ads_ax_tar_req = 11;
+}
+
+message ADS_0x138 {
+  // 交通拥堵自动驾驶开关反馈状态
+  enum TjpSettingStatesS {
+    OFF = 0x0;
+    ON = 0x1;
+    FAULT = 0x2;
+    RESERVED = 0x3;
+  }
+  optional TjpSettingStatesS tjp_setting_states_s = 1;
+}
+
+// adas receive can data
+
+message Media_0x4EF {
+  optional Child_Id_0x35 child_id_0x35 = 1;
+  optional Child_Id_0x38 child_id_0x38 = 2;
+}
+
+message Child_Id_0x35 {
+  enum TjpEnableS {
+    Invalid = 0x0;
+    Switchoff = 0x1;
+    Switchon = 0x2;
+    Reserved = 0x3;
+  }
+
+  enum RequestTjpToCloseS {
+    TO_CLOSE_INVALID = 0x0;
+    TJP_ARE_OFF = 0x1;
+  }
+
+  optional TjpEnableS tjp_enable_s = 1;
+  optional RequestTjpToCloseS request_tjp_to_closes = 2;
+}
+
+message Child_Id_0x38 {
+  enum PadLvpprkinreqbymobileS {
+    No_Request = 0x0;
+    LVP_PARKING_IN_REQUEST_BY_MOBILE = 0x1;
+
+  }
+  optional PadLvpprkinreqbymobileS pad_lvpprkinreqbymobile_s = 1;
+}
+
+message BMS_0x445 {
+  optional int32 battery_balance_infor_s = 1;
+}
+
+message EPS_0x135 {
+  enum EpsApaCtrlstasS {
+    EPS_APA_CTRL_STAS_S_TEMPORARY_INHIBITED = 0;
+    EPS_APA_CTRL_STAS_S_AVAILABLE_FOR_CONTROL = 1;
+    EPS_APA_CTRL_STAS_S_ACTIVE = 2;
+    EPS_APA_CTRL_STAS_S_PERMANENT_INHIBITED = 3;
+  }
+
+  optional double eps_strwhltorqval_s = 1;
+  optional EpsApaCtrlstasS eps_apa_ctrlstas_s = 2;
+}
+
+message Left_BCM_0x294 {
+  enum LeftFrontDoorStatus294S {
+    LEFT_FRONT_DOOR_STATUS_294_S_INVALID = 0;
+    LEFT_FRONT_DOOR_STATUS_294_S_CLOSE = 1;
+    LEFT_FRONT_DOOR_STATUS_294_S_OPEN = 2;
+  }
+
+  enum RightFrontDoorStatus294S {
+    RIGHT_FRONT_DOOR_STATUS_294_S_INVALID = 0;
+    RIGHT_FRONT_DOOR_STATUS_294_S_CLOSE = 1;
+    RIGHT_FRONT_DOOR_STATUS_294_S_OPEN = 2;
+  }
+
+  enum LeftBackDoorStatus294S {
+    LEFT_BACK_DOOR_STATUS_294_S_INVALID = 0;
+    LEFT_BACK_DOOR_STATUS_294_S_CLOSE = 1;
+    LEFT_BACK_DOOR_STATUS_294_S_OPEN = 2;
+  }
+
+  enum RightBackDoorStatus294S {
+    RIGHT_BACK_DOOR_STATUS_294_S_INVALID = 0;
+    RIGHT_BACK_DOOR_STATUS_294_S_CLOSE = 1;
+    RIGHT_BACK_DOOR_STATUS_294_S_OPEN = 2;
+  }
+
+  enum DriverBeltStatusS {
+    DRIVER_BELT_STATUS_S_INVALID = 0;
+    DRIVER_BELT_STATUS_S_UNLOCK = 1;
+    DRIVER_BELT_STATUS_S_BUCKLE = 2;
+  }
+
+  enum BackDoorStatus294S {
+    BACK_DOOR_STATUS_294_S_INVALID = 0;
+    BACK_DOOR_STATUS_294_S_CLOSE = 1;
+    BACK_DOOR_STATUS_294_S_OPEN = 2;
+  }
+
+  enum FormerHatchStatus294S {
+    FORMER_HATCH_STATUS_294_S_INVALID = 0;
+    FORMER_HATCH_STATUS_294_S_CLOSE = 1;
+    FORMER_HATCH_STATUS_294_S_OPEN = 2;
+  }
+
+  enum EmergencyAlarmStatusS {
+    EMERGENCY_ALARM_STATUS_S_INVALID = 0;
+    EMERGENCY_ALARM_STATUS_S_CLOSE = 1;
+    EMERGENCY_ALARM_STATUS_S_OPEN = 2;
+  }
+
+  enum BrakePedalStatuslevelS {
+    BRAKE_PEDAL_STATUSLEVEL_S_NOT_PRESSED = 0;
+    BRAKE_PEDAL_STATUSLEVEL_S_DEPRESS_TBPDEEPLY = 1;
+    BRAKE_PEDAL_STATUSLEVEL_S_DEPRESS_TBPLIGHTLY = 2;
+    BRAKE_PEDAL_STATUSLEVEL_S_ERROR = 3;
+  }
+
+  optional LeftFrontDoorStatus294S left_front_door_status_294_s = 1;
+  optional RightFrontDoorStatus294S right_front_door_status_294_s = 2;
+  optional LeftBackDoorStatus294S left_back_door_status_294_s = 3;
+  optional RightBackDoorStatus294S right_back_door_status_294_s = 4;
+  optional DriverBeltStatusS driver_belt_status_s = 5;
+  optional BackDoorStatus294S back_door_status_294_s = 6;
+  optional FormerHatchStatus294S former_hatch_status_294_s = 7;
+  optional EmergencyAlarmStatusS emergency_alarm_status_s = 8;
+  optional BrakePedalStatuslevelS brake_pedal_statuslevel_s = 9;
+}
+
+message Left_BCM_0x407 {
+  enum FlDoorLockSttus407S {
+    FL_DOOR_LOCK_STTUS407_S_INVALID = 0;
+    FL_DOOR_LOCK_STTUS407_S_UNLOCKED_STATE = 1;
+    FL_DOOR_LOCK_STTUS407_S_LOCKED_STATE = 2;
+  }
+
+  enum FrDoorLockStatus407S {
+    FR_DOOR_LOCK_STATUS_407_S_INVALID = 0;
+    FR_DOOR_LOCK_STATUS_407_S_UNLOCKED_STATE = 1;
+    FR_DOOR_LOCK_STATUS_407_S_LOCKED_STATE = 2;
+  }
+
+  enum RlDoorLockStatusS {
+    RL_DOOR_LOCK_STATUS_S_INVALID = 0;
+    RL_DOOR_LOCK_STATUS_S_UNLOCKED_STATE = 1;
+    RL_DOOR_LOCK_STATUS_S_LOCKED_STATE = 2;
+  }
+
+  enum RrDoorLockStatus407S {
+    RR_DOOR_LOCK_STATUS_407_S_INVALID = 0;
+    RR_DOOR_LOCK_STATUS_407_S_UNLOCKED_STATE = 1;
+    RR_DOOR_LOCK_STATUS_407_S_LOCKED_STATE = 2;
+  }
+
+  enum BackDoorLockStatus407S {
+    BACK_DOOR_LOCK_STATUS_407_S_INVALID = 0;
+    BACK_DOOR_LOCK_STATUS_407_S_UNLOCKED_STATE = 1;
+    BACK_DOOR_LOCK_STATUS_407_S_LOCKED_STATE = 2;
+  }
+
+  enum FldigExtrrMrorsExpandS {
+    FLDIG_EXTRR_MRORS_EXPAND_S_NO_ACTION = 0;
+    FLDIG_EXTRR_MRORS_EXPAND_S_FOLDED = 1;
+    FLDIG_EXTRR_MRORS_EXPAND_S_EXPANDED = 2;
+  }
+
+  optional FlDoorLockSttus407S fl_door_lock_sttus407_s = 1;
+  optional FrDoorLockStatus407S fr_door_lock_status_407_s = 2;
+  optional RlDoorLockStatusS rl_door_lock_status_s = 3;
+  optional RrDoorLockStatus407S rr_door_lock_status_407_s = 4;
+  optional BackDoorLockStatus407S back_door_lock_status_407_s = 5;
+  optional FldigExtrrMrorsExpandS fldig_extrr_mrors_expand_s = 6;
+}
+
+message Left_BCM_0x3CD {
+  enum TyrePositionS {
+    TYRE_POSITION_S_LEFT_FRONT_TIRE = 0;
+    TYRE_POSITION_S_RIGHT_FRONT_TIRE = 1;
+    TYRE_POSITION_S_LEFT_REAR_TIRE = 2;
+    TYRE_POSITION_S_RIGHT_REAR_TIRE = 3;
+  }
+
+  enum SingleTireStatusSignalS {
+    SINGLE_TIRE_STATUS_SIGNAL_S_NORMAL = 0;
+    SINGLE_TIRE_STATUS_SIGNAL_S_ABNORMAL_SIGNAL = 1;
+  }
+
+  enum BsdSysStatS {
+    BSD_SYS_STAT_S_NORMAL = 0;
+    BSD_SYS_STAT_S_SYSTEM_SELF_CHECK = 1;
+    BSD_SYS_STAT_S_SYSTEM_SIGNAL_ABNORMAL = 2;
+    BSD_SYS_STAT_S_SYSTEM_FAILURE = 3;
+  }
+
+  enum SingleTirePressStatusS {
+    SINGLE_TIRE_PRESS_STATUS_S_NORMAL = 0;
+    SINGLE_TIRE_PRESS_STATUS_S_UNDERVOLTAGE = 1;
+  }
+
+  enum SystemUnderpressureStatusS {
+    SYSTEM_UNDERPRESSURE_STATUS_S_NORMAL = 0;
+    SYSTEM_UNDERPRESSURE_STATUS_S_UNDERVOLTAGE = 1;
+  }
+
+  optional TyrePositionS tyre_position_s = 1;
+  optional SingleTireStatusSignalS single_tire_status_signal_s = 2;
+  optional BsdSysStatS bsd_sys_stat_s = 3;
+  optional SingleTirePressStatusS single_tire_press_status_s = 4;
+  optional int32 single_tire_press_value_s = 5;
+  optional double single_tire_temperature_value_s = 6;
+  optional SystemUnderpressureStatusS system_underpressure_status_s = 7;
+}
+
+message Left_BCM_0x38A {
+  enum SmallLights38aS {
+    SMALL_LIGHTS_38A_S_INVALID = 0;
+    SMALL_LIGHTS_38A_S_TURN_ON = 1;
+    SMALL_LIGHTS_38A_S_TURN_OFF = 2;
+  }
+
+  enum DippedHeadlight38aS {
+    DIPPED_HEADLIGHT_38A_S_INVALID = 0;
+    DIPPED_HEADLIGHT_38A_S_TURN_ON = 1;
+    DIPPED_HEADLIGHT_38A_S_TURN_OFF = 2;
+  }
+
+  enum HighBeamLight38aS {
+    HIGH_BEAM_LIGHT_38A_S_INVALID = 0;
+    HIGH_BEAM_LIGHT_38A_S_TURN_ON = 1;
+    HIGH_BEAM_LIGHT_38A_S_TURN_OFF = 2;
+  }
+
+  enum BackFogLight38aS {
+    BACK_FOG_LIGHT_38A_S_INVALID = 0;
+    BACK_FOG_LIGHT_38A_S_TURN_ON = 1;
+    BACK_FOG_LIGHT_38A_S_TURN_OFF = 2;
+  }
+
+  enum BrakeLights38aS {
+    BRAKE_LIGHTS_38A_S_INVALID = 0;
+    BRAKE_LIGHTS_38A_S_ALWAYS_BRIGHT_LIGHT = 1;
+    BRAKE_LIGHTS_38A_S_FLASHING_ON = 2;
+    BRAKE_LIGHTS_38A_S_OFF = 3;
+  }
+
+  enum Backlight38aS {
+    BACKLIGHT_38A_S_INVALID = 0;
+    BACKLIGHT_38A_S_LIT = 1;
+    BACKLIGHT_38A_S_OFF = 2;
+  }
+
+  enum AllWeatherLights38aS {
+    ALL_WEATHER_LIGHTS_38A_S_INVALID = 0;
+    ALL_WEATHER_LIGHTS_38A_S_LIT = 1;
+    ALL_WEATHER_LIGHTS_38A_S_OFF = 2;
+  }
+
+  enum RearPositionLightStatusS {
+    REAR_POSITION_LIGHT_STATUS_S_INVALID = 0;
+    REAR_POSITION_LIGHT_STATUS_S_LIT = 1;
+    REAR_POSITION_LIGHT_STATUS_S_OFF = 2;
+  }
+
+  enum TurnSignalWorkCondition38aS {
+    TURN_SIGNAL_WORK_CONDITION_38A_S_INVALID = 0;
+    TURN_SIGNAL_WORK_CONDITION_38A_S_NOT_WORKING = 1;
+    TURN_SIGNAL_WORK_CONDITION_38A_S_LTSLNORMAL_FLASHING = 2;
+    TURN_SIGNAL_WORK_CONDITION_38A_S_LTSLFLASHING_QUICKLY = 3;
+    TURN_SIGNAL_WORK_CONDITION_38A_S_RTSLFLASHING_NORMALLY = 4;
+    TURN_SIGNAL_WORK_CONDITION_38A_S_RTSLFAULTY_FLASHING_FWS = 5;
+    TURN_SIGNAL_WORK_CONDITION_38A_S_DANGER_WARNING_SIGNAL = 6;
+    TURN_SIGNAL_WORK_CONDITION_38A_S_EMERGENCY_BRAKING_SIGNAL = 7;
+    TURN_SIGNAL_WORK_CONDITION_38A_S_REAR_END_COLLISION_WS = 8;
+    TURN_SIGNAL_WORK_CONDITION_38A_S_NORMAL_FLASHING = 9;
+  }
+
+  enum MidTailLightPosiLightStsS {
+    MID_TAIL_LIGHT_POSI_LIGHT_STS_S_INVALID = 0;
+    MID_TAIL_LIGHT_POSI_LIGHT_STS_S_LIT = 1;
+    MID_TAIL_LIGHT_POSI_LIGHT_STS_S_OFF = 2;
+  }
+
+  optional SmallLights38aS small_lights_38a_s = 1;
+  optional DippedHeadlight38aS dipped_headlight_38a_s = 2;
+  optional HighBeamLight38aS high_beam_light_38a_s = 3;
+  optional BackFogLight38aS back_fog_light_38a_s = 4;
+  optional BrakeLights38aS brake_lights_38a_s = 5;
+  optional Backlight38aS backlight_38a_s = 6;
+  optional AllWeatherLights38aS all_weather_lights_38a_s = 7;
+  optional RearPositionLightStatusS rear_position_light_status_s = 8;
+  optional TurnSignalWorkCondition38aS turn_signal_work_condition_38a_s = 9;
+  optional MidTailLightPosiLightStsS mid_tail_light_posi_light_sts_s = 10;
+}
+
+message Left_BCM_0x12D {
+  enum GatewayEngineStopInform12dS {
+    GATEWAY_ENGINE_STOP_INFORM_12D_S_INVALID = 0;
+    GATEWAY_ENGINE_STOP_INFORM_12D_S_STOP = 1;
+  }
+
+  enum BcmpowerGear12dS {
+    BCMPOWER_GEAR_12D_S_INVALID = 0;
+    BCMPOWER_GEAR_12D_S_OFFFILE = 1;
+    BCMPOWER_GEAR_12D_S_ACCFILE = 2;
+    BCMPOWER_GEAR_12D_S_ONFILE = 3;
+  }
+
+  enum VehicleStatusSecurityS {
+    VEHICLE_STATUS_SECURITY_S_NORMAL_STATE = 0;
+    VEHICLE_STATUS_SECURITY_S_ANTI_THEFT_SETTING_STATE = 1;
+    VEHICLE_STATUS_SECURITY_S_ANTI_THEFT_STATE = 2;
+  }
+
+  optional GatewayEngineStopInform12dS gateway_engine_stop_inform_12d_s = 1;
+  optional BcmpowerGear12dS bcmpower_gear_12d_s = 2;
+  optional VehicleStatusSecurityS vehicle_status_security_s = 3;
+}
+
+message Left_BCM_0x151 {
+  optional int32 speed_signal_151_s = 1;
+  optional int32 speed_unit_setting_151_s = 2;
+}
+
+message Left_BCM_0x323 {
+  enum InsShowFault323S {
+    INS_SHOW_FAULT_323_S_NORMAL = 0;
+    INS_SHOW_FAULT_323_S_FAULT = 1;
+  }
+
+  optional InsShowFault323S ins_show_fault_323_s = 1;
+}
+
+message Left_BCM_0x3D9 {
+  enum ChildId3d9S {
+    CHILD_ID_3D9_S_CHILD_ID05 = 0;
+  }
+
+  optional ChildId3d9S child_id_3d9_s = 1;
+  optional double total_distance_3d9s5_s = 2;
+}
+
+message Left_BCM_0x4A5 {
+  enum MileageUnit4a5S {
+    MILEAGE_UNIT_4A5_S_INVALID = 0;
+    MILEAGE_UNIT_4A5_S_KM = 1;
+    MILEAGE_UNIT_4A5_S_MILE = 2;
+  }
+
+  optional int32 child_id_4a5_s = 1;
+  optional double total_distance_4a5_s = 2;
+  optional MileageUnit4a5S mileage_unit_4a5_s = 3;
+  optional int32 limited_drive_distance_fue_4a5_s = 4;
+}
+
+message Left_BCM_0x475 {
+  enum WiperSpeedS {
+    WIPER_SPEED_S_INVALID = 0;
+    WIPER_SPEED_S_STOP = 1;
+    WIPER_SPEED_S_SLOW_SCRAPING = 2;
+    WIPER_SPEED_S_FAST_SCRAPING = 3;
+  }
+
+  enum DragAndDropModeConfigS {
+    DRAG_AND_DROP_MODE_CONFIG_S_INVALID = 0;
+    DRAG_AND_DROP_MODE_CONFIG_S_NO = 1;
+    DRAG_AND_DROP_MODE_CONFIG_S_YES = 2;
+    DRAG_AND_DROP_MODE_CONFIG_S_RESERVED = 3;
+  }
+
+  optional WiperSpeedS wiper_speed_s = 1;
+  optional DragAndDropModeConfigS drag_and_drop_mode_config_s = 2;
+}
+
+message Rear_BCM_0x218 {
+  enum EleParkBrakeSwitchStatusS {
+    ELE_PARK_BRAKE_SWITCH_STATUS_S_NOT_ACTIVE = 0;
+    ELE_PARK_BRAKE_SWITCH_STATUS_S_RELEASE = 1;
+    ELE_PARK_BRAKE_SWITCH_STATUS_S_APPLY = 2;
+  }
+
+  enum EpbStatusS {
+    EPB_STATUS_S_RELEASING = 0;
+    EPB_STATUS_S_RELEASED = 1;
+    EPB_STATUS_S_APPLYING = 2;
+    EPB_STATUS_S_APPLIED = 3;
+    EPB_STATUS_S_FAULT_PROHIBIT_OF_REMOTE_D = 4;
+    EPB_STATUS_S_MAINTENANCE_RSTATUS = 5;
+  }
+
+  enum DrvorothfcnreqepboverrideS {
+    DRV_OR_OTH_FCN_REQ_EPBOVERRIDE_S_FALSE = 0;
+    DRV_OR_OTH_FCN_REQ_EPBOVERRIDE_S_TRUE = 1;
+  }
+
+  optional EleParkBrakeSwitchStatusS ele_park_brake_switch_status_s = 1;
+  optional EpbStatusS epb_status_s = 2;
+  optional DrvorothfcnreqepboverrideS drvorothfcnreqepboverride_s = 3;
+}
+
+message Left_BCM_0x496 {
+  enum ChildId0x496S {
+    CHILD_ID_0X496_S_CHILD_ID03 = 0;
+  }
+
+  enum DaytimeRunningLightsFuncS {
+    DAYTIME_RUNNING_LIGHTS_FUNC_S_INVALID = 0;
+    DAYTIME_RUNNING_LIGHTS_FUNC_S_ENABLE = 1;
+    DAYTIME_RUNNING_LIGHTS_FUNC_S_DISABLE = 2;
+  }
+
+  optional ChildId0x496S child_id_0x496_s = 1;
+  optional DaytimeRunningLightsFuncS daytime_running_lights_func_s = 2;
+}
+
+message Left_BCM_0x48E {
+  enum WinAntitrapFlagS {
+    WIN_ANTITRAP_FLAG_S_INVALID = 0;
+    WIN_ANTITRAP_FLAG_S_NO_WINDOW_ANTI_PINCH = 1;
+    WIN_ANTITRAP_FLAG_S_LFWINDOW_ANTI_PINCH = 2;
+    WIN_ANTITRAP_FLAG_S_FDOOR_WINDOW_ANTI_PINCH = 3;
+    WIN_ANTITRAP_FLAG_S_FOUR_DOOR_WANTI_PINCH = 4;
+  }
+
+  optional WinAntitrapFlagS win_antitrap_flag_s = 1;
+}
+
+message Left_BCM_0x388 {
+  enum FlWindowClosingStatus {
+    FL_WINDOW_CLOSING_STATUS_INVALID = 0;
+    FL_WINDOW_CLOSING_STATUS_THE_LFWINDOW_IS_CLOSED_P = 1;
+    FL_WINDOW_CLOSING_STATUS_THE_LFWINDOW_IS_NOT_CLOSED = 2;
+  }
+
+  enum RlWindowClosingStatus {
+    RL_WINDOW_CLOSING_STATUS_INVALID = 0;
+    RL_WINDOW_CLOSING_STATUS_THE_LRWINDOW_IS_CLOSED = 1;
+    RL_WINDOW_CLOSING_STATUS_THE_LRWINDOW_IS_NOT_CLOSED = 2;
+  }
+
+  enum LbcmFrWindowClosingStatus {
+    LBCM_FR_WINDOW_CLOSING_STATUS_INVALID = 0;
+    LBCM_FR_WINDOW_CLOSING_STATUS_THE_RFWINDOW_IS_CLOSED_P = 1;
+    LBCM_FR_WINDOW_CLOSING_STATUS_THE_RFWINDOW_IS_NOT_CLOSED = 2;
+  }
+
+  enum LbcmRrWindowClosingStatus {
+    LBCM_RR_WINDOW_CLOSING_STATUS_INVALID = 0;
+    LBCM_RR_WINDOW_CLOSING_STATUS_THE_RRWINDOW_IS_CLOSED = 1;
+    LBCM_RR_WINDOW_CLOSING_STATUS_THE_RRWINDOW_IS_NOT_CLOSED = 2;
+  }
+
+  optional int32 lf_win_pos_pct_s = 1;
+  optional int32 rl_win_pos_pct_s = 2;
+  optional int32 rf_win_pos_pct_388_s = 3;
+  optional int32 rr_win_pos_pct_388_s = 4;
+  optional FlWindowClosingStatus fl_window_closing_status = 5;
+  optional RlWindowClosingStatus rl_window_closing_status = 6;
+  optional LbcmFrWindowClosingStatus lbcm_fr_window_closing_status = 7;
+  optional LbcmRrWindowClosingStatus lbcm_rr_window_closing_status = 8;
+}
+
+message Right_BCM_0x41A {
+  enum SkylightsUninitializedS {
+    SKYLIGHTS_UNINITIALIZED_S_INVALID = 0;
+    SKYLIGHTS_UNINITIALIZED_S_INITIALIZED = 1;
+    SKYLIGHTS_UNINITIALIZED_S_UNINITIALIZED = 2;
+  }
+
+  enum SunsdUninitializedS {
+    SUNSD_UNINITIALIZED_S_INVALID = 0;
+    SUNSD_UNINITIALIZED_S_INITIALIZED = 1;
+    SUNSD_UNINITIALIZED_S_UNINITIALIZED = 2;
+  }
+
+  enum SkylightsUnclsdS {
+    SKYLIGHTS_UN_CLSD_S_INVALID = 0;
+    SKYLIGHTS_UN_CLSD_S_THE_SUNROOF_IS_TURN_OFFD_P = 1;
+    SKYLIGHTS_UN_CLSD_S_THE_SUNROOF_IS_NOT_TURN_OFFD = 2;
+  }
+
+  enum SunshadeClosingStatusS {
+    SUNSHADE_CLOSING_STATUS_S_INVALID = 0;
+    SUNSHADE_CLOSING_STATUS_S_THE_SUN_SHADE_IS_TURN_OFFD = 1;
+    SUNSHADE_CLOSING_STATUS_S_THE_SUN_SHADE_IS_NOT_TURN_OFFD = 2;
+  }
+
+  enum SunrfCurrentActStatsS {
+    SUNRF_CURRENT_ACT_STATS_S_INVALID = 0;
+    SUNRF_CURRENT_ACT_STATS_S_STOP = 1;
+    SUNRF_CURRENT_ACT_STATS_S_SUNROOF_UPWARD_TILT = 2;
+    SUNRF_CURRENT_ACT_STATS_S_SUNROOF_TURN_ON = 3;
+    SUNRF_CURRENT_ACT_STATS_S_SUNROOF_TURN_OFFD = 4;
+    SUNRF_CURRENT_ACT_STATS_S_SUNROOF_ANTI_PINCH = 5;
+  }
+
+  enum SunsdCurrentActStatsS {
+    SUNSD_CURRENT_ACT_STATS_S_INVALID = 0;
+    SUNSD_CURRENT_ACT_STATS_S_STOP = 1;
+    SUNSD_CURRENT_ACT_STATS_S_SUN_SHADE_TURN_ON = 2;
+    SUNSD_CURRENT_ACT_STATS_S_SUN_SHADE_TURN_OFFD = 3;
+    SUNSD_CURRENT_ACT_STATS_S_SUN_SHADE_ANTI_PINCH_REVERSE = 4;
+  }
+
+  enum SunrfRmtClsS {
+    SUNRF_RMT_CLS_S_INVALID = 0;
+    SUNRF_RMT_CLS_S_CLOSING_THE_WINDOW_FAILED = 1;
+    SUNRF_RMT_CLS_S_CLOSING_THE_WINDOW_SUCCESS = 2;
+  }
+
+  enum SunrfSunsdConfigS {
+    SUNRF_SUNSD_CONFIG_S_INVALID = 0;
+    SUNRF_SUNSD_CONFIG_S_LIFTING_SUNROOF_AND_SWITH_AP = 1;
+    SUNRF_SUNSD_CONFIG_S_PANORAMIC_SUN_BLIND_WITH_AP = 2;
+    SUNRF_SUNSD_CONFIG_S_BUILT_IN_SMALL_SKYLIGHT_WITH_AP = 3;
+    SUNRF_SUNSD_CONFIG_S_BUILT_IN_SMALL_SKYLIGHT_NO_AP = 4;
+    SUNRF_SUNSD_CONFIG_S_NO_SUNROOF = 5;
+    SUNRF_SUNSD_CONFIG_S_LIFTING_SRSUNSHADE_WITH_AP = 6;
+    SUNRF_SUNSD_CONFIG_S_LIFTING_SAND_SRSWITH_AP = 7;
+  }
+
+  optional int32 sunrf_position_percent_41a_s = 1;
+  optional int32 sunshade_pos_perc_41a_s = 2;
+  optional SkylightsUninitializedS skylights_uninitialized_s = 3;
+  optional SunsdUninitializedS sunsd_uninitialized_s = 4;
+  optional SkylightsUnclsdS skylights_unclsd_s = 5;
+  optional SunshadeClosingStatusS sunshade_closing_status_s = 6;
+  optional SunrfCurrentActStatsS sunrf_current_act_stats_s = 7;
+  optional SunsdCurrentActStatsS sunsd_current_act_stats_s = 8;
+  optional SunrfRmtClsS sunrf_rmt_cls_s = 9;
+  optional SunrfSunsdConfigS sunrf_sunsd_config_s = 10;
+}
+
+message Rear_BCM_0x219 {
+  enum ChipsControlDeviceStatusS {
+    CHIPS_CONTROL_DEVICE_STATUS_S_SINGLE_CHIP_CONTROLLER = 0;
+    CHIPS_CONTROL_DEVICE_STATUS_S_DUAL_CHIP_CONTROLLER = 1;
+  }
+
+  optional ChipsControlDeviceStatusS chips_control_device_status_s = 1;
+}
+
+message LTE4G_0x49A {
+  enum MediumEnterOtaModeReqS {
+    MEDIUM_ENTER_OTA_MODE_REQ_S_OTAEND_NORMAL_MODE = 0;
+    MEDIUM_ENTER_OTA_MODE_REQ_S_THE_VENTERS_OTAMODE = 1;
+  }
+
+  optional MediumEnterOtaModeReqS medium_enter_ota_mode_req_s = 1;
+}
+
+message SCU_0x35C {
+  enum GearSystemStatusS {
+    GEAR_SYSTEM_STATUS_S_NORMAL = 0;
+    GEAR_SYSTEM_STATUS_S_ABNORMAL = 1;
+  }
+
+  enum ScuFeedbackApaStatusInfoS {
+    SCU_FEEDBACK_APA_STATUS_INFO_S_NO_OPERATION = 0;
+    SCU_FEEDBACK_APA_STATUS_INFO_S_NORMAL_OPERATION = 1;
+    SCU_FEEDBACK_APA_STATUS_INFO_S_DRIVER_GEAR_INTERFERENCE = 2;
+  }
+
+  enum GearRecognizeStatusS {
+    GEAR_RECOGNIZE_STATUS_S_INITIAL_NO_GEAR_SHIFTING = 0;
+    GEAR_RECOGNIZE_STATUS_S_P = 1;
+    GEAR_RECOGNIZE_STATUS_S_R = 2;
+    GEAR_RECOGNIZE_STATUS_S_N = 3;
+    GEAR_RECOGNIZE_STATUS_S_D = 4;
+    GEAR_RECOGNIZE_STATUS_S_M = 5;
+    GEAR_RECOGNIZE_STATUS_S_POSITIVE = 6;
+    GEAR_RECOGNIZE_STATUS_S_NEGATIVE = 7;
+  }
+
+  optional GearSystemStatusS gear_system_status_s = 1;
+  optional ScuFeedbackApaStatusInfoS scu_feedback_apa_status_info_s = 2;
+  optional GearRecognizeStatusS gear_recognize_status_s = 3;
+}
+
+message Media_0x4DE {
+  enum SwitchDisplayModeS {
+    SWITCH_DISPLAY_MODE_S_TURN_OFF_THE_DISPLAY = 0;
+    SWITCH_DISPLAY_MODE_S_FRONT_VIEW = 1;
+    SWITCH_DISPLAY_MODE_S_BACK_VIEW = 2;
+    SWITCH_DISPLAY_MODE_S_LEFT_VIEW = 3;
+    SWITCH_DISPLAY_MODE_S_RIGHT_VIEW = 4;
+    SWITCH_DISPLAY_MODE_S_FRONT_LEFT = 5;
+    SWITCH_DISPLAY_MODE_S_FRONT_RIGHT = 6;
+    SWITCH_DISPLAY_MODE_S_BACK_LEFT = 7;
+    SWITCH_DISPLAY_MODE_S_BACK_RIGHT = 8;
+    SWITCH_DISPLAY_MODE_S_FRONT_WIDE = 9;
+    SWITCH_DISPLAY_MODE_S_BACK_WIDE = 10;
+    SWITCH_DISPLAY_MODE_S_WIDTH_LIMIT = 11;
+  }
+
+  enum PanoramicImageWrkMod4deS {
+    PANORAMIC_IMAGE_WRK_MOD_4DE_S_2DPANORAMIC_MODE = 0;
+    PANORAMIC_IMAGE_WRK_MOD_4DE_S_LARGE_IMAGE_MODE_FULL_SCREEN = 1;
+    PANORAMIC_IMAGE_WRK_MOD_4DE_S_SMALL_WINDOW_MODE_WIDGET = 2;
+    PANORAMIC_IMAGE_WRK_MOD_4DE_S_REVERSE_FRONT_RIGHT_MODE = 3;
+    PANORAMIC_IMAGE_WRK_MOD_4DE_S_REVERSE_PANORAMIC_MODE = 4;
+    PANORAMIC_IMAGE_WRK_MOD_4DE_S_3DPANORAMIC_MODE = 5;
+    PANORAMIC_IMAGE_WRK_MOD_4DE_S_INVALID = 6;
+  }
+
+  enum RoatePadStatus4deS {
+    ROATE_PAD_STATUS_4DE_S_INVALID = 0;
+    ROATE_PAD_STATUS_4DE_S_HORIZONTAL_SCREEN = 1;
+    ROATE_PAD_STATUS_4DE_S_VERTICAL_SCREEN = 2;
+  }
+
+  enum SwitchDisplayMode1S {
+    SWITCH_DISPLAY_MODE1_S_INVALID = 0;
+    SWITCH_DISPLAY_MODE1_S_2DFRONT_WIDE_LEFT = 1;
+    SWITCH_DISPLAY_MODE1_S_2DFRONT_WIDE_RIGHT = 2;
+    SWITCH_DISPLAY_MODE1_S_2DREAR_WIDE_LEFT = 3;
+    SWITCH_DISPLAY_MODE1_S_2DREAR_WIDE_RIGHT = 4;
+    SWITCH_DISPLAY_MODE1_S_2DLIMITED_WIDTH_LEFT = 5;
+    SWITCH_DISPLAY_MODE1_S_2DLIMITED_WIDTH_RIGHT = 6;
+    SWITCH_DISPLAY_MODE1_S_LOOKING_DOWN_LEFT = 7;
+    SWITCH_DISPLAY_MODE1_S_LOOKING_DOWN_RIGHT = 8;
+    SWITCH_DISPLAY_MODE1_S_3DLEFT_AND2DLEFT = 9;
+    SWITCH_DISPLAY_MODE1_S_3DLEFT_AND2DRIGHT = 10;
+    SWITCH_DISPLAY_MODE1_S_3DRIGHT_AND2DLEFT = 11;
+    SWITCH_DISPLAY_MODE1_S_3DRIGHT_AND2DRIGHT = 12;
+    SWITCH_DISPLAY_MODE1_S_LEFT_AND_FRONT = 13;
+    SWITCH_DISPLAY_MODE1_S_RIGHT_AND_RIGHT = 14;
+  }
+
+  enum SwitchDisplayMode2S {
+    SWITCH_DISPLAY_MODE2_S_INVALID = 0;
+    SWITCH_DISPLAY_MODE2_S_3DLEFT_FRONT2DLEFT = 1;
+    SWITCH_DISPLAY_MODE2_S_3DLEFT_FRONT2DRIGHT = 2;
+    SWITCH_DISPLAY_MODE2_S_3DRIGHT_FRONT2DLEFT = 3;
+    SWITCH_DISPLAY_MODE2_S_3DRIGHT_FRONT2DRIGHT = 4;
+  }
+
+  enum PanrmTransparntSwchS {
+    PANRM_TRANSPARNT_SWCH_S_INVALID = 0;
+    PANRM_TRANSPARNT_SWCH_S_WITH_ACTION = 1;
+  }
+
+  enum RmtCallPanoramicImgS {
+    RMT_CALL_PANORAMIC_IMG_S_INVALID = 0;
+    RMT_CALL_PANORAMIC_IMG_S_NEED_TO_CALL = 1;
+  }
+
+  enum ApaModeS {
+    APA_MODE_S_INVALID = 0;
+    APA_MODE_S_ENTER_AUTOMATIC_PARKING_MODE = 1;
+    APA_MODE_S_EXIT_AUTOMATIC_PARKING_MODE = 2;
+  }
+
+  optional int32 child_id_4de_s = 1;
+  optional SwitchDisplayModeS switch_display_mode_s = 2;
+  optional PanoramicImageWrkMod4deS panoramic_image_wrk_mod_4de_s = 3;
+  optional RoatePadStatus4deS roate_pad_status_4de_s = 4;
+  optional SwitchDisplayMode1S switch_display_mode1_s = 5;
+  optional SwitchDisplayMode2S switch_display_mode2_s = 6;
+  optional PanrmTransparntSwchS panrm_transparnt_swch_s = 7;
+  optional RmtCallPanoramicImgS rmt_call_panoramic_img_s = 8;
+  optional ApaModeS apa_mode_s = 9;
+}
+
+message Media_0x3B7 {
+  optional int32 media_speed_is_obtained_by_gps_s = 1;
+}
+
+message Media_0x2EC {
+  enum FatigueMonitoringStatusS {
+    FATIGUE_MONITORING_STATUS_S_INVALID = 0;
+    FATIGUE_MONITORING_STATUS_S_MILD_FATIGUE = 1;
+    FATIGUE_MONITORING_STATUS_S_MODERATE_FATIGUE = 2;
+    FATIGUE_MONITORING_STATUS_S_SEVERE_FATIGUE = 3;
+    FATIGUE_MONITORING_STATUS_S_NO_FATIGUE = 4;
+    FATIGUE_MONITORING_STATUS_S_CLOSE = 5;
+    FATIGUE_MONITORING_STATUS_S_UNKNOWN = 6;
+  }
+
+  enum DistractionMonitoringDActS {
+    DISTRACTION_MONITORING_D_ACT_S_NO_DANGEROUS_ACTION = 0;
+    DISTRACTION_MONITORING_D_ACT_S_DANGEROUS_ACTION = 1;
+    DISTRACTION_MONITORING_D_ACT_S_SMOKING = 2;
+    DISTRACTION_MONITORING_D_ACT_S_MAKE_ACALL = 3;
+  }
+
+  enum LongTermDrivingMonitorStsS {
+    LONG_TERM_DRIVING_MONITOR_STS_S_INVALID = 0;
+    LONG_TERM_DRIVING_MONITOR_STS_S_DRIVING_FOR_ALONG_TIME = 1;
+  }
+
+  enum DmsSelfCheckStatusS {
+    DMS_SELF_CHECK_STATUS_S_INVALID = 0;
+    DMS_SELF_CHECK_STATUS_S_FAULT_FAULTSTATE = 1;
+    DMS_SELF_CHECK_STATUS_S_INIT_INITIALIZATION = 2;
+    DMS_SELF_CHECK_STATUS_S_ACTIVE_NORMALWORK = 3;
+    DMS_SELF_CHECK_STATUS_S_CAMERABLOCKED_DOMESTIC = 4;
+    DMS_SELF_CHECK_STATUS_S_CAMERABLOCKED_OVERSEAS = 5;
+    DMS_SELF_CHECK_STATUS_S_OFF_FUNCTIONCLOSED = 6;
+    DMS_SELF_CHECK_STATUS_S_FAIL_INITIALIZATIONFAILED = 7;
+    DMS_SELF_CHECK_STATUS_S_PRIVACY_MODE = 8;
+  }
+
+  enum DriverAreaOfInterestS {
+    DRIVER_AREA_OF_INTEREST_S_UNAVAILAVLE = 0;
+    DRIVER_AREA_OF_INTEREST_S_WINDSHIELD = 1;
+    DRIVER_AREA_OF_INTEREST_S_REAR_VIEW_MIRROR = 2;
+    DRIVER_AREA_OF_INTEREST_S_DRIVERSIDEWINDOW = 3;
+    DRIVER_AREA_OF_INTEREST_S_INSTRUMENTCLUSTER = 4;
+    DRIVER_AREA_OF_INTEREST_S_INFOTAIMENTDISPLAY = 5;
+    DRIVER_AREA_OF_INTEREST_S_LEFT_SIDE_MIRROR = 6;
+    DRIVER_AREA_OF_INTEREST_S_RIGHT_SIDE_MIRROR = 7;
+    DRIVER_AREA_OF_INTEREST_S_DRIVERSIDEFOOTWELL = 8;
+    DRIVER_AREA_OF_INTEREST_S_AIR_CONDITIONING_PORT = 9;
+    DRIVER_AREA_OF_INTEREST_S_PASSENGERSIDEDOORPANEL = 10;
+    DRIVER_AREA_OF_INTEREST_S_DRIVERSIDEDOORPANEL = 11;
+    DRIVER_AREA_OF_INTEREST_S_PASSENGERSIDEFOOTWELL = 12;
+    DRIVER_AREA_OF_INTEREST_S_DRIVING_RELATEDTASKS = 13;
+    DRIVER_AREA_OF_INTEREST_S_DRIVING_NON_RELATEDTASKS = 14;
+  }
+
+  enum DistractionMonitorAMonitorS {
+    DISTRACTION_MONITOR_A_MONITOR_S_UNAVAILABLE = 0;
+    DISTRACTION_MONITOR_A_MONITOR_S_NON_DISTRACTIVE = 1;
+    DISTRACTION_MONITOR_A_MONITOR_S_LOW_LEVEL_DISTRACTIVE = 2;
+    DISTRACTION_MONITOR_A_MONITOR_S_MIDDLE_LEVEL_DISTRACTIVE = 3;
+    DISTRACTION_MONITOR_A_MONITOR_S_HIGH_LEVEL_DISTRACTIVE = 4;
+    DISTRACTION_MONITOR_A_MONITOR_S_OFF = 5;
+    DISTRACTION_MONITOR_A_MONITOR_S_UNKNOWN = 6;
+  }
+
+  enum RequestUnpAndHnpToCloseS {
+    REQUEST_UNP_AND_HNP_TO_CLOSE_S_INVALID = 0;
+    REQUEST_UNP_AND_HNP_TO_CLOSE_S_UNPAND_HNPARE_OFF = 1;
+  }
+
+  optional FatigueMonitoringStatusS fatigue_monitoring_status_s = 1;
+  optional DistractionMonitoringDActS distraction_monitoring_d_act_s = 2;
+  optional LongTermDrivingMonitorStsS long_term_driving_monitor_sts_s = 3;
+  optional DmsSelfCheckStatusS dms_self_check_status_s = 4;
+  optional DriverAreaOfInterestS driver_area_of_interest_s = 5;
+  optional DistractionMonitorAMonitorS distraction_monitor_a_monitor_s = 6;
+  optional RequestUnpAndHnpToCloseS request_unp_and_hnp_to_close_s = 7;
+}
+
+message Media_0x25C {
+  enum DriverTakeoverCapabStateS {
+    DRIVER_TAKEOVER_CAPAB_STATE_S_INVALID = 0;
+    DRIVER_TAKEOVER_CAPAB_STATE_S_TAKE_OVER_CAPABILITY = 1;
+    DRIVER_TAKEOVER_CAPAB_STATE_S_NO_TAKE_OVER_CAPABILITY = 2;
+  }
+
+  enum DriverOnSeatStateS {
+    DRIVER_ON_SEAT_STATE_S_INVALID = 0;
+    DRIVER_ON_SEAT_STATE_S_ON_THE_SEAT = 1;
+    DRIVER_ON_SEAT_STATE_S_NOT_ON_THE_SEAT = 2;
+  }
+
+  enum DriverAttentionStateS {
+    DRIVER_ATTENTION_STATE_S_INVALID = 0;
+    DRIVER_ATTENTION_STATE_S_DRIVING_RELATED_TASKS = 1;
+    DRIVER_ATTENTION_STATE_S_DRIVING_NON_RELATED_TASKS = 2;
+  }
+
+  enum PadAppStatusS {
+    PAD_APP_STATUS_S_NORMAL = 0;
+    PAD_APP_STATUS_S_PAD_FAULT = 1;
+    PAD_APP_STATUS_S_APP_FAULT = 2;
+    PAD_APP_STATUS_S_APP_CONNECT_FAULT = 3;
+  }
+
+  optional DriverTakeoverCapabStateS driver_takeover_capab_state_s = 1;
+  optional DriverOnSeatStateS driver_on_seat_state_s = 2;
+  optional DriverAttentionStateS driver_attention_state_s = 3;
+  optional PadAppStatusS pad_app_status_s = 4;
+}
+
+message SEC_0x23F {
+  enum SecParkingType23fS {
+    SEC_PARKING_TYPE_23F_S_INVALID = 0;
+    SEC_PARKING_TYPE_23F_S_PARKING_IN = 1;
+    SEC_PARKING_TYPE_23F_S_PARKING_OUT = 2;
+  }
+
+  enum SecParkingPlaceType23fS {
+    SEC_PARKING_PLACE_TYPE_23F_S_INVALID = 0;
+    SEC_PARKING_PLACE_TYPE_23F_S_HORIZONTAL = 1;
+    SEC_PARKING_PLACE_TYPE_23F_S_VERTICAL = 2;
+    SEC_PARKING_PLACE_TYPE_23F_S_OBLIQUE_ORIENTATION = 3;
+  }
+
+  enum SecParkingPos23fS {
+    SEC_PARKING_POS_23F_S_INVALID = 0;
+    SEC_PARKING_POS_23F_S_LEFT = 1;
+    SEC_PARKING_POS_23F_S_RIGHT = 2;
+  }
+
+  enum SecParkingCtrl23fS {
+    SEC_PARKING_CTRL_23F_S_INVALID = 0;
+    SEC_PARKING_CTRL_23F_S_START_PARKING = 1;
+    SEC_PARKING_CTRL_23F_S_PAUSE_PARKING = 2;
+    SEC_PARKING_CTRL_23F_S_STOP_PARKING = 3;
+  }
+
+  enum SecKeyButton23fS {
+    SEC_KEY_BUTTON_23F_S_INVALID = 0;
+    SEC_KEY_BUTTON_23F_S_SHORT_PRESS = 1;
+    SEC_KEY_BUTTON_23F_S_LONG_PRESS = 2;
+  }
+
+  enum BluetoothConnectionStatusS {
+    BLUETOOTH_CONNECTION_STATUS_S_DISCONNECT = 0;
+    BLUETOOTH_CONNECTION_STATUS_S_CONNECT = 1;
+  }
+
+  enum BluetoothFaultStatusFlagS {
+    BLUETOOTH_FAULT_STATUS_FLAG_S_NO_ERROR = 0;
+    BLUETOOTH_FAULT_STATUS_FLAG_S_ERROR = 1;
+  }
+
+  enum RpaCancelButtonStatusS {
+    RPA_CANCEL_BUTTON_STATUS_S_NO_PRESSED = 0;
+    RPA_CANCEL_BUTTON_STATUS_S_PRESSED = 1;
+  }
+
+  enum RpaActivaButtonStatusS {
+    RPA_ACTIVA_BUTTON_STATUS_S_NO_PRESSED = 0;
+    RPA_ACTIVA_BUTTON_STATUS_S_PRESSED = 1;
+  }
+
+  enum ParkOutDirectionSelectionS {
+    PARK_OUT_DIRECTION_SELECTION_S_NONE = 0;
+    PARK_OUT_DIRECTION_SELECTION_S_FRONT_LEFT_CROSS = 1;
+    PARK_OUT_DIRECTION_SELECTION_S_FRONT_LEFT_PARALLEL = 2;
+    PARK_OUT_DIRECTION_SELECTION_S_FRONT_OUT = 3;
+    PARK_OUT_DIRECTION_SELECTION_S_FRONT_RIGHT_CROSS = 4;
+    PARK_OUT_DIRECTION_SELECTION_S_FRONT_RIGHT_PARALLEL = 5;
+    PARK_OUT_DIRECTION_SELECTION_S_BACK_OUT = 6;
+    PARK_OUT_DIRECTION_SELECTION_S_BACK_LEFT_CROSS = 7;
+    PARK_OUT_DIRECTION_SELECTION_S_BACK_RIGHT_CROSS = 8;
+  }
+
+  enum SecRpaAppFunctionC23fS {
+    SEC_RPA_APP_FUNCTION_C_23F_S_INVALID = 0;
+    SEC_RPA_APP_FUNCTION_C_23F_S_CLOSED = 1;
+    SEC_RPA_APP_FUNCTION_C_23F_S_OPEN = 2;
+  }
+
+  enum SecRemoteControlDS23fS {
+    SEC_REMOTE_CONTROL_D_S_23F_S_RD_NOT_READY = 0;
+    SEC_REMOTE_CONTROL_D_S_23F_S_RD_READY = 1;
+  }
+
+  optional SecParkingType23fS sec_parking_type_23f_s = 1;
+  optional SecParkingPlaceType23fS sec_parking_place_type_23f_s = 2;
+  optional SecParkingPos23fS sec_parking_pos_23f_s = 3;
+  optional SecParkingCtrl23fS sec_parking_ctrl_23f_s = 4;
+  optional SecKeyButton23fS sec_key_button_23f_s = 5;
+  optional BluetoothConnectionStatusS bluetooth_connection_status_s = 6;
+  optional BluetoothFaultStatusFlagS bluetooth_fault_status_flag_s = 7;
+  optional RpaCancelButtonStatusS rpa_cancel_button_status_s = 8;
+  optional RpaActivaButtonStatusS rpa_activa_button_status_s = 9;
+  optional ParkOutDirectionSelectionS park_out_direction_selection_s = 10;
+  optional SecRpaAppFunctionC23fS sec_rpa_app_function_c_23f_s = 11;
+  optional SecRemoteControlDS23fS sec_remote_control_d_s_23f_s = 12;
+  optional int32 reserved_s_1 = 13;
+}
+
+message CS_0x133 {
+  enum FrontAndRearFogLampGearS {
+    FRONT_AND_REAR_FOG_LAMP_GEAR_S_INVALID = 0;
+    FRONT_AND_REAR_FOG_LAMP_GEAR_S_OFFFILE = 1;
+    FRONT_AND_REAR_FOG_LAMP_GEAR_S_ALL_WEATHER_LIGHT_FILE = 2;
+    FRONT_AND_REAR_FOG_LAMP_GEAR_S_REAR_FOG_LAMP = 3;
+  }
+
+  enum CsFrontWiperGearS {
+    CS_FRONT_WIPER_GEAR_S_OFFGEAR = 0;
+    CS_FRONT_WIPER_GEAR_S_SHORT_PRESS = 1;
+    CS_FRONT_WIPER_GEAR_S_CLICK_AND_LONG_PRESS = 2;
+    CS_FRONT_WIPER_GEAR_S_GAP1LEVEL = 3;
+    CS_FRONT_WIPER_GEAR_S_GAP2LEVEL = 4;
+    CS_FRONT_WIPER_GEAR_S_GAP3LEVEL = 5;
+    CS_FRONT_WIPER_GEAR_S_GAP4LEVEL = 6;
+    CS_FRONT_WIPER_GEAR_S_SLOW_SCRAPING = 7;
+    CS_FRONT_WIPER_GEAR_S_QUICK_SCRAPING = 8;
+    CS_FRONT_WIPER_GEAR_S_AUTOGEAR = 9;
+  }
+
+  enum LightKnobMechanGearS {
+    LIGHT_KNOB_MECHAN_GEAR_S_INVALID = 0;
+    LIGHT_KNOB_MECHAN_GEAR_S_OFFFILE = 1;
+    LIGHT_KNOB_MECHAN_GEAR_S_AUTOFILE = 2;
+    LIGHT_KNOB_MECHAN_GEAR_S_SMALL_LIGHT_FILE = 3;
+    LIGHT_KNOB_MECHAN_GEAR_S_LOW_BEAM_LIGHT_FILE = 4;
+  }
+
+  enum HighBeamAttendanLampStallS {
+    HIGH_BEAM_ATTENDAN_LAMP_STALL_S_INVALID = 0;
+    HIGH_BEAM_ATTENDAN_LAMP_STALL_S_OFFFILE = 1;
+    HIGH_BEAM_ATTENDAN_LAMP_STALL_S_HIGH_BEAM_FILE = 2;
+    HIGH_BEAM_ATTENDAN_LAMP_STALL_S_OVERTAKING_LAMP = 3;
+  }
+
+  enum TurnSignalSwitchS {
+    TURN_SIGNAL_SWITCH_S_INVALID = 0;
+    TURN_SIGNAL_SWITCH_S_OFFGEAR = 1;
+    TURN_SIGNAL_SWITCH_S_LEFT_STEERING_SHORT_LIFT = 2;
+    TURN_SIGNAL_SWITCH_S_LEFT_STEERING_LONG_LIFT = 3;
+    TURN_SIGNAL_SWITCH_S_RIGHT_STEERING_SHORT_LIFT = 4;
+    TURN_SIGNAL_SWITCH_S_RIGHT_STEERING_LONG_LIFT = 5;
+  }
+
+  optional FrontAndRearFogLampGearS front_and_rear_fog_lamp_gear_s = 1;
+  optional CsFrontWiperGearS cs_front_wiper_gear_s = 2;
+  optional LightKnobMechanGearS light_knob_mechan_gear_s = 3;
+  optional HighBeamAttendanLampStallS high_beam_attendan_lamp_stall_s = 4;
+  optional TurnSignalSwitchS turn_signal_switch_s = 5;
+}
+
+message SWS_0x3B0 {
+  enum SwsSpeedSetS {
+    SWS_SPEED_SET_S_INITIAL_POSITION = 0;
+    SWS_SPEED_SET_S_DECELERATE_FIRST_GEAR = 1;
+    SWS_SPEED_SET_S_DECELERATE_SECOND_GEAR = 2;
+    SWS_SPEED_SET_S_ACCELERATE_FIRST_GEAR = 3;
+    SWS_SPEED_SET_S_ACCELERATE_SECOND_GEAR = 4;
+  }
+
+  enum DipilotSwitchSignalS {
+    DIPILOT_SWITCH_SIGNAL_S_INVALID = 0;
+    DIPILOT_SWITCH_SIGNAL_S_SWITCH_PRESS = 1;
+  }
+
+  enum SwsCruisSwchFaultStatFlgS {
+    SWS_CRUIS_SWCH_FAULT_STAT_FLG_S_INVALID = 0;
+    SWS_CRUIS_SWCH_FAULT_STAT_FLG_S_NORMAL = 1;
+  }
+
+  enum SwsDistSwitchSignalDownS {
+    SWS_DIST_SWITCH_SIGNAL_DOWN_S_INVALID = 0;
+    SWS_DIST_SWITCH_SIGNAL_DOWN_S_DISTANCE_SWITCH_IS_PRESSED = 1;
+  }
+
+  enum SwsDistSwitchSignalUpS {
+    SWS_DIST_SWITCH_SIGNAL_UP_S_INVALID = 0;
+    SWS_DIST_SWITCH_SIGNAL_UP_S_DISTANCE_SWITCH_PLUS_PRESS = 1;
+  }
+
+  enum AccSwitchSignalS {
+    ACC_SWITCH_SIGNAL_S_INVALID = 0;
+    ACC_SWITCH_SIGNAL_S_SWITCH_PRESS = 1;
+  }
+
+  enum HodSystemStatusS {
+    HOD_SYSTEM_STATUS_S_AVAILABLE = 0;
+    HOD_SYSTEM_STATUS_S_INITIAL_STATUS = 1;
+    HOD_SYSTEM_STATUS_S_FAULT = 2;
+    HOD_SYSTEM_STATUS_S_NOT_CALIBRATION = 3;
+  }
+
+  enum DriverGripS {
+    DRIVER_GRIP_S_INVALID = 0;
+    DRIVER_GRIP_S_NO_HAND_DETECTED = 1;
+    DRIVER_GRIP_S_HAND_DETECTED = 2;
+  }
+
+  enum DriverGripAreaS {
+    DRIVER_GRIP_AREA_S_NO_HAND = 0;
+    DRIVER_GRIP_AREA_S_LEFT_HALF_AREA = 1;
+    DRIVER_GRIP_AREA_S_RIGHT_HALF_AREA = 2;
+  }
+
+  enum DriverSinglehandsStateS {
+    DRIVER_SINGLE_HANDS_STATE_S_NO_HANDS_ON = 0;
+    DRIVER_SINGLE_HANDS_STATE_S_ONE_HAND = 1;
+    DRIVER_SINGLE_HANDS_STATE_S_BOTH_HANDS_ON = 2;
+  }
+
+  enum LeftPaddleForADFS {
+    LEFT_PADDLE_FOR_A_D_F_S_INVALID = 0;
+    LEFT_PADDLE_FOR_A_D_F_S_LEFT_PADDLE_PRESSED = 1;
+    LEFT_PADDLE_FOR_A_D_F_S_LONG_PRESS_ON_THE_LEFT_PADDLE = 2;
+  }
+
+  enum RightPaddleForADFS {
+    RIGHT_PADDLE_FOR_A_D_F_S_INVALID = 0;
+    RIGHT_PADDLE_FOR_A_D_F_S_RIGHT_PADDLE_PRESSED = 1;
+    RIGHT_PADDLE_FOR_A_D_F_S_LONG_PRESS_ON_THE_RIGHT_PADDLE = 2;
+  }
+
+  optional SwsSpeedSetS sws_speed_set_s = 1;
+  optional DipilotSwitchSignalS dipilot_switch_signal_s = 2;
+  optional SwsCruisSwchFaultStatFlgS sws_cruis_swch_fault_stat_flg_s = 3;
+  optional SwsDistSwitchSignalDownS sws_dist_switch_signal_down_s = 4;
+  optional SwsDistSwitchSignalUpS sws_dist_switch_signal_up_s = 5;
+  optional AccSwitchSignalS acc_switch_signal_s = 6;
+  optional HodSystemStatusS hod_system_status_s = 7;
+  optional DriverGripS driver_grip_s = 8;
+  optional DriverGripAreaS driver_grip_area_s = 9;
+  optional DriverSinglehandsStateS driver_singlehands_state_s = 10;
+  optional LeftPaddleForADFS left_paddle_for_a_d_f_s = 11;
+  optional RightPaddleForADFS right_paddle_for_a_d_f_s = 12;
+  optional int32 checkcode3b0_s = 13;
+}
+
+message VCU_0x341 {
+  enum DrvPwrLimLampSts {
+    DRV_PWR_LIM_LAMP_STS_DO_NOT_DISPLAY = 0;
+    DRV_PWR_LIM_LAMP_STS_DISPLAY = 1;
+  }
+
+  enum VcuReadyIndicatorLightS {
+    VCU_READY_INDICATOR_LIGHT_S_DO_NOT_DISPLAY = 0;
+    VCU_READY_INDICATOR_LIGHT_S_DISPLAY = 1;
+  }
+
+  optional DrvPwrLimLampSts drv_pwr_lim_lamp_sts = 1;
+  optional VcuReadyIndicatorLightS vcu_ready_indicator_light_s = 2;
+}
+
+message VCU_0x240 {
+  enum PowerSystemFailureS {
+    POWER_SYSTEM_FAILURE_S_POWER_SYSTEM_STATUS_IS_NORMAL = 0;
+    POWER_SYSTEM_FAILURE_S_EVFUNCTION_IS_RESTRICTED = 1;
+    POWER_SYSTEM_FAILURE_S_POWER_SYSTEM_STATUS_IS_FAULTY = 2;
+  }
+
+  enum VcuGoalRoadModeS {
+    VCU_GOAL_ROAD_MODE_S_INVALID = 0;
+    VCU_GOAL_ROAD_MODE_S_NORMAL_MODE = 1;
+    VCU_GOAL_ROAD_MODE_S_GRASS_GRAVEL_GROUND_SNOW = 2;
+    VCU_GOAL_ROAD_MODE_S_MUDDY_GROUND_RUT_GROUND = 3;
+    VCU_GOAL_ROAD_MODE_S_SAND = 4;
+  }
+
+  enum VcuPracticeRoadModeS {
+    VCU_PRACTICE_ROAD_MODE_S_INVALID = 0;
+    VCU_PRACTICE_ROAD_MODE_S_NORMAL_MODE = 1;
+    VCU_PRACTICE_ROAD_MODE_S_GRASS_GRAVEL_GROUND_SNOW = 2;
+    VCU_PRACTICE_ROAD_MODE_S_MUDDY_GROUND_RUT_GROUND = 3;
+    VCU_PRACTICE_ROAD_MODE_S_SAND = 4;
+  }
+
+  optional PowerSystemFailureS power_system_failure_s = 1;
+  optional VcuGoalRoadModeS vcu_goal_road_mode_s = 2;
+  optional VcuPracticeRoadModeS vcu_practice_road_mode_s = 3;
+}
+
+message VCU_0x342 {
+  enum VcuVehWorkModeSwitchStatsS {
+    VCU_VEH_WORK_MODE_SWITCH_STATS_S_NOT_SWITCHED = 0;
+    VCU_VEH_WORK_MODE_SWITCH_STATS_S_SWITCHING = 1;
+  }
+
+  enum VcuVehicleRunModeS {
+    VCU_VEHICLE_RUN_MODE_S_NORMAL = 0;
+  }
+
+  enum VcuVehicleRunModeS2 {
+    VCU_VEHICLE_RUN_MODE_S2_NORMAL = 0;
+  }
+
+  enum VcuGoalGearS {
+    VCU_GOAL_GEAR_S_PGEAR = 0;
+    VCU_GOAL_GEAR_S_RGEA = 1;
+    VCU_GOAL_GEAR_S_NGEA = 2;
+    VCU_GOAL_GEAR_S_DGEA = 3;
+  }
+
+  optional int32 vcu_accelerograph_depth_s = 1;
+  optional int32 vcu_brake_depth_s = 2;
+  optional VcuVehWorkModeSwitchStatsS vcu_veh_work_mode_switch_stats_s = 3;
+  optional VcuVehicleRunModeS vcu_vehicle_run_mode_s = 4;
+  optional VcuVehicleRunModeS2 vcu_vehicle_run_mode_s2 = 5;
+  optional VcuGoalGearS vcu_goal_gear_s = 6;
+}
+
+message VCU_0x242 {
+  enum Autoparksts242 {
+    AUTO_PARK_STS_242_INVALID = 0;
+    AUTO_PARK_STS_242_ALLOWED = 1;
+    AUTO_PARK_STS_242_PARKING = 2;
+    AUTO_PARK_STS_242_FORBID = 3;
+  }
+
+  enum VcuDriverVlcRequestTorqueS {
+    VCU_DRIVER_VLC_REQUEST_TORQUE_S_NO_OVERRIDE = 0;
+    VCU_DRIVER_VLC_REQUEST_TORQUE_S_DRIVER_OVERRIDE = 1;
+  }
+
+  enum AccelerationPedalDepthErrorS {
+    ACCELERATION_PEDAL_DEPTH_ERROR_S_NO_ERROR = 0;
+    ACCELERATION_PEDAL_DEPTH_ERROR_S_ERROR = 1;
+  }
+
+  optional Autoparksts242 autoparksts_242 = 1;
+  optional VcuDriverVlcRequestTorqueS vcu_driver_vlc_request_torque_s = 2;
+  optional AccelerationPedalDepthErrorS acceleration_pedal_depth_error_s = 3;
+}
+
+message BMS_0x344 {
+  enum BmcDischargMainRealyStatsS {
+    BMC_DISCHARG_MAIN_REALY_STATS_S_DISCONNECT = 0;
+    BMC_DISCHARG_MAIN_REALY_STATS_S_PULLIN = 1;
+  }
+
+  enum BmcExtnChagEqupConecStatS {
+    BMC_EXTN_CHAG_EQUP_CONEC_STAT_S_READY = 0;
+    BMC_EXTN_CHAG_EQUP_CONEC_STAT_S_CHARGING = 1;
+    BMC_EXTN_CHAG_EQUP_CONEC_STAT_S_CHARGING_END = 2;
+    BMC_EXTN_CHAG_EQUP_CONEC_STAT_S_GCNOT_ENTER_THE_PROCESS = 3;
+    BMC_EXTN_CHAG_EQUP_CONEC_STAT_S_CHARGING_TERMINATED = 4;
+    BMC_EXTN_CHAG_EQUP_CONEC_STAT_S_C10CHARGING_CABINET_FAILURE = 5;
+    BMC_EXTN_CHAG_EQUP_CONEC_STAT_S_CHARGING_GCFAILURE_STAY = 6;
+    BMC_EXTN_CHAG_EQUP_CONEC_STAT_S_ON_BOARD_EDISCHARGE_WAIT = 7;
+    BMC_EXTN_CHAG_EQUP_CONEC_STAT_S_ACEXTERNAL_CEFAILURE = 8;
+    BMC_EXTN_CHAG_EQUP_CONEC_STAT_S_APPOINTMENT_WAITING_EVR = 9;
+    BMC_EXTN_CHAG_EQUP_CONEC_STAT_S_EXTERNAL_DISCHARGE_READY = 10;
+    BMC_EXTN_CHAG_EQUP_CONEC_STAT_S_EXTERNAL_DISCHARGE = 11;
+    BMC_EXTN_CHAG_EQUP_CONEC_STAT_S_EDISCHARGE_ENDS_NORMALLY = 12;
+    BMC_EXTN_CHAG_EQUP_CONEC_STAT_S_CHARGING_PAUSE = 13;
+    BMC_EXTN_CHAG_EQUP_CONEC_STAT_S_EDISCHARGE_ENDS_ABNORMALLY = 14;
+    BMC_EXTN_CHAG_EQUP_CONEC_STAT_S_DEFAULT = 15;
+  }
+
+  enum BmcChargeGunConnectStatusS {
+    BMC_CHARGE_GUN_CONNECT_STATUS_S_NOT_CONNECTED = 0;
+    BMC_CHARGE_GUN_CONNECT_STATUS_S_ACCHARGING_GUN_CONNECTION = 1;
+    BMC_CHARGE_GUN_CONNECT_STATUS_S_DCCHARGING_GUN_CONNECTION = 2;
+    BMC_CHARGE_GUN_CONNECT_STATUS_S_ACCGAND_DCCGCD_AT_SAME_TIME = 3;
+    BMC_CHARGE_GUN_CONNECT_STATUS_S_VTOLDISCHARGE_GC = 4;
+    BMC_CHARGE_GUN_CONNECT_STATUS_S_OBCCCCONNECTION = 5;
+  }
+
+  optional BmcDischargMainRealyStatsS bmc_discharg_main_realy_stats_s = 1;
+  optional BmcExtnChagEqupConecStatS bmc_extn_chag_equp_conec_stat_s = 2;
+  optional BmcChargeGunConnectStatusS bmc_charge_gun_connect_status_s = 3;
+}
+
+message BMS_0x345 {
+  optional int32 ev_endurance_mileage345_s = 1;
+}
+
+message SRS_0x08C {
+  enum SrsCollosionSignalS {
+    SRS_COLLOSION_SIGNAL_S_THE_VEHICLE_IS_NORMAL = 0;
+    SRS_COLLOSION_SIGNAL_S_THE_VEHICLE_COLLIDES = 1;
+  }
+
+  enum SrsSrsFaultIndicatorS {
+    SRS_SRS_FAULT_INDICATOR_S_INDICATOR_LIGHT_OFF = 0;
+    SRS_SRS_FAULT_INDICATOR_S_INDICATOR_LIGHT_ON = 1;
+  }
+
+  optional SrsCollosionSignalS srs_collosion_signal_s = 1;
+  optional SrsSrsFaultIndicatorS srs_srs_fault_indicator_s = 2;
+}
+
+message MSR_DRV_0x481 {
+  enum DriverMotorSeatBeltStatusS {
+    DRIVER_MOTOR_SEAT_BELT_STATUS_S_FUNCTION_NOT_PERFORMED = 0;
+    DRIVER_MOTOR_SEAT_BELT_STATUS_S_SEAT_BELT_FATIGUE_DVIBRATION = 1;
+    DRIVER_MOTOR_SEAT_BELT_STATUS_S_THE_SEAT_BELT_IS_TIGHTENED = 2;
+    DRIVER_MOTOR_SEAT_BELT_STATUS_S_AEBSEAE_BELT_BRAKES_TIGHTENED = 3;
+    DRIVER_MOTOR_SEAT_BELT_STATUS_S_HSSEAT_BELT_BRAKES_TIGHTEN = 4;
+  }
+
+  optional DriverMotorSeatBeltStatusS driver_motor_seat_belt_status_s = 1;
+}
+
+message EPS_0x24C {
+  enum SteeringModeStatusS {
+    STEERING_MODE_STATUS_S_INVALID = 0;
+    STEERING_MODE_STATUS_S_COMFORTABLE = 1;
+    STEERING_MODE_STATUS_S_COMFORTABLE_PLUS = 2;
+    STEERING_MODE_STATUS_S_SPORTS = 3;
+    STEERING_MODE_STATUS_S_SPORTS_PLUS = 4;
+    STEERING_MODE_STATUS_S_LANE_KEEPING_MODE = 5;
+  }
+
+  optional SteeringModeStatusS steering_mode_status_s = 1;
+}
+
+message EPS_0x11F {
+  enum SensorCalibrationStatsS {
+    SENSOR_CALIBRATION_STATS_S_SENSOR_NOT_CALIBRATED = 0;
+    SENSOR_CALIBRATION_STATS_S_SENSOR1CALIBRATED = 1;
+  }
+
+  enum TrimTrimmingStatsS {
+    TRIM_TRIMMING_STATS_S_SENSOR_NOT_TRIMMED = 0;
+    TRIM_TRIMMING_STATS_S_SENSOR_TRIMMED = 1;
+  }
+
+  optional double steering_wheel_angle_s = 1;
+  optional double steering_wheel_rotation_speed_s = 2;
+  optional SensorCalibrationStatsS sensor_calibration_stats_s = 3;
+  optional TrimTrimmingStatsS trim_trimming_stats_s = 4;
+}
+
+message EPS_0x318 {
+  enum EpsLkaControlStateS {
+    EPS_LKA_CONTROL_STATE_S_EPSESTORQUE_REQ_CNOT_R = 0;
+    EPS_LKA_CONTROL_STATE_S_EPSESTORQUE_REQ_CR = 1;
+    EPS_LKA_CONTROL_STATE_S_EPSESTORQUE_REQ_CACTIVE = 2;
+    EPS_LKA_CONTROL_STATE_S_EREQ_EPSTEMPORARY_FAILED = 3;
+    EPS_LKA_CONTROL_STATE_S_EREQ_EPSPERMANENT_FAILED = 4;
+  }
+
+  enum HnadsOffDetectedStatesS {
+    HNADS_OFF_DETECTED_STATES_S_HANDS_OFF_NOT_DETECTED = 0;
+    HNADS_OFF_DETECTED_STATES_S_HANDS_OF_DETECTED = 1;
+  }
+
+  optional EpsLkaControlStateS eps_lka_control_state_s = 1;
+  optional double lka_control_delivered_value_s = 2;
+  optional HnadsOffDetectedStatesS hnads_off_detected_states_s = 3;
+  optional double strngwhltorq_s = 4;
+}
+
+message EPS_0x1FC {
+  enum EpsanglectrlstS {
+    EPSANGLE_CTRL_ST_S_NOT_READY = 0;
+    EPSANGLE_CTRL_ST_S_READY = 1;
+    EPSANGLE_CTRL_ST_S_ACTIVE = 2;
+    EPSANGLE_CTRL_ST_S_TEMPORARY_FAILED = 3;
+    EPSANGLE_CTRL_ST_S_PERMANENTLY_FAILED = 4;
+    EPSANGLE_CTRL_ST_S_NOT_ACTIVE_NOTAVAILABLE = 5;
+    EPSANGLE_CTRL_ST_S_AWE_DEGRADED = 6;
+    EPSANGLE_CTRL_ST_S_AWE_CRITICALLY_DEGRADED = 7;
+  }
+
+  enum EpsCtrlchannelcur {
+    EPS_CTRL_CHANNEL_CUR_MAIN_EPS_CHANNEL = 0;
+    EPS_CTRL_CHANNEL_CUR_SLAVE_EPS_CHANNEL = 1;
+  }
+
+  enum RequestangleoverrangeS {
+    REQUEST_ANGLE_OVER_RANGE_S_NORMAL = 0;
+    REQUEST_ANGLE_OVER_RANGE_S_OVERRANGE = 1;
+  }
+
+  enum RequestanglespeedoverrangeS {
+    REQUEST_ANGLESPEED_OVER_RANGE_S_NORMAL = 0;
+    REQUEST_ANGLESPEED_OVER_RANGE_S_OVERRANGE = 1;
+  }
+
+  enum EpsanglectrlabortfeedbackS {
+    EPSANGLE_CTRL_ABORT_FEEDBACK_S_NOINTERRUPTION = 0;
+    EPSANGLE_CTRL_ABORT_FEEDBACK_S_DRIVERHANDSOFF = 1;
+    EPSANGLE_CTRL_ABORT_FEEDBACK_S_DRIVEROVERRIDE = 2;
+    EPSANGLE_CTRL_ABORT_FEEDBACK_S_VEHICLE_SPEED_INVALID = 3;
+    EPSANGLE_CTRL_ABORT_FEEDBACK_S_ADASECUACT_REQ_E = 4;
+    EPSANGLE_CTRL_ABORT_FEEDBACK_S_ADASECUSIGNALERROR = 5;
+    EPSANGLE_CTRL_ABORT_FEEDBACK_S_EPSTEMPORARYERROR = 6;
+    EPSANGLE_CTRL_ABORT_FEEDBACK_S_EPSPERMANENTLYERROR = 7;
+    EPSANGLE_CTRL_ABORT_FEEDBACK_S_LKAANGLE_VALUE_LIMITATION = 8;
+    EPSANGLE_CTRL_ABORT_FEEDBACK_S_LKAANGLE_SLOPE_LIMITATION = 9;
+    EPSANGLE_CTRL_ABORT_FEEDBACK_S_ACT_CUR_PIN_ADEVIN_AE = 10;
+  }
+
+  optional EpsanglectrlstS epsanglectrlst_s = 1;
+  optional double strngwhltorq_s_1 = 2;
+  optional double epsanglectrldlvdvalue_s = 3;
+  optional double epsanglectrldlvdtbartorquev_s = 4;
+  optional EpsCtrlchannelcur eps_ctrlchannelcur = 5;
+  optional RequestangleoverrangeS requestangleoverrange_s = 6;
+  optional RequestanglespeedoverrangeS requestanglespeedoverrange_s = 7;
+  optional EpsanglectrlabortfeedbackS epsanglectrlabortfeedback_s = 8;
+}
+
+message IPB_0x0D5 {
+}
+
+message IPB_0x121 {
+  enum AwbAvailableS {
+    AWB_AVAILABLE_S_NOTAVAILABLE = 0;
+    AWB_AVAILABLE_S_AVAILABLE = 1;
+  }
+
+  enum AwbActiveBrakeWarningS {
+    AWB_ACTIVE_BRAKE_WARNING_S_NO_ACTIVE = 0;
+    AWB_ACTIVE_BRAKE_WARNING_S_ACTIVE = 1;
+  }
+
+  enum AebDecActiveS {
+    AEB_DEC_ACTIVE_S_NO_ACTIVE = 0;
+    AEB_DEC_ACTIVE_S_ACTIVE = 1;
+  }
+
+  enum AebNotAvailableS {
+    AEB_NOT_AVAILABLE_S_NOT_AVAILABLE = 0;
+    AEB_NOT_AVAILABLE_S_AVAILABLE = 1;
+  }
+
+  enum PrefillAvailableS {
+    PREFILL_AVAILABLE_S_NOT_AVAILABLE = 0;
+    PREFILL_AVAILABLE_S_AVAILABLE = 1;
+  }
+
+  enum PrefillActiveS {
+    PREFILL_ACTIVE_S_NO_ACTIVE = 0;
+    PREFILL_ACTIVE_S_ACTIVE = 1;
+  }
+
+  enum AbaavailableS {
+    ABAAVAILABLE_S_NOT_AVAILABLE = 0;
+    ABAAVAILABLE_S_AVAILABLE = 1;
+  }
+
+  enum AbaActiveS {
+    ABA_ACTIVE_S_NO_ACTIVE = 0;
+    ABA_ACTIVE_S_ACTIVE = 1;
+  }
+
+  optional double ipb_vehicle_speed_s = 1;
+  optional AwbAvailableS awb_available_s = 2;
+  optional AwbActiveBrakeWarningS awb_active_brake_warning_s = 3;
+  optional AebDecActiveS aeb_dec_active_s = 4;
+  optional AebNotAvailableS aeb_not_available_s = 5;
+  optional PrefillAvailableS prefill_available_s = 6;
+  optional PrefillActiveS prefill_active_s = 7;
+  optional AbaavailableS abaavailable_s = 8;
+  optional AbaActiveS aba_active_s = 9;
+  optional int32 checknum121_s = 10;
+}
+
+message IPB_0x122 {
+  enum AvhFailureS {
+    AVH_FAILURE_S_NO_FAILURE = 0;
+    AVH_FAILURE_S_FAILURE = 1;
+  }
+
+  enum AvhCtrlstatusS {
+    AVH_CTRL_STATUS_S_AVHOFF = 0;
+    AVH_CTRL_STATUS_S_AVHONWITHOUT_ACTBRAK = 1;
+    AVH_CTRL_STATUS_S_AVHONWITH_ACTBRAK = 2;
+    AVH_CTRL_STATUS_S_AVHON_NO_READY = 3;
+  }
+
+  optional AvhFailureS avh_failure_s = 1;
+  optional AvhCtrlstatusS avh_ctrlstatus_s = 2;
+}
+
+message IPB_0x123 {
+  enum HdcCtrlstatusS {
+    HDC_CTRL_STATUS_S_HDCOFF_NOLAMP = 0;
+    HDC_CTRL_STATUS_S_HDCON_WITHOUT_ACTIVEBRAKING_LAMPON = 1;
+    HDC_CTRL_STATUS_S_HDCON_WITH_ACTIVEBRAKING_LAMPFLASHING = 2;
+    HDC_CTRL_STATUS_S_IPB_WITHOUT_HDC = 3;
+  }
+
+  enum BrakePedalStatusS {
+    BRAKE_PEDAL_STATUS_S_NOT_PRESSED = 0;
+    BRAKE_PEDAL_STATUS_S_PRESSED = 1;
+    BRAKE_PEDAL_STATUS_S_ERROR = 2;
+  }
+
+  enum EspOffS {
+    ESP_OFF_S_ESPON = 0;
+    ESP_OFF_S_ESPOFF = 1;
+  }
+
+  enum EspActiveS {
+    ESP_ACTIVE_S_NO_ACTIVE = 0;
+    ESP_ACTIVE_S_ACTIVE = 1;
+  }
+
+  enum TcsFaultS {
+    TCS_FAULT_S_NO_FAILURE = 0;
+    TCS_FAULT_S_FAILURE = 1;
+  }
+
+  enum VdcFaultS {
+    VDC_FAULT_S_NO_FAILURE = 0;
+    VDC_FAULT_S_FAILURE = 1;
+  }
+
+  optional HdcCtrlstatusS hdc_ctrlstatus_s = 1;
+  optional BrakePedalStatusS brake_pedal_status_s = 2;
+  optional EspOffS esp_off_s = 3;
+  optional EspActiveS esp_active_s = 4;
+  optional TcsFaultS tcs_fault_s = 5;
+  optional VdcFaultS vdc_fault_s = 6;
+}
+
+message IPB_0x222 {
+  enum EbdActive222S {
+    EBD_ACTIVE_222_S_NO_ACTIVE = 0;
+    EBD_ACTIVE_222_S_ACTIVE = 1;
+  }
+
+  enum AbsActive222S {
+    ABS_ACTIVE_222_S_NO_ACTIVE = 0;
+    ABS_ACTIVE_222_S_ACTIVE = 1;
+  }
+
+  enum EbdFault222S {
+    EBD_FAULT_222_S_NO_FAILURE = 0;
+    EBD_FAULT_222_S_FAILURE = 1;
+  }
+
+  enum AbsFault222S {
+    ABS_FAULT_222_S_NO_FAILURE = 0;
+    ABS_FAULT_222_S_FAILURE = 1;
+  }
+
+  enum TcsActive222S {
+    TCS_ACTIVE_222_S_NOT_ACTIVE = 0;
+    TCS_ACTIVE_222_S_ACTIVE = 1;
+  }
+
+  enum DwtBActive222S {
+    DWT_B_ACTIVE_222_S_NOT_ACTIVE = 0;
+    DWT_B_ACTIVE_222_S_ACTIVE = 1;
+  }
+
+  enum VdcActive222S {
+    VDC_ACTIVE_222_S_NOT_ACTIVE = 0;
+    VDC_ACTIVE_222_S_ACTIVE = 1;
+  }
+
+  optional double yaw_rate_signal_s = 1;
+  optional double yaw_rate_offset_s = 2;
+  optional EbdActive222S ebd_active_222_s = 3;
+  optional AbsActive222S abs_active_222_s = 4;
+  optional EbdFault222S ebd_fault_222_s = 5;
+  optional AbsFault222S abs_fault_222_s = 6;
+  optional TcsActive222S tcs_active_222_s = 7;
+  optional DwtBActive222S dwt_b_active_222_s = 8;
+  optional VdcActive222S vdc_active_222_s = 9;
+}
+
+message IPB_0x223 {
+  optional double ipb_ax_offset_s = 1;
+  optional double ipb_ay_offset_s = 2;
+}
+
+message IPB_0x321 {
+  optional double ipb_plunger_pressure_s = 1;
+}
+
+message IPB_0x220 {
+  enum RrWheelDriveDirectionS {
+    RR_WHEEL_DRIVE_DIRECTION_S_UNDEFINABLE = 0;
+    RR_WHEEL_DRIVE_DIRECTION_S_FORWARD = 1;
+    RR_WHEEL_DRIVE_DIRECTION_S_BACKWARD = 2;
+    RR_WHEEL_DRIVE_DIRECTION_S_STOP = 3;
+  }
+
+  enum RlWheelDriveDirectionS {
+    RL_WHEEL_DRIVE_DIRECTION_S_UNDEFINABLE = 0;
+    RL_WHEEL_DRIVE_DIRECTION_S_FORWARD = 1;
+    RL_WHEEL_DRIVE_DIRECTION_S_BACKWARD = 2;
+    RL_WHEEL_DRIVE_DIRECTION_S_STOP = 3;
+  }
+
+  enum FrWheelDriveDirectionS {
+    FR_WHEEL_DRIVE_DIRECTION_S_UNDEFINABLE = 0;
+    FR_WHEEL_DRIVE_DIRECTION_S_FORWARD = 1;
+    FR_WHEEL_DRIVE_DIRECTION_S_BACKWARD = 2;
+    FR_WHEEL_DRIVE_DIRECTION_S_STOP = 3;
+  }
+
+  enum FlWheelDriveDirectionS {
+    FL_WHEEL_DRIVE_DIRECTION_S_UNDEFINABLE = 0;
+    FL_WHEEL_DRIVE_DIRECTION_S_FORWARD = 1;
+    FL_WHEEL_DRIVE_DIRECTION_S_BACKWARD = 2;
+    FL_WHEEL_DRIVE_DIRECTION_S_STOP = 3;
+  }
+
+  enum ActiveVehicleHoldS {
+    ACTIVE_VEHICLE_HOLD_S_NOT_ACT_VEHICLE_HOLD = 0;
+    ACTIVE_VEHICLE_HOLD_S_ACT_VEHICLE_HOLD = 1;
+  }
+
+  enum VlcAvailableS {
+    VLC_AVAILABLE_S_NOT_AVAILABLE = 0;
+    VLC_AVAILABLE_S_AVAILABLE = 1;
+  }
+
+  enum VlcActiveS {
+    VLC_ACTIVE_S_NO_ACTIVE = 0;
+    VLC_ACTIVE_S_ACTIVE = 1;
+  }
+
+  enum VlcFailS {
+    VLC_FAIL_S_NO_FAILURE = 0;
+    VLC_FAIL_S_FAILURE = 1;
+  }
+
+  enum NoBrakeForceS {
+    NO_BRAKE_FORCE_S_EXIST_BRAKE_FORCE = 0;
+    NO_BRAKE_FORCE_S_NO_BRAKE_FORCE = 1;
+  }
+
+  enum QdcAccS {
+    QDC_ACC_S_NO_ERROR = 0;
+    QDC_ACC_S_ERROR = 1;
+  }
+
+  enum EcdTempOffS {
+    ECD_TEMP_OFF_S_NOT_HIGH = 0;
+    ECD_TEMP_OFF_S_TEMP_TOO_HIGH = 1;
+  }
+
+  enum VehicleStandStillS {
+    VEHICLE_STAND_STILL_S_NOT_STANDSTILL = 0;
+    VEHICLE_STAND_STILL_S_STANDSTILL = 1;
+    VEHICLE_STAND_STILL_S_INVALID_SHORT_UNAVAIL_MAX3S = 2;
+  }
+
+  enum CddAvailableS {
+    CDD_AVAILABLE_S_NO_AVAILABLE = 0;
+    CDD_AVAILABLE_S_AVAILABLE = 1;
+  }
+
+  enum CddActiveS {
+    CDD_ACTIVE_S_NO_ACTIVE = 0;
+    CDD_ACTIVE_S_ACTIVE = 1;
+  }
+
+  enum CddFailS {
+    CDD_FAIL_S_NO_FAILURE = 0;
+    CDD_FAIL_S_FAILURE = 1;
+  }
+
+  optional RrWheelDriveDirectionS rr_wheel_drive_direction_s = 1;
+  optional RlWheelDriveDirectionS rl_wheel_drive_direction_s = 2;
+  optional FrWheelDriveDirectionS fr_wheel_drive_direction_s = 3;
+  optional FlWheelDriveDirectionS fl_wheel_drive_direction_s = 4;
+  optional ActiveVehicleHoldS active_vehicle_hold_s = 5;
+  optional VlcAvailableS vlc_available_s = 6;
+  optional VlcActiveS vlc_active_s = 7;
+  optional VlcFailS vlc_fail_s = 8;
+  optional NoBrakeForceS no_brake_force_s = 9;
+  optional QdcAccS qdc_acc_s = 10;
+  optional EcdTempOffS ecd_temp_off_s = 11;
+  optional VehicleStandStillS vehicle_stand_still_s = 12;
+  optional double vlc_internal_targ_accel_s = 13;
+  optional CddAvailableS cdd_available_s = 14;
+  optional CddActiveS cdd_active_s = 15;
+  optional CddFailS cdd_fail_s = 16;
+}
+
+message IPB_0x1F0 {
+  optional double wheel_speed_fl_1f0_s = 1;
+  optional double wheel_speed_fr_1f0_s = 2;
+  optional double wheel_speed_rl_1f0_s = 3;
+  optional double wheel_speed_rr_1f0_s = 4;
+}
+
+message IPB_0x173 {
+  enum Ipb2park1LsmposlongacapblS {
+    IPB2PARK1_LSMPOS_LONG_ACAPBL_S_AX_CAPBL_FULL = 0;
+    IPB2PARK1_LSMPOS_LONG_ACAPBL_S_UNEXPECTED_GEAR = 1;
+    IPB2PARK1_LSMPOS_LONG_ACAPBL_S_AX_CAPBL_VEH_BLOCKED = 2;
+    IPB2PARK1_LSMPOS_LONG_ACAPBL_S_P_EPB_TIME_OUT_OVERRIDE = 3;
+  }
+
+  enum Ipb2park1LsmsubmtlevelechoS {
+    IPB2PARK1_LSMSUB_MTLEVEL_ECHO_S_MTLEVEL_NONE = 0;
+    IPB2PARK1_LSMSUB_MTLEVEL_ECHO_S_MTLEVEL_12 = 1;
+    IPB2PARK1_LSMSUB_MTLEVEL_ECHO_S_MTLEVEL_23 = 2;
+    IPB2PARK1_LSMSUB_MTLEVEL_ECHO_S_MTLEVEL_AVP = 3;
+  }
+
+  enum Ipb2park1LsmsubmtlongechoS {
+    IPB2PARK1_LSMSUB_MTLONG_ECHO_S_MTLONG_NONE = 0;
+    IPB2PARK1_LSMSUB_MTLONG_ECHO_S_MTLONG_COMFORT = 1;
+    IPB2PARK1_LSMSUB_MTLONG_ECHO_S_MTLONG_EMERGENCY = 2;
+  }
+
+  enum Ipb2park1LsmsubmtreqechoS {
+    IPB2PARK1_LSMSUB_MTREQ_ECHO_S_MTLONG_NONE = 0;
+    IPB2PARK1_LSMSUB_MTREQ_ECHO_S_MTLONG_DRIVE = 1;
+    IPB2PARK1_LSMSUB_MTREQ_ECHO_S_MTLONG_LSM = 2;
+    IPB2PARK1_LSMSUB_MTREQ_ECHO_S_REVERSED = 3;
+  }
+
+  enum Ipb2park1Lsm12comfortavlS {
+    IPB2PARK1_LSM12COMFORT_AVL_S_NOT_AVAILABLE = 0;
+    IPB2PARK1_LSM12COMFORT_AVL_S_FAIL_DETEC_REDUCED_AVL = 1;
+    IPB2PARK1_LSM12COMFORT_AVL_S_FAIL_DETEC_FULLY_AVL = 2;
+    IPB2PARK1_LSM12COMFORT_AVL_S_AVAILABLE = 3;
+  }
+
+  enum Ipb2park1Lsm12emergencyavlS {
+    IPB2PARK1_LSM12EMERGENCY_AVL_S_NOT_AVAILABLE = 0;
+    IPB2PARK1_LSM12EMERGENCY_AVL_S_FAIL_DETECTED_REDUCED_AVL = 1;
+    IPB2PARK1_LSM12EMERGENCY_AVL_S_FAIL_DETECTED_FULLY_AVL = 2;
+    IPB2PARK1_LSM12EMERGENCY_AVL_S_AVAILABLE = 3;
+  }
+
+  enum Ipb2park1Lsm23avlS {
+    IPB2PARK1_LSM23AVL_S_NOT_AVAILABLE = 0;
+    IPB2PARK1_LSM23AVL_S_FAILURE_DETECTED_REDUCED_AVL = 1;
+    IPB2PARK1_LSM23AVL_S_FAILURE_DETECTED_FULLY_AVL = 2;
+    IPB2PARK1_LSM23AVL_S_AVAILABLE = 3;
+  }
+
+  enum Ipb2epbRpabackupsreqS {
+    IPB2EPB_RPABACKUP_SREQ_S_NONE = 0;
+    IPB2EPB_RPABACKUP_SREQ_S_VEHICLE_STOP_AUTOMATED = 1;
+  }
+
+  enum Ipb2epbStopm2bemegreqS {
+    IPB2EPB_STOP_M2BEMEG_REQ_S_FALSE = 0;
+    IPB2EPB_STOP_M2BEMEG_REQ_S_TRUE = 1;
+  }
+
+  enum IpbBrakeoverride {
+    IPB_BRAKE_OVERRIDE_INACTIVE_DEFAULT = 0;
+    IPB_BRAKE_OVERRIDE_ACTIVE = 1;
+  }
+
+  optional Ipb2park1LsmposlongacapblS ipb2park1_lsmposlongacapbl_s = 1;
+  optional Ipb2park1LsmsubmtlevelechoS ipb2park1_lsmsubmtlevelecho_s = 2;
+  optional Ipb2park1LsmsubmtlongechoS ipb2park1_lsmsubmtlongecho_s = 3;
+  optional Ipb2park1LsmsubmtreqechoS ipb2park1_lsmsubmtreqecho_s = 4;
+  optional Ipb2park1Lsm12comfortavlS ipb2park1_lsm12comfortavl_s = 5;
+  optional Ipb2park1Lsm12emergencyavlS ipb2park1_lsm12emergencyavl_s = 6;
+  optional Ipb2park1Lsm23avlS ipb2park1_lsm23avl_s = 7;
+  optional Ipb2epbRpabackupsreqS ipb2epb_rpabackupsreq_s = 8;
+  optional Ipb2epbStopm2bemegreqS ipb2epb_stopm2bemegreq_s = 9;
+  optional IpbBrakeoverride ipb_brakeoverride = 10;
+  optional int32 reserved_4 = 11;
+}
+
+message IPB_0x322 {
+  enum RctbActive {
+    RCTB_ACTIVE_NOACTIVE = 0;
+    RCTB_ACTIVE_ACTIVE = 1;
+  }
+
+  enum RctbAvailable {
+    RCTB_AVAILABLE_NO_AVAILABLE = 0;
+    RCTB_AVAILABLE_AVAILABLE = 1;
+  }
+
+  optional RctbActive rctb_active = 1;
+  optional RctbAvailable rctb_available = 2;
+}
+
+message IPB_0x075 {
+  enum Ipb1Adcl12availablestateS {
+    IPB_1_ADCL12AVAILABLE_STATE_S_ADC_NOT_AVAILABLE_L12 = 0;
+    IPB_1_ADCL12AVAILABLE_STATE_S_ADC_NOT_AVAILABLE_BY_S_L12 = 1;
+    IPB_1_ADCL12AVAILABLE_STATE_S_ADC_AVAILABLE_L12 = 2;
+  }
+
+  enum Ipb1Adcl3availablestateS {
+    IPB_1_ADCL3AVAILABLE_STATE_S_ADC_NOT_AVAILABLE_L3 = 0;
+    IPB_1_ADCL3AVAILABLE_STATE_S_ADC_NOT_AVAILABLE_BY_S_L3 = 1;
+    IPB_1_ADCL3AVAILABLE_STATE_S_ADC_AVAILABLE_WITH_FAULT_L3 = 2;
+    IPB_1_ADCL3AVAILABLE_STATE_S_ADC_AVAILABLE_WITH_SI_L3 = 3;
+    IPB_1_ADCL3AVAILABLE_STATE_S_ADC_AVAILABLE_L3 = 4;
+  }
+
+  enum Ipb1AdccontrollerreleaseS {
+    IPB_1_ADCCONTROLLER_RELEASE_S_ADC_NOT_RELEASE = 0;
+    IPB_1_ADCCONTROLLER_RELEASE_S_ADC_RELEASE = 1;
+  }
+
+  enum Ipb1AdcactivestateS {
+    IPB_1_ADCACTIVE_STATE_S_ADC_NOT_ACTIVE_L123 = 0;
+    IPB_1_ADCACTIVE_STATE_S_ADC_ACTIVE_L12 = 1;
+    IPB_1_ADCACTIVE_STATE_S_ADC_ACTIVE_L3 = 2;
+  }
+
+  enum Ipb1AdcrampoffsuspendsS {
+    IPB_1_ADCRAMP_OFF_SUSPEND_S_S_ADC_NORMAL = 0;
+    IPB_1_ADCRAMP_OFF_SUSPEND_S_S_ADC_RAMP_OFF_BY_DB = 1;
+  }
+
+  enum Ipb1VlcdecouplingofpS {
+    IPB_1_VLCDECOUPLING_OF_P_S_FALSE = 0;
+    IPB_1_VLCDECOUPLING_OF_P_S_TRUE = 1;
+  }
+
+  enum Ipb1VlcdecouplingofpvS {
+    IPB_1_VLCDECOUPLING_OF_PV_S_FALSE = 0;
+    IPB_1_VLCDECOUPLING_OF_PV_S_TRUE = 1;
+  }
+
+  optional Ipb1Adcl12availablestateS ipb_1_adcl12availablestate_s = 1;
+  optional Ipb1Adcl3availablestateS ipb_1_adcl3availablestate_s = 2;
+  optional Ipb1AdccontrollerreleaseS ipb_1_adccontrollerrelease_s = 3;
+  optional Ipb1AdcactivestateS ipb_1_adcactivestate_s = 4;
+  optional Ipb1AdcrampoffsuspendsS ipb_1_adcrampoffsuspends_s = 5;
+  optional Ipb1VlcdecouplingofpS ipb_1_vlcdecouplingofp_s = 6;
+  optional Ipb1VlcdecouplingofpvS ipb_1_vlcdecouplingofpv_s = 7;
+}
+
+message RBU_0x07A {
+  enum Rbu1Adcl3availablestateS {
+    RBU_1_ADCL3AVAILABLE_STATE_S_ADC_NOT_AVAILABLE_L3 = 0;
+    RBU_1_ADCL3AVAILABLE_STATE_S_ADC_NOT_AVAILABLE_BY_S_L3 = 1;
+    RBU_1_ADCL3AVAILABLE_STATE_S_ADC_AVAILABLE_WITH_FAULT_L3 = 2;
+    RBU_1_ADCL3AVAILABLE_STATE_S_ADC_AVAILABLE_WITH_SI_L3 = 3;
+    RBU_1_ADCL3AVAILABLE_STATE_S_ADC_AVAILABLE_L3 = 4;
+  }
+
+  enum Rbu1AdccontrollerreleaseS {
+    RBU_1_ADCCONTROLLER_RELEASE_S_ADC_NOT_RELEASE = 0;
+    RBU_1_ADCCONTROLLER_RELEASE_S_ADC_RELEASE = 1;
+  }
+
+  enum Rbu1AdcactivestateS {
+    RBU_1_ADCACTIVE_STATE_S_ADC_NO_TACTIVATED = 0;
+    RBU_1_ADCACTIVE_STATE_S_ADC_ACTIVATED = 1;
+  }
+
+  enum Rbuipb21Drivebackup2msS {
+    RBUIPB21_DRIVE_BACKUP2MS_S_NOT_AVAILABLE_TEMPORARY = 0;
+    RBUIPB21_DRIVE_BACKUP2MS_S_NOT_AVAIL_NOT_RELEASED = 1;
+    RBUIPB21_DRIVE_BACKUP2MS_S_NOT_AVAILABLE_PERMANENT = 2;
+    RBUIPB21_DRIVE_BACKUP2MS_S_NOT_ACT_FULL_AVAILABLE = 3;
+    RBUIPB21_DRIVE_BACKUP2MS_S_ACT_PREPARATION = 4;
+    RBUIPB21_DRIVE_BACKUP2MS_S_ACTIVATION_PENDING = 5;
+    RBUIPB21_DRIVE_BACKUP2MS_S_ACT_PEND_REDUNDANCY_LOST = 6;
+    RBUIPB21_DRIVE_BACKUP2MS_S_ACT_PEND_FAIL_OPERATION = 7;
+    RBUIPB21_DRIVE_BACKUP2MS_S_ACT_FULL_AVAILABLE = 8;
+    RBUIPB21_DRIVE_BACKUP2MS_S_ACT_FAIL_OPERATION = 9;
+    RBUIPB21_DRIVE_BACKUP2MS_S_ACT_REDUNDANCY_LOST = 10;
+    RBUIPB21_DRIVE_BACKUP2MS_S_DEACTIVATION_PENDING = 11;
+  }
+
+  enum RbuBlrequestcontrollerS {
+    RBU_BLREQUEST_CONTROLLER_S_NO_REQUEST = 0;
+    RBU_BLREQUEST_CONTROLLER_S_ACTIVE_REQUEST = 1;
+  }
+
+  optional Rbu1Adcl3availablestateS rbu_1_adcl3availablestate_s = 1;
+  optional Rbu1AdccontrollerreleaseS rbu_1_adccontrollerrelease_s = 2;
+  optional Rbu1AdcactivestateS rbu_1_adcactivestate_s = 3;
+  optional Rbuipb21Drivebackup2msS rbuipb21_drivebackup2ms_s = 4;
+  optional RbuBlrequestcontrollerS rbu_blrequestcontroller_s = 5;
+}
+
+message RBU_0x07E {
+  optional double wheel_speed_fl_07e_s = 1;
+  optional double wheel_speed_fr_07e_s = 2;
+  optional double wheel_speed_rl_07e_s = 3;
+  optional double wheel_speed_rr_07e_s = 4;
+}
+
+message RBU_0x0EC {
+  enum HbcActive0ecS {
+    HBC_ACTIVE_0EC_S_NO_ACTIVE = 0;
+    HBC_ACTIVE_0EC_S_ACTIVE = 1;
+  }
+
+  optional HbcActive0ecS hbc_active_0ec_s = 1;
+  optional double ipb_vehicle_speed_0ec_s = 2;
+}
+
+message IPB_0x082 {
+  enum Ipbrbu21Drivemain2backupstateS {
+    IPBRBU21_DRIVE_MAIN2BACKUP_STATE_S_NOT_AVAILABLE_TEMPORARY = 0;
+    IPBRBU21_DRIVE_MAIN2BACKUP_STATE_S_NOT_AVAIL_NOT_RELEASED = 1;
+    IPBRBU21_DRIVE_MAIN2BACKUP_STATE_S_NOT_AVAILABLE_PERMANENT = 2;
+    IPBRBU21_DRIVE_MAIN2BACKUP_STATE_S_NOT_ACT_FULL_AVAILABLE = 3;
+    IPBRBU21_DRIVE_MAIN2BACKUP_STATE_S_ACTIVATION_PREPARATION = 4;
+    IPBRBU21_DRIVE_MAIN2BACKUP_STATE_S_ACTIVATION_PEND = 5;
+    IPBRBU21_DRIVE_MAIN2BACKUP_STATE_S_ACT_PEND_REDUNDAN_LOST = 6;
+    IPBRBU21_DRIVE_MAIN2BACKUP_STATE_S_ACT_PEND_FAIL_OPERATION = 7;
+    IPBRBU21_DRIVE_MAIN2BACKUP_STATE_S_ACT_FULL_AVAILABLE = 8;
+    IPBRBU21_DRIVE_MAIN2BACKUP_STATE_S_ACT_FAIL_OPERATION = 9;
+    IPBRBU21_DRIVE_MAIN2BACKUP_STATE_S_ACT_REDUNDANCY_LOST = 10;
+    IPBRBU21_DRIVE_MAIN2BACKUP_STATE_S_DEACTIVATION_PENDING = 11;
+  }
+
+  enum Main21DrvbrkpedalreqdomS {
+    MAIN21_DRV_BRK_PEDAL_REQ_DOM_S_NOT_DOMINANT = 0;
+    MAIN21_DRV_BRK_PEDAL_REQ_DOM_S_DOMINANT = 1;
+  }
+
+  enum Main21DrvbrkpedalreqdomquaS {
+    MAIN21_DRV_BRK_PEDAL_REQ_DOM_QUA_S_NOT_INITIALIZED = 0;
+    MAIN21_DRV_BRK_PEDAL_REQ_DOM_QUA_S_FAULT = 1;
+    MAIN21_DRV_BRK_PEDAL_REQ_DOM_QUA_S_FULL = 2;
+  }
+
+  enum Ipbrbu12WsscoremonrobS {
+    IPBRBU12_WSS_CORE_MON_ROB_S_DISABLE_DO_MON_RR = 0;
+    IPBRBU12_WSS_CORE_MON_ROB_S_DISABLE_DO_MON_RL = 1;
+    IPBRBU12_WSS_CORE_MON_ROB_S_DISABLE_DO_MON_FR = 2;
+    IPBRBU12_WSS_CORE_MON_ROB_S_DISABLE_DO_MON_FL = 3;
+    IPBRBU12_WSS_CORE_MON_ROB_S_KA_IS_ACTIVE = 4;
+    IPBRBU12_WSS_CORE_MON_ROB_S_EBD_KA_REDUCED_CTL = 5;
+    IPBRBU12_WSS_CORE_MON_ROB_S_EBD_OFF = 6;
+    IPBRBU12_WSS_CORE_MON_ROB_S_ROLLER_BENCH_MODE = 7;
+  }
+
+  optional Ipbrbu21Drivemain2backupstateS ipbrbu21_drivemain2backupstate_s = 1;
+  optional Main21DrvbrkpedalreqdomS main21_drvbrkpedalreqdom_s = 2;
+  optional Main21DrvbrkpedalreqdomquaS main21_drvbrkpedalreqdomqua_s = 3;
+  optional int32 ipbrbu12_ttcfactor_fl_s = 4;
+  optional int32 ipbrbu12_ttcfactor_fr_s = 5;
+  optional int32 ipbrbu12_ttcfactor_rl_s = 6;
+  optional int32 ipbrbu12_ttcfactor_rr_s = 7;
+  optional Ipbrbu12WsscoremonrobS ipbrbu12_wsscoremonrob_s = 8;
+}
+
+message IPB_0x083 {
+  enum Ipbrbu11Drivemain2backupstateS {
+    IPBRBU11_DRIVE_MAIN2BACKUP_STATE_S_NOT_AVAILABLE_TEMPORARY = 0;
+    IPBRBU11_DRIVE_MAIN2BACKUP_STATE_S_NOT_AVAILABLE_NOT_RELEASED = 1;
+    IPBRBU11_DRIVE_MAIN2BACKUP_STATE_S_NOT_AVAILABLE_PERMANENT = 2;
+    IPBRBU11_DRIVE_MAIN2BACKUP_STATE_S_NOT_ACTD_FULL_AVAILABLE = 3;
+    IPBRBU11_DRIVE_MAIN2BACKUP_STATE_S_ACTIVATION_PREPARATION = 4;
+    IPBRBU11_DRIVE_MAIN2BACKUP_STATE_S_ACTIVATION_PENDING = 5;
+    IPBRBU11_DRIVE_MAIN2BACKUP_STATE_S_ACT_PEND_REDUNDAN_LOST = 6;
+    IPBRBU11_DRIVE_MAIN2BACKUP_STATE_S_ACT_PEND_FAIL_OPERATION = 7;
+    IPBRBU11_DRIVE_MAIN2BACKUP_STATE_S_ACTIVATED_FULL_AVAILABLE = 8;
+    IPBRBU11_DRIVE_MAIN2BACKUP_STATE_S_ACTIVATED_FAIL_OPERATION = 9;
+    IPBRBU11_DRIVE_MAIN2BACKUP_STATE_S_ACT_REDUNDANCY_LOST = 10;
+    IPBRBU11_DRIVE_MAIN2BACKUP_STATE_S_DEACTIVATION_PENDING = 11;
+  }
+
+  enum Ipbrbu11IpbselftestinfoS {
+    IPBRBU11_IPBSELF_TEST_INFO_S_IPB_RBUST_PRE_COND_NOT_MET = 0;
+    IPBRBU11_IPBSELF_TEST_INFO_S_IPB_RBUST_IPBFAILURE = 1;
+    IPBRBU11_IPBSELF_TEST_INFO_S_IPB_RBUST_BATPLAUSI_FAULT = 2;
+    IPBRBU11_IPBSELF_TEST_INFO_S_IPB_RBUST_PRE_COND_MET = 3;
+    IPBRBU11_IPBSELF_TEST_INFO_S_IPB_RBUST_ABORTED = 4;
+    IPBRBU11_IPBSELF_TEST_INFO_S_IPB_RBUST_PR_IPB_UV = 5;
+    IPBRBU11_IPBSELF_TEST_INFO_S_IPB_RBUST_PR_SLOT_GRANTED = 6;
+    IPBRBU11_IPBSELF_TEST_INFO_S_IPB_RBUT_PR_SLOT_PENDING = 7;
+    IPBRBU11_IPBSELF_TEST_INFO_S_IPB_RBUST_PR_WITHOUT_LEM = 8;
+    IPBRBU11_IPBSELF_TEST_INFO_S_IPB_RBUST_PREPARED = 9;
+    IPBRBU11_IPBSELF_TEST_INFO_S_IPB_RBUST_IN_PROGRESS = 10;
+  }
+
+  optional Ipbrbu11Drivemain2backupstateS ipbrbu11_drivemain2backupstate_s = 1;
+  optional Ipbrbu11IpbselftestinfoS ipbrbu11_ipbselftestinfo_s = 2;
+}
+
+message RBU_0x084 {
+  enum Rbuipb11Drivebackup2mainstateS {
+    RBUIPB11_DRIVE_BACKUP2MAIN_STATE_S_NOT_AVAILABLE_TEMPORARY = 0;
+    RBUIPB11_DRIVE_BACKUP2MAIN_STATE_S_NOT_AVAILABLE_NOT_RELEASED = 1;
+    RBUIPB11_DRIVE_BACKUP2MAIN_STATE_S_NOT_AVAILABLE_PERMANENT = 2;
+    RBUIPB11_DRIVE_BACKUP2MAIN_STATE_S_NOT_ACTIVATED_FULL_AVAILABLE = 3;
+    RBUIPB11_DRIVE_BACKUP2MAIN_STATE_S_ACTIVATION_PREPARATION = 4;
+    RBUIPB11_DRIVE_BACKUP2MAIN_STATE_S_ACT_PENDING = 5;
+    RBUIPB11_DRIVE_BACKUP2MAIN_STATE_S_ACT_PEND_REDUNDANCY_LOST = 6;
+    RBUIPB11_DRIVE_BACKUP2MAIN_STATE_S_ACT_PEND_FAIL_OPERATION = 7;
+    RBUIPB11_DRIVE_BACKUP2MAIN_STATE_S_ACT_FULL_AVAILABLE = 8;
+    RBUIPB11_DRIVE_BACKUP2MAIN_STATE_S_ACT_FAIL_OPERATION = 9;
+    RBUIPB11_DRIVE_BACKUP2MAIN_STATE_S_ACT_REDUNDANCY_LOST = 10;
+    RBUIPB11_DRIVE_BACKUP2MAIN_STATE_S_DEACTIVATION_PENDING = 11;
+  }
+
+  enum Rbuipb11RbuselftestinfoS {
+    RBUIPB11_RBUSELF_TEST_INFO_S_RBUSELF_T_PRE_COND_NOT_MET = 0;
+    RBUIPB11_RBUSELF_TEST_INFO_S_RBUSELF_T_PRE_COND_MET = 1;
+    RBUIPB11_RBUSELF_TEST_INFO_S_RBUSELF_TEST_REQUESTED = 2;
+    RBUIPB11_RBUSELF_TEST_INFO_S_RBUSELF_TEST_PREPARED = 3;
+    RBUIPB11_RBUSELF_TEST_INFO_S_IPB_RBUST_IN_PROGRESS = 4;
+    RBUIPB11_RBUSELF_TEST_INFO_S_RBUSELF_TEST_ABORTED = 5;
+  }
+
+  enum Backup11DrvbrkpedalreqdomS {
+    BACKUP11_DRV_BRK_PEDAL_REQ_DOM_S_NOT_DOMINANT = 0;
+    BACKUP11_DRV_BRK_PEDAL_REQ_DOM_S_DOMINANT = 1;
+  }
+
+  enum Backup11DrvbrkpedalreqdomquaS {
+    BACKUP11_DRV_BRK_PEDAL_REQ_DOM_QUA_S_NOT_INITIALIZED = 0;
+    BACKUP11_DRV_BRK_PEDAL_REQ_DOM_QUA_S_FAULT = 1;
+    BACKUP11_DRV_BRK_PEDAL_REQ_DOM_QUA_S_FULL = 2;
+  }
+
+  enum Backup11IsdrvprsbrkpedalS {
+    BACKUP11_IS_DRV_PRS_BRK_PEDAL_S_NOT_DOMINANT = 0;
+    BACKUP11_IS_DRV_PRS_BRK_PEDAL_S_DOMINANT = 1;
+  }
+
+  enum Backup11IsdrvprsbrkpedalquaS {
+    BACKUP11_IS_DRV_PRS_BRK_PEDAL_QUA_S_NOT_INITIALIZED = 0;
+    BACKUP11_IS_DRV_PRS_BRK_PEDAL_QUA_S_FAULT = 1;
+    BACKUP11_IS_DRV_PRS_BRK_PEDAL_QUA_S_FULL = 2;
+  }
+
+  optional Rbuipb11Drivebackup2mainstateS rbuipb11_drivebackup2mainstate_s = 1;
+  optional Rbuipb11RbuselftestinfoS rbuipb11_rbuselftestinfo_s = 2;
+  optional int32 rbuipb11_variantinfo_s = 3;
+  optional Backup11DrvbrkpedalreqdomS backup11_drvbrkpedalreqdom_s = 4;
+  optional Backup11DrvbrkpedalreqdomquaS backup11_drvbrkpedalreqdomqua_s = 5;
+  optional Backup11IsdrvprsbrkpedalS backup11_isdrvprsbrkpedal_s = 6;
+  optional Backup11IsdrvprsbrkpedalquaS backup11_isdrvprsbrkpedalqua_s = 7;
+}
+
+message DiSus_0x258 {
+  enum DisusHeightAdjustProcessS {
+    DI_SUS_HEIGHT_ADJUST_PROCESS_S_INVALID = 0;
+    DI_SUS_HEIGHT_ADJUST_PROCESS_S_THE_BODY_IS_RISING = 1;
+    DI_SUS_HEIGHT_ADJUST_PROCESS_S_THE_BODY_IS_FALLING = 2;
+    DI_SUS_HEIGHT_ADJUST_PROCESS_S_ADJUST_COMPLETED = 3;
+    DI_SUS_HEIGHT_ADJUST_PROCESS_S_ADJUST_INTERRUPT = 4;
+  }
+
+  enum GoalDisusHeightModeS {
+    GOAL_DI_SUS_HEIGHT_MODE_S_INVALID = 0;
+    GOAL_DI_SUS_HEIGHT_MODE_S_LO = 1;
+    GOAL_DI_SUS_HEIGHT_MODE_S_N = 2;
+    GOAL_DI_SUS_HEIGHT_MODE_S_HI = 3;
+    GOAL_DI_SUS_HEIGHT_MODE_S_EX_HI = 4;
+    GOAL_DI_SUS_HEIGHT_MODE_S_EXTRA_LOW = 5;
+  }
+
+  enum DisusHeightNotCalibrationS {
+    DI_SUS_HEIGHT_NOT_CALIBRATION_S_NORMAL = 0;
+    DI_SUS_HEIGHT_NOT_CALIBRATION_S_FAILURE = 1;
+  }
+
+  optional int32 crc_checknum_258_s = 1;
+  optional DisusHeightAdjustProcessS disus_height_adjust_process_s = 2;
+  optional GoalDisusHeightModeS goal_disus_height_mode_s = 3;
+  optional DisusHeightNotCalibrationS disus_height_not_calibration_s = 4;
+}
+
+message Disus_0x109 {
+  optional int32 crc_checknum_109_s = 1;
+  optional int32 disus_actual_height_fl_s = 2;
+  optional int32 disus_actual_height_fr_s = 3;
+  optional int32 disus_actual_height_rl_s = 4;
+  optional int32 disus_actual_height_rr_s = 5;
+}
+
+message FMCU_0x254 {
+  optional int32 fmcu_dc_generatrix_pres_s = 1;
+}
+
+message BDC_0x339 {
+  optional int32 igbt_temperature_339_s = 1;
+}
+
+message VCU_0x44D {
+  optional int32 vcu_fmcu_a_phase_current_s = 1;
+  optional int32 vcu_fmcu_b_phase_current_s = 2;
+  optional int32 vcu_fmcu_c_phase_current_s = 3;
+}
+
+message VCU_0x44E {
+  optional int32 vcu_rmcu_a_phase_current_s = 1;
+  optional int32 vcu_rmcu_b_phase_current_s = 2;
+  optional int32 vcu_rmcu_c_phase_current_s = 3;
+}
+
+message BMS_0x244 {
+  enum ThermalRunawayAlarmTestS {
+    THERMAL_RUNAWAY_ALARM_TEST_S_NORMAL = 0;
+    THERMAL_RUNAWAY_ALARM_TEST_S_ALARM = 1;
+  }
+
+  optional ThermalRunawayAlarmTestS thermal_runaway_alarm_test_s = 1;
+}
+
+message BMS_0x444 {
+  optional double curt_battery_pack_total_cur_s = 1;
+  optional int32 bmc_soc_s = 2;
+  optional int32 battery_health_index_s = 3;
+}
+
+message LBMS_2_0x2C7 {
+  enum LbmsFaultWarn2c7S {
+    LBMS_FAULT_WARN_2C7_S_NORMAL = 0;
+    LBMS_FAULT_WARN_2C7_S_FAULT = 1;
+  }
+
+  enum LowBatteryWarn2c7S {
+    LOW_BATTERY_WARN_2C7_S_INVALID = 0;
+    LOW_BATTERY_WARN_2C7_S_ALARM = 1;
+  }
+
+  enum ReplaceBatteryAlert2c7S {
+    REPLACE_BATTERY_ALERT_2C7_S_INVALID = 0;
+    REPLACE_BATTERY_ALERT_2C7_S_OVER_DISCHARGE_LOWEST_SINGLE_CELL15V = 1;
+  }
+
+  optional LbmsFaultWarn2c7S lbms_fault_warn_2c7_s = 1;
+  optional LowBatteryWarn2c7S low_battery_warn_2c7_s = 2;
+  optional ReplaceBatteryAlert2c7S replace_battery_alert_2c7_s = 3;
+}
+
+message DCDC_0x26C {
+  enum DcdcDcsYstemFaultS {
+    DCDC_DCS_YSTEM_FAULT_S_NORMAL = 0;
+    DCDC_DCS_YSTEM_FAULT_S_FAULT = 1;
+  }
+
+  optional DcdcDcsYstemFaultS dcdc_dcs_ystem_fault_s = 1;
+}
+
+message MRR_0x12B {
+  enum MrrSta12bS {
+    MRR_STA_12B_S_NORMAL = 0;
+    MRR_STA_12B_S_TEM_FAILED = 1;//temporary
+    MRR_STA_12B_S_TEM_PEM_FAILED = 2;//permanent
+  }
+
+  enum MrrTjpStatsS {
+    MRR_TJP_STATS_S_OFF = 0;
+    MRR_TJP_STATS_S_PASSIVE = 1;
+    MRR_TJP_STATS_S_BACKRUNNING = 2;
+    MRR_TJP_STATS_S_MRC = 3;
+    MRR_TJP_STATS_S_FAULT = 4;
+  }
+
+  optional MrrSta12bS mrr_sta_12b_s = 1;
+  optional MrrTjpStatsS mrr_tjp_stats_s = 2;
+}
+
+message LBMS_0x449 {
+  enum LbmsFaultWarnS {
+    LBMS_FAULT_WARN_S_NORMAL = 0;
+    LBMS_FAULT_WARN_S_ALARM = 1;
+  }
+
+  enum LowBatteryWarnS {
+    LOW_BATTERY_WARN_S_INVALID = 0;
+    LOW_BATTERY_WARN_S_ALARM = 1;
+  }
+
+  enum ReplaceBatteryAlertS {
+    REPLACE_BATTERY_ALERT_S_INVALID = 0;
+    REPLACE_BATTERY_ALERT_S_OVER_DISCHARGE_LOWEST_SINGLE_CELL15V = 1;
+  }
+
+  optional LbmsFaultWarnS lbms_fault_warn_s = 1;
+  optional int32 battery_temperature_s = 2;
+  optional LowBatteryWarnS low_battery_warn_s = 3;
+  optional ReplaceBatteryAlertS replace_battery_alert_s = 4;
+}
+
+message Left_BCM_0x3B4 {
+  enum SunSensorHardwareFaultS {
+    SUN_SENSOR_HARDWARE_FAULT_S_NOFAULT = 0;
+    SUN_SENSOR_HARDWARE_FAULT_S_FAULT = 1;
+  }
+
+  enum HumiditySensorFaultSignS {
+    HUMIDITY_SENSOR_FAULT_SIGN_S_NOFAULT = 0;
+    HUMIDITY_SENSOR_FAULT_SIGN_S_FAULT = 1;
+  }
+
+  optional double left_sunshine_intensity_s = 1;
+  optional double right_sunshine_intensity_s = 2;
+  optional int32 rainfall_values_s = 3;
+  optional SunSensorHardwareFaultS sun_sensor_hardware_fault_s = 4;
+  optional HumiditySensorFaultSignS humidity_sensor_fault_sign_s = 5;
+}
+
+message Pbox_0x631 {
+  enum PboxState {
+    PBOX_STATE_INVALID = 0;
+    PBOX_STATE_NORMAL = 1;
+    PBOX_STATE_FAULT = 2;
+  }
+  optional PboxState pbox_state = 1;
+}
+
+message Left_BCM_0x4B3 {
+
+  enum LowBeamFailureStatusS {
+    LOW_BEAM_FAILURE_STATUS_S_INVALID = 0;
+    LOW_BEAM_FAILURE_STATUS_S_NORMAL = 1;
+    LOW_BEAM_FAILURE_STATUS_S_FAILURE = 2;
+  }
+
+  enum HighBeamFailureStatusS {
+    HIGH_BEAM_FAILURE_STATUS_S_INVALID = 0;
+    HIGH_BEAM_FAILURE_STATUS_S_NORMAL = 1;
+    HIGH_BEAM_FAILURE_STATUS_S_FAILURE = 2;
+  }
+
+  optional LowBeamFailureStatusS low_beam_failure_status_s = 1;
+  optional HighBeamFailureStatusS high_beam_failure_status_s = 2;
+}
+
+message RCR_R_0x418 {
+  enum RcrRSysStatusS {
+    RCR_R_SYS_STATUS_S_OFF = 0;
+    RCR_R_SYS_STATUS_S_ON = 1;
+    RCR_R_SYS_STATUS_S_SDA_ERROR = 2;
+    RCR_R_SYS_STATUS_S_SYSTEM_ERROR = 3;
+  }
+
+  enum ElkaWarningLeftS {
+    ELKA_WARNING_LEFT_S_NO_WARNING = 0;
+    ELKA_WARNING_LEFT_S_WARNING = 1;
+  }
+
+  enum ElkaWarnRightS {
+    ELKA_WARN_RIGHT_S_NO_WARNING = 0;
+    ELKA_WARN_RIGHT_S_WARNING = 1;
+  }
+
+  enum RBsdWarningLeftS {
+    R_BSD_WARNING_LEFT_S_NO_WARNING = 0;
+    R_BSD_WARNING_LEFT_S_WARNING_LEVEL1 = 1;
+    R_BSD_WARNING_LEFT_S_WARNING_LEVEL2 = 2;
+  }
+
+  enum RBsdWarningRightS {
+    R_BSD_WARNING_RIGHT_S_NO_WARNING = 0;
+    R_BSD_WARNING_RIGHT_S_WARNING_LEVEL1 = 1;
+    R_BSD_WARNING_RIGHT_S_WARNING_LEVEL2 = 2;
+  }
+
+  enum RradarRctaWarningLeftS {
+    RRADAR_RCTA_WARNING_LEFT_S_WARING_OFF = 0;
+    RRADAR_RCTA_WARNING_LEFT_S_WARING_ON = 1;
+  }
+
+  enum RadarRctaWarnRightS {
+    RADAR_RCTA_WARN_RIGHT_S_WARING_OFF = 0;
+    RADAR_RCTA_WARN_RIGHT_S_WARING_ON = 1;
+  }
+
+  enum RcwWarningS {
+    RCW_WARNING_S_WARINGOFF = 0;
+    RCW_WARNING_S_WARINGON = 1;
+  }
+
+  enum RBsdStatusS {
+    R_BSD_STATUS_S_OFF = 0;
+    R_BSD_STATUS_S_PASSIVE = 1;
+    R_BSD_STATUS_S_ACTIVE = 2;
+    R_BSD_STATUS_S_FAULT = 3;
+  }
+
+  enum RightRadarRctaStatusS {
+    RIGHT_RADAR_RCTA_STATUS_S_OFF = 0;
+    RIGHT_RADAR_RCTA_STATUS_S_PASSIVE = 1;
+    RIGHT_RADAR_RCTA_STATUS_S_ACTIVE = 2;
+    RIGHT_RADAR_RCTA_STATUS_S_FAULT = 3;
+  }
+
+  enum RightRadarRcwStatusS {
+    RIGHT_RADAR_RCW_STATUS_S_OFF = 0;
+    RIGHT_RADAR_RCW_STATUS_S_PASSIVE = 1;
+    RIGHT_RADAR_RCW_STATUS_S_ACTIVE = 2;
+    RIGHT_RADAR_RCW_STATUS_S_FAULT = 3;
+  }
+
+  enum RightRadarDowStatusS {
+    RIGHT_RADAR_DOW_STATUS_S_OFF = 0;
+    RIGHT_RADAR_DOW_STATUS_S_PASSIVE = 1;
+    RIGHT_RADAR_DOW_STATUS_S_ACTIVE = 2;
+    RIGHT_RADAR_DOW_STATUS_S_FAULT = 3;
+  }
+
+  enum RradarDowWarningLeftS {
+    RRADAR_DOW_WARNING_LEFT_S_NO_WARNING = 0;
+    RRADAR_DOW_WARNING_LEFT_S_WARNING_LEVEL1 = 1;
+    RRADAR_DOW_WARNING_LEFT_S_WARNING_LEVEL2 = 2;
+  }
+
+  enum RradarDowWarningrightS {
+    RRADAR_DOW_WARNING_RIGHT_S_NO_WARNING = 0;
+    RRADAR_DOW_WARNING_RIGHT_S_WARNING_LEVEL1 = 1;
+    RRADAR_DOW_WARNING_RIGHT_S_WARNING_LEVEL2 = 2;
+  }
+
+  enum RightRadarRctbStatusS {
+    RIGHT_RADAR_RCTB_STATUS_S_OFF = 0;
+    RIGHT_RADAR_RCTB_STATUS_S_PASSIVE = 1;
+    RIGHT_RADAR_RCTB_STATUS_S_ACTIVE = 2;
+    RIGHT_RADAR_RCTB_STATUS_S_FAULT = 3;
+  }
+
+  enum RightRadarRctbBrakingReqS {
+    RIGHT_RADAR_RCTB_BRAKING_REQ_S_INVALID = 0;
+    RIGHT_RADAR_RCTB_BRAKING_REQ_S_NO_DEMAND = 1;
+    RIGHT_RADAR_RCTB_BRAKING_REQ_S_DEMAND = 2;
+    RIGHT_RADAR_RCTB_BRAKING_REQ_S_RESERVE = 3;
+  }
+
+  enum RearRadarRctbWaring {
+    REAR_RADAR_RCTB_WARING_WARING_OFF = 0;
+    REAR_RADAR_RCTB_WARING_WARING_LEFT_ON = 1;
+    REAR_RADAR_RCTB_WARING_WARING_RIGHT_ON = 2;
+    REAR_RADAR_RCTB_WARING_WARING_LEFT_RIGHT_ON = 3;
+  }
+
+  optional RcrRSysStatusS rcr_r_sys_status_s = 1;
+  optional ElkaWarningLeftS elka_warning_left_s = 2;
+  optional ElkaWarnRightS elka_warn_right_s = 3;
+  optional RBsdWarningLeftS r_bsd_warning_left_s = 4;
+  optional RBsdWarningRightS r_bsd_warning_right_s = 5;
+  optional RradarRctaWarningLeftS rradar_rcta_warning_left_s = 6;
+  optional RadarRctaWarnRightS radar_rcta_warn_right_s = 7;
+  optional RcwWarningS rcw_warning_s = 8;
+  optional RBsdStatusS r_bsd_status_s = 9;
+  optional RightRadarRctaStatusS right_radar_rcta_status_s = 10;
+  optional RightRadarRcwStatusS right_radar_rcw_status_s = 11;
+  optional RightRadarDowStatusS right_radar_dow_status_s = 12;
+  optional RradarDowWarningLeftS rradar_dow_warning_left_s = 13;
+  optional RradarDowWarningrightS rradar_dow_warningright_s = 14;
+  optional RightRadarRctbStatusS right_radar_rctb_status_s = 15;
+  optional RightRadarRctbBrakingReqS right_radar_rctb_braking_req_s = 16;
+  optional double rctbtargetdecel_s = 17;
+  optional RearRadarRctbWaring rear_radar_rctb_waring = 18;
+}
+
+message Right_BCM_0x404 {
+  enum TemperatureConversionS {
+    TEMPERATURE_CONVERSION_S_SET_TEMPERATURE_IN_CELSIUS= 0;
+    TEMPERATURE_CONVERSION_S_SET_TEMPERATURE_IN_FAHRENHEIT = 1;
+  }
+
+  optional TemperatureConversionS temperature_conversion_s = 1;
+  optional double achmc_outside_temperature_s = 2;
+}
+
+message Media_0x385 {
+  enum RctaEnableS {
+    RCTA_ENABLE_S_INVALID = 0;
+    RCTA_ENABLE_S_SWITCHOFF = 1;
+    RCTA_ENABLE_S_SWITCHON = 2;
+  }
+
+  enum RcwEnableS {
+    RCW_ENABLE_S_INVALID = 0;
+    RCW_ENABLE_S_SWITCHOFF = 1;
+    RCW_ENABLE_S_SWITCHON = 2;
+  }
+
+  enum DowEnableS {
+    DOW_ENABLE_S_INVALID = 0;
+    DOW_ENABLE_S_SWITCHOFF = 1;
+    DOW_ENABLE_S_SWITCHON = 2;
+  }
+
+  enum TjaIcawitchS {
+    TJA_ICAWITCH_S_INVALID = 0;
+    TJA_ICAWITCH_S_SWITCHOFF = 1;
+    TJA_ICAWITCH_S_SWITCHON = 2;
+  }
+
+  enum RctbEnableS {
+    RCTB_ENABLE_S_INVALID = 0;
+    RCTB_ENABLE_S_SWITCHOFF = 1;
+    RCTB_ENABLE_S_SWITCHON = 2;
+  }
+
+  enum HmaFuntionSwitchSignalS {
+    HMA_FUNTION_SWITCH_SIGNAL_S_INVALID = 0;
+    HMA_FUNTION_SWITCH_SIGNAL_S_HMANOTSELECTED = 1;
+    HMA_FUNTION_SWITCH_SIGNAL_S_HMASELECTED = 2;
+  }
+
+  enum TsrSwitchS {
+    TSR_SWITCH_S_INVALID = 0;
+    TSR_SWITCH_S_SWITCHOFF = 1;
+    TSR_SWITCH_S_SWITCHON = 2;
+  }
+
+  enum PcwEnableS {
+    PCW_ENABLE_S_INVALID = 0;
+    PCW_ENABLE_S_SWITCHOFF = 1;
+    PCW_ENABLE_S_SWITCHON = 2;
+  }
+
+  enum LksEnableS {
+    LKS_ENABLE_S_INVALID = 0;
+    LKS_ENABLE_S_TURNOFFD = 1;
+    LKS_ENABLE_S_LANEDEPARTURE = 2;
+    LKS_ENABLE_S_LANEKEEPING_RESERVED = 3;
+    LKS_ENABLE_S_FULLFUNCTION_RESERVED = 4;
+    LKS_ENABLE_S_LaneDeparturePrevention = 5;
+  }
+
+  enum AebEnableS {
+    AEB_ENABLE_S_INVALID = 0;
+    AEB_ENABLE_S_SWITCHOFF = 1;
+    AEB_ENABLE_S_SWITCHON = 2;
+  }
+
+  enum LdwWarningModeS {
+    LDW_WARNING_MODE_S_INVALID = 0;
+    LDW_WARNING_MODE_S_VIBRATIONONLY = 1;
+    LDW_WARNING_MODE_S_SOUNDONLY = 2;
+    LDW_WARNING_MODE_S_VIBRATIONSOUND = 3;
+  }
+
+  enum BsdLcaEnableS {
+    BSD_LCA_ENABLE_S_INVALID = 0;
+    BSD_LCA_ENABLE_S_SWITCHOFF = 1;
+    BSD_LCA_ENABLE_S_SWITCHON = 2;
+  }
+
+  enum SdwreqSwitchStateS {
+    SDWREQ_SWITCH_STATE_S_INVALID = 0;
+    SDWREQ_SWITCH_STATE_S_SWITCHOFF = 1;
+    SDWREQ_SWITCH_STATE_S_SWITCHON = 2;
+  }
+
+  enum LdwEnableS {
+    LDW_ENABLE_S_INVALID = 0;
+    LDW_ENABLE_S_CLOSED = 1;
+    LDW_ENABLE_S_LANEDEPARTURE = 2;
+  }
+
+  enum IsliSwitchS {
+    ISLI_SWITCH_S_INVALID = 0;
+    ISLI_SWITCH_S_OFF = 1;
+    ISLI_SWITCH_S_ON = 2;
+  }
+
+  enum ElkaEnableS {
+    ELKA_ENABLE_S_INVALID = 0;
+    ELKA_ENABLE_S_SWITCHOFF = 1;
+    ELKA_ENABLE_S_SWITCHON = 2;
+  }
+
+  optional RctaEnableS rcta_enable_s = 1;
+  optional RcwEnableS rcw_enable_s = 2;
+  optional DowEnableS dow_enable_s = 3;
+  optional TjaIcawitchS tja_icawitch_s = 4;
+  optional RctbEnableS rctb_enable_s = 5;
+  optional HmaFuntionSwitchSignalS hma_funtion_switch_signal_s = 6;
+  optional TsrSwitchS tsr_switch_s = 7;
+  optional PcwEnableS pcw_enable_s = 8;
+  optional LksEnableS lks_enable_s = 9;
+  optional AebEnableS aeb_enable_s = 10;
+  optional LdwWarningModeS ldw_warning_mode_s = 11;
+  optional BsdLcaEnableS bsd_lca_enable_s = 12;
+  optional SdwreqSwitchStateS sdwreq_switch_state_s = 13;
+  optional LdwEnableS ldw_enable_s = 14;
+  optional IsliSwitchS isli_switch_s = 15;
+  optional ElkaEnableS elka_enable_s = 16;
+}

@@ -1,0 +1,76 @@
+syntax = "proto2";
+
+package deeproute.common;
+
+// import "localization/pose.proto";
+import "canbus/chassis.proto";
+import "common/geometry.proto";
+
+message VehicleState {
+    reserved 1 to 3, 5 to 12, 15;
+    // ------------------------------ deprecated fields -----------------------------------------------
+    // optional double x = 1 [deprecated = true];
+    // optional double y = 2 [deprecated = true];
+    // optional double z = 3 [deprecated = true];    
+    // optional double roll = 5 [deprecated = true];
+    // optional double pitch = 6 [deprecated = true];
+    // optional double yaw = 7 [deprecated = true];
+    // optional double heading = 8 [deprecated = true];
+    // optional double kappa = 9 [deprecated = true];
+    // optional double linear_velocity = 10 [deprecated = true];
+    // optional double angular_velocity = 11 [deprecated = true];
+    // optional double linear_acceleration = 12 [deprecated = true];
+    // optional deeproute.localization.Pose pose = 15 [deprecated = true];
+
+    // ---------------------------------- in use fields -----------------------------------------------
+    optional int64 timestamp = 4 [default = 0];               // in use, micro sec = 1e-6s
+
+    optional deeproute.canbus.Chassis.GearPosition gear = 13;        // in used, gear position status
+    optional deeproute.canbus.Chassis.DrivingMode driving_mode = 14; // in used, auto driving mode    
+
+    optional Point3D position = 16;     // in used
+    optional Point3D velocity_enu = 17; // in used
+    optional Point3D velocity_flu = 18; // in used
+
+    // in used,Yaw = 0 when the car heads to east, pi/2 when the car heads to north.
+    optional Point3D roll_pitch_yaw = 19;
+
+    optional Point3D angular_velocity_flu = 20; // in used
+    optional Point3D acceleration_flu = 21;     // in used, in m/s^2
+    optional float front_wheel_angle = 22;      // in used, in rad
+
+    enum TurnSignal {
+        NONE_TURN = 0;
+        LEFT = 1;
+        RIGHT = 2;
+    }
+    optional TurnSignal turn_signal = 23;                  // in used
+    optional bool warning_blinker_on = 24;                 // in used, indicating if the blinker is on
+    optional float acceleration_over_ground = 25;          // in used
+    optional deeproute.canbus.WheelSpeed wheel_speed = 26; // in used, for localization
+    optional float longitudinal = 27;                      // in used, longitudinal command in [-1, 1], or acceleration if it's torque throttle
+    optional float speed = 28;                             // in used, Vehicle speed from CAN bus, in m/s.
+    optional double front_wheel_angle_rate = 29;            // in used, in rad/s
+    optional bool has_physical_pedal_input = 30;
+    optional float rear_wheel_angle = 31 [default = 0.0];       // [rad]
+    optional float rear_wheel_angle_rate = 32 [default = 0.0];  // [rad/s]
+
+    message VehicleModeRequest {
+        // true: request for entering auto driving mode, false: no request
+        optional bool vehicle_auto_request = 1;
+        // true: request for entering manual driving mode, false: no request
+        optional bool vehicle_manual_request = 2;
+    }
+    optional VehicleModeRequest vehicle_mode_request = 33;
+
+    enum ControlSource {
+        MANUAL = 0;         // none
+        AUTO = 1;           // auto drive
+        RC = 2;             // 2.4G remote controller
+        RC_EMERGENCY = 3;   // 2.4G remote controller emergency stop
+        REMOTE = 4;         // 4G/5G remote takeover
+        REMOTE_EMERGENCY = 5;   // 4G/5G remote emergency
+    }
+    optional ControlSource control_source = 34;
+    optional int64 localization_timestamp = 35 [default = 0];
+}

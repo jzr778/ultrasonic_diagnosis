@@ -1,0 +1,17 @@
+syntax = "proto2";
+
+package deeproute.hdmap;
+
+import "common/geometry.proto";
+import "semantic_map/map_overlap.proto";
+// Area that covers the V shape diversion line. It indicats road spliting at 
+// simple junctions. Vehicles are not allowed to drive on or across this area.
+message DiversionArea {
+  optional int32 id = 1;
+
+  optional common.Polygon polygon = 2;
+
+  optional int32 layer = 3;
+
+  repeated Overlap overlaps = 4;
+}

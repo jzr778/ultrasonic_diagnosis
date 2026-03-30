@@ -1,0 +1,97 @@
+syntax = "proto2";
+
+package dr.safety.state;
+
+import "common/module_event.proto";
+import "safety/safety_event.proto";
+import "safety/safety_analysis.proto";
+
+//safety发送给mcu的故障事件直接携带执行策略，不需要mcu再去查询
+message TriggeredEvent {
+  optional dr.common.Event event = 1;
+  optional dr.safety.EventType type = 2;
+  //@C_Mark@30@;
+  repeated uint32 task_failure_policy = 3; //第一个字节表示FailurePolicy，第二个字节表示TaskType
+  optional int32 dtc_index = 4; //dtc对应的写入数组的index，无dtc则为-1
+}
+
+// TODO 功能状态机状态
+
+message SysTrace {
+  optional uint32 cpu_temp = 1;
+  optional uint32 gpu_temp = 2;
+  optional uint32 board_temp = 3;
+}
+
+// safety -> ssm
+message SafetyState { // topic: "/safety/soc_status"
+  optional uint64 timestamp = 1;  // timestamp for mili-second
+  //@C_Mark@20@;
+  repeated TriggeredEvent triggered_events = 2;
+  optional SysTrace sys_trace = 3;
+}
+
+// TODO 温度、电源状态
+
+message SSMEvent {
+  optional dr.common.Module module = 1;
+  optional dr.common.Event event = 2;
+  optional uint64 timestamp = 3;  // ms
+  optional int32 sequence_num = 4;
+  reserved 5 to 6;
+  optional dr.safety.EventLevel level = 7;
+}
+
+//其它信息由safety从配置补全
+message SSMPolicyEvent {
+  optional dr.safety.TaskType task_type = 1;
+  optional dr.safety.FailurePolicy failure_policy = 2;
+  repeated dr.common.Event events = 3;
+}
+
+// ssm -> safety
+message SSMState { // topic: "/safety/mcu_status"
+  optional uint64 timestamp = 1;  // timestamp for mili-second
+  optional dr.safety.FaultLevel fault_level = 2;
+  //@C_Mark@10@;
+  repeated SSMEvent ssm_events = 3;
+  optional int32 event_config_sequence_num = 4; //默认值为-1
+  //@C_Mark@30@;
+  repeated SSMPolicyEvent ssm_policy_events = 5;
+}
+
+message TaskFailurePolicy {
+  optional TaskType task_type = 1;
+  optional FailurePolicy failure_policy = 2;
+}
+
+//ssm直接获得的事件，需要ssm主动查询配置
+message EventPolicyConfig {
+  optional dr.common.Event event = 1;
+  //@C_Mark@30@;
+  repeated uint32 task_failure_policy = 2; ////第一个字节表示FailurePolicy，第二个字节表示TaskType
+}
+
+message BlcState {
+  optional int32 blc_type = 1;
+  optional int32 blc_state = 2;
+}
+
+message PolicyMonitorConfig {
+ optional dr.safety.FailurePolicy failure_policy = 1;
+ optional uint64 check_interval = 2;
+ repeated BlcState status_check_config = 3;
+}
+
+message SafetyMcuConfig { // topic: "/safety/mcu_config"
+  //@C_Mark@20@;
+  repeated EventPolicyConfig event_config = 1;
+  //@C_Mark@10@;
+  repeated PolicyMonitorConfig  policy_monitor_config = 2;
+  optional int32 event_config_sequence_num = 3;
+}
+
+message BlcStatus { // topic: "/safety/blc_status"
+  //@C_Mark@30@;
+  repeated BlcState blc_status = 1;
+}

@@ -24,13 +24,23 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\'planning/human_planning_interface.proto\x12\x12\x64\x65\x65proute.planning*z\n\x0bPlannerType\x12\x0e\n\nEM_PLANNER\x10\x00\x12\x11\n\rTRACE_PLANNER\x10\x01\x12\x16\n\x12OPEN_SPACE_PLANNER\x10\x02\x12\x12\n\x0eGLOBAL_PLANNER\x10\x03\x12\x1c\n\x18REVERSE_TRACKING_PLANNER\x10\x04')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\'planning/human_planning_interface.proto\x12\x12\x64\x65\x65proute.planning\"B\n\x0eOpenSpacePoint\x12\t\n\x01x\x18\x01 \x01(\x01\x12\t\n\x01y\x18\x02 \x01(\x01\x12\t\n\x01z\x18\x03 \x01(\x01\x12\x0f\n\x07heading\x18\x04 \x01(\x01*\x8e\x02\n\x0e\x45mergencyState\x12\x1d\n\x19PLANNING_EMERGENCY_NORMAL\x10\x00\x12\x1b\n\x17PLANNING_EMERGENCY_STOP\x10\x01\x12\x1f\n\x1bPLANNING_EMERGENCY_PULLOVER\x10\x02\x12\"\n\x1ePLANNING_EMERGENCY_STOP_FINISH\x10\x03\x12&\n\"PLANNING_EMERGENCY_PULLOVER_FINISH\x10\x04\x12%\n!PLANNING_EMERGENCY_TEMPORARY_STOP\x10\x05\x12,\n(PLANNING_EMERGENCY_TEMPORARY_STOP_FINISH\x10\x06*\x7f\n\x0b\x42lockStatus\x12\x1a\n\x16PLANNING_BLOCKING_NONE\x10\x00\x12\x1c\n\x18PLANNING_BLOCKING_SINGLE\x10\x01\x12\x19\n\x15PLANNING_BLOCKING_ALL\x10\x02\x12\x1b\n\x17PLANNING_BLOCKING_ENDED\x10\x03*\x8e\x01\n\x17SelectionOverloadStatus\x12\x19\n\x15SELECTION_NO_OVERLOAD\x10\x00\x12\x1b\n\x17SELECTION_OVERLOAD_LEFT\x10\x01\x12\x1d\n\x19SELECTION_OVERLOAD_MIDDLE\x10\x02\x12\x1c\n\x18SELECTION_OVERLOAD_RIGHT\x10\x03*\x89\x01\n\x10PlannerSelection\x12\x10\n\x0cSELECTION_EM\x10\x00\x12\x13\n\x0fSELECTION_TRACE\x10\x01\x12\x18\n\x14SELECTION_OPEN_SPACE\x10\x02\x12\x14\n\x10SELECTION_GLOBAL\x10\x03\x12\x1e\n\x1aSELECTION_REVERSE_TRACKING\x10\x04*z\n\x0bPlannerType\x12\x0e\n\nEM_PLANNER\x10\x00\x12\x11\n\rTRACE_PLANNER\x10\x01\x12\x16\n\x12OPEN_SPACE_PLANNER\x10\x02\x12\x12\n\x0eGLOBAL_PLANNER\x10\x03\x12\x1c\n\x18REVERSE_TRACKING_PLANNER\x10\x04')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'planning.human_planning_interface_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_PLANNERTYPE']._serialized_start=63
-  _globals['_PLANNERTYPE']._serialized_end=185
+  _globals['_EMERGENCYSTATE']._serialized_start=132
+  _globals['_EMERGENCYSTATE']._serialized_end=402
+  _globals['_BLOCKSTATUS']._serialized_start=404
+  _globals['_BLOCKSTATUS']._serialized_end=531
+  _globals['_SELECTIONOVERLOADSTATUS']._serialized_start=534
+  _globals['_SELECTIONOVERLOADSTATUS']._serialized_end=676
+  _globals['_PLANNERSELECTION']._serialized_start=679
+  _globals['_PLANNERSELECTION']._serialized_end=816
+  _globals['_PLANNERTYPE']._serialized_start=818
+  _globals['_PLANNERTYPE']._serialized_end=940
+  _globals['_OPENSPACEPOINT']._serialized_start=63
+  _globals['_OPENSPACEPOINT']._serialized_end=129
 # @@protoc_insertion_point(module_scope)

@@ -1,0 +1,53 @@
+syntax = "proto2";
+
+package deeproute.perception;
+import "common/geometry.proto";
+
+// show details for users
+message RWTriggerInfo {
+  enum RearWarningType {
+    L_BSD = 0;
+    R_BSD = 1;
+    L_LCA = 2;
+    R_LCA = 3;
+    L_DOW = 4;
+    R_DOW = 5;
+    L_RCTA = 6;
+    R_RCTA = 7;
+    RCW = 8;
+    L_RCTB = 9;
+    R_RCTB = 10;
+  };
+  optional RearWarningType type = 1;
+  optional float curvature_radius = 2;
+  optional common.Point3D obj_velocity = 3;
+  optional common.Point3D obj_local_velocity = 7;
+  optional common.Point3D obj_position = 4;
+  optional common.Point3D obj_local_position = 8;
+  optional int32 obj_id = 5;
+  optional float ttc = 6;
+}
+
+message RearWarningStatus {
+  // Blind Spot Detection Trigger
+  optional bool left_bsd_trigger = 1;
+  optional bool right_bsd_trigger = 2;
+
+  // Lane Change Assistance Trigger
+  optional bool left_lca_trigger = 3;
+  optional bool right_lca_trigger = 4;
+
+  // Door Open Warning Trigger
+  optional bool left_dow_trigger = 5;
+  optional bool right_dow_trigger = 6;
+
+  // Rear Crossing Traffic Alert
+  optional bool left_rcta_trigger = 7;
+  optional bool right_rcta_trigger = 8;
+  // // Rear Crossing Traffic Brake
+  optional bool left_rctb_trigger = 11;
+  optional bool right_rctb_trigger = 12;
+  // Rear Crossing Warning
+  optional bool rcw_trigger = 9;
+  repeated RWTriggerInfo trigger_info = 10;
+}

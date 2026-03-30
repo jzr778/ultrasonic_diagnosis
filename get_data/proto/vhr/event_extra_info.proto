@@ -1,0 +1,10 @@
+syntax = "proto2";
+
+package dr.vhr;
+
+//事件额外扩展信息
+message EventExtraInfo{
+  optional uint64 ad_code = 1;  // 区域编码,由6位数字组成,唯一标识一个区划, // 如广东省深圳市南山区为440305
+  optional int32 road_class = 2;  // 当前道路等级, 巡航也需要， RoadClass枚举值 drapi/gwm_navigation.proto
+  optional int32 road_type = 3;   // 当前道路类型, 巡航也需要， RoadType枚举值 drapi/gwm_navigation.proto
+}

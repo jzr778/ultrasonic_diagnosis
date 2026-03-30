@@ -1,0 +1,10 @@
+syntax = "proto2";
+
+package deeproute.drivers;
+
+enum CalibrationType {
+  CALIB_TYPE_NONE = 0;
+  CALIB_TYPE_EOL = 1;     // 下线标定结果
+  CALIB_TYPE_ONLINE = 2;  // 售后标定结果
+  CALIB_TYPE_MANUAL = 3;  // 手工标定结果
+}

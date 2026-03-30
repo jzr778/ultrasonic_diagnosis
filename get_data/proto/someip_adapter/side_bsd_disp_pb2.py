@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\"someip_adapter/side_bsd_disp.proto\x12\x1c\x64\x65\x65proute.someip_adapter.gwm\"x\n\x12SideBsdDispRequest\x12I\n\x07request\x18\x01 \x01(\x0e\x32\x38.deeproute.someip_adapter.gwm.SideBsdDispRequest.Request\"\x17\n\x07Request\x12\x0c\n\x08REQUESET\x10\x00\"r\n\x0fSideBsdDispResp\x12\x44\n\x06status\x18\x01 \x01(\x0e\x32\x34.deeproute.someip_adapter.gwm.SideBsdDispResp.Status\"\x19\n\x06Status\x12\x07\n\x03OFF\x10\x00\x12\x06\n\x02ON\x10\x01\"p\n\x0eSideBsdDispSts\x12\x43\n\x06status\x18\x01 \x01(\x0e\x32\x33.deeproute.someip_adapter.gwm.SideBsdDispSts.Status\"\x19\n\x06Status\x12\x07\n\x03OFF\x10\x00\x12\x06\n\x02ON\x10\x01\"\x89\x01\n\x13SideBsdDispErrorSts\x12H\n\x06status\x18\x01 \x01(\x0e\x32\x38.deeproute.someip_adapter.gwm.SideBsdDispErrorSts.Status\"(\n\x06Status\x12\x0c\n\x08NO_ERROR\x10\x00\x12\x10\n\x0cSYSTEM_ERROR\x10\x01\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\"someip_adapter/side_bsd_disp.proto\x12\x1c\x64\x65\x65proute.someip_adapter.gwm\"x\n\x12SideBsdDispRequest\x12I\n\x07request\x18\x01 \x01(\x0e\x32\x38.deeproute.someip_adapter.gwm.SideBsdDispRequest.Request\"\x17\n\x07Request\x12\x0c\n\x08REQUESET\x10\x00\"p\n\x0eSideBsdDispSts\x12\x43\n\x06status\x18\x01 \x01(\x0e\x32\x33.deeproute.someip_adapter.gwm.SideBsdDispSts.Status\"\x19\n\x06Status\x12\x07\n\x03OFF\x10\x00\x12\x06\n\x02ON\x10\x01\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -35,16 +35,8 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_SIDEBSDDISPREQUEST']._serialized_end=188
   _globals['_SIDEBSDDISPREQUEST_REQUEST']._serialized_start=165
   _globals['_SIDEBSDDISPREQUEST_REQUEST']._serialized_end=188
-  _globals['_SIDEBSDDISPRESP']._serialized_start=190
-  _globals['_SIDEBSDDISPRESP']._serialized_end=304
-  _globals['_SIDEBSDDISPRESP_STATUS']._serialized_start=279
-  _globals['_SIDEBSDDISPRESP_STATUS']._serialized_end=304
-  _globals['_SIDEBSDDISPSTS']._serialized_start=306
-  _globals['_SIDEBSDDISPSTS']._serialized_end=418
-  _globals['_SIDEBSDDISPSTS_STATUS']._serialized_start=279
-  _globals['_SIDEBSDDISPSTS_STATUS']._serialized_end=304
-  _globals['_SIDEBSDDISPERRORSTS']._serialized_start=421
-  _globals['_SIDEBSDDISPERRORSTS']._serialized_end=558
-  _globals['_SIDEBSDDISPERRORSTS_STATUS']._serialized_start=518
-  _globals['_SIDEBSDDISPERRORSTS_STATUS']._serialized_end=558
+  _globals['_SIDEBSDDISPSTS']._serialized_start=190
+  _globals['_SIDEBSDDISPSTS']._serialized_end=302
+  _globals['_SIDEBSDDISPSTS_STATUS']._serialized_start=277
+  _globals['_SIDEBSDDISPSTS_STATUS']._serialized_end=302
 # @@protoc_insertion_point(module_scope)

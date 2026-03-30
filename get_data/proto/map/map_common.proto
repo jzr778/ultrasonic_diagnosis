@@ -1,0 +1,35 @@
+syntax = "proto2";
+
+package deeproute.map;
+
+import "map/common_type.proto";
+import "map/sd_map.proto";
+
+message CrossingInfo {
+  optional deeproute.map.CrossingType crossing_type = 1;
+  optional deeproute.map.LaneTurn crossing_turn = 2;
+  /// 分正负，+表示未经过路口时，自车位置到路口的距离，-表示经过路口后，自车位置到路口的距离
+  optional double crossing_remaining_s = 3;
+  repeated int32 freeway_main_road_lane_ids = 4;  
+}
+
+message SdRoadInfo {
+  optional deeproute.map.RoadClass road_class = 1;
+  /// 当前路口信息
+  optional CrossingInfo crossing_info = 2;
+  optional deeproute.map.LinkUsage link_usage = 3;
+  optional deeproute.sd_map.LinkData.FormWay link_formway = 4;
+  repeated CrossingInfo crossing_infos = 5;
+  optional bool is_on_main_road = 6;
+}
+
+message AreaInfo {
+  enum AreaType {
+    UNKNOWN = 0;
+    REST_AREA = 1;
+    TOLL = 2;
+  }
+  optional AreaType area_type = 1;
+  optional double distance_to_area_start = 2;
+  optional double distance_to_area_end = 3;
+}

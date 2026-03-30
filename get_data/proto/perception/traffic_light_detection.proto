@@ -1,0 +1,128 @@
+syntax = "proto2";
+
+package deeproute.perception;
+
+import "common/geometry.proto";
+
+enum TrafficLightType {
+  UNKNOWN = 0;
+  FORWARD = 1;
+  LEFT = 2;
+  RIGHT = 3;
+  UTURN = 4;
+}
+
+message TrafficLightBox {
+  optional int32 x = 1;
+  optional int32 y = 2;
+  optional int32 width = 3;
+  optional int32 height = 4;
+}
+
+message TrafficLight {
+  enum Color {
+    UNKNOWN = 0;
+    RED = 1;
+    YELLOW = 2;
+    GREEN = 3;
+    BLACK = 4;
+  };
+  enum Shape {
+    CIRCLE = 0;
+    FORWARD_ARROW = 1;
+    LEFT_ARROW = 2;
+    RIGHT_ARROW = 3;
+    UTURN_ARROW = 4;
+  }
+
+  optional Color color = 1;
+
+  optional Shape shape = 12;
+
+  // Traffic light unique token in the map data.
+  optional int32 traffic_light_token = 2;
+
+  // How confidence about the detected results, between 0 and 1.
+  optional double confidence = 3 [default = 1.0];
+
+  // Duration of the traffic light since detected.
+  optional double tracking_time = 4;
+
+  // Is traffic blinking
+  optional bool blink = 5;
+
+  // Is traffic blinking last more than 5 seconds
+  optional bool long_term_blink = 14;
+
+  // traffic light countdowns
+  optional int32 countdowns = 13;
+  // v2x traffic light remaining time.
+  optional double remaining_time = 6;
+
+  // task id from PNC
+  optional int32 task_id = 7;
+
+  // timestamp
+  optional double time_stamp = 8;
+
+  // traffic light type
+  optional TrafficLightType traffic_type = 9;
+
+  // traffic light debug info
+  optional TrafficLightBox projected_roi = 10;
+  optional TrafficLightBox detected_box = 11;
+
+  // amap late fusion info
+  optional bool amap_has_traffic_light = 15;   // amap地图有无标注红绿灯
+  optional bool amap_has_realtime_info = 16;   // amap地图有无发送红绿灯实时状态
+  optional bool amap_perception_conflict = 17; // amap红绿灯与感知检测是否存在冲突
+  optional common.Point3D amap_traffic_light_position = 18; // amap红绿灯坐标
+  optional bool odd = 19;
+  optional bool amap_count_downs = 20; // 融合后的读秒来自高德
+
+}
+
+message TrafficLightDetectionTask {
+  optional int32 task_id = 1;
+  repeated int32 traffic_light_token = 2;
+  optional TrafficLightType traffic_type = 3;
+}
+
+message TrafficLight3D {
+  optional int32 id = 1;
+  // traffic light type [optional]
+  optional TrafficLightType traffic_type = 2;
+  // 3d position in global coordinate.
+  optional common.Point3D position = 3;
+  // color
+  enum Color {
+    UNKNOWN = 0;
+    RED = 1;
+    YELLOW = 2;
+    GREEN = 3;
+    BLACK = 4;
+  };
+  optional Color color = 4;
+
+  // traffic light 3d size
+  optional float width = 5;
+  optional float height = 6;
+  optional float length = 7;
+  optional int32 count_down_number = 8;
+}
+
+message TrafficLightResponse {
+  // Traffic light mapping result for PNC
+  // Note that:
+  // 1. The traffic_lights will always have 4 lights in its field and
+  // each one has a unique TrafficLightType(FORWARD/LEFT/RIGHT/UTURN).
+  // 2. Each traffic light in traffic_lights has TrafficLight::Color which
+  // mapping from perception's perceive & HDMap information.
+  repeated TrafficLight traffic_lights = 1;
+  // Timestamp for current frame's traffic light detection result.
+  optional int64 time_stamp = 2;
+  // 3D traffic light status for HMI
+  // Note that traffic_light_3d is a field for HMI. It has all lights that
+  // perception perceive and has the 3d infromation for better HMI.
+  repeated TrafficLight3D traffic_light_3d = 3;
+}

@@ -1,0 +1,110 @@
+syntax = "proto3";
+
+import "drapi/base.proto";
+
+package dr.roadobject;
+
+/************************感知障碍物实时状态********************************/
+message PerceptionInfo {
+  repeated TrafficLight3D traffic_light_3d = 1;
+  repeated PerceptionTarget perception_target = 2;
+  repeated CriticalObject critical_object = 3;
+  int64 time_measurement = 4;
+}
+
+/************************感知障碍物引用的结构体*****************************/
+enum TrafficLightType {
+  UNKNOWN = 0;
+  FORWARD = 1;
+  LEFT = 2;
+  RIGHT = 3;
+  UTURN = 4;
+}
+
+message TrafficLight3D {
+  int32 id = 1;
+  TrafficLightType traffic_type = 2;
+  dr.base.Point3D position = 3;
+  enum Color {
+    UNKNOWN = 0;
+    RED = 1;
+    YELLOW = 2;
+    GREEN = 3;
+    BLACK = 4;
+  };
+  Color color = 4;
+
+  float width = 5;
+  float height = 6;
+  float length = 7;
+}
+
+enum TargetType {
+  TARGET_TYPE_UNKNOWN = 0;
+  UNKNOWN_MOVABLE = 1;
+  UNKNOWN_UNMOVABLE = 2;
+  PEDESTRIAN = 3;  // Pedestrian, usually determined by moving behavior.
+  BICYCLE = 4;     // bike, motor bike
+  VEHICLE = 5;     // Passenger car or truck.
+  TRUCK = 6;
+  TRAFFIC_CONE = 7;
+  OCCUPANCY_CELLS = 8;    // occupancy map, cells is provided
+  INVISIBLE_SECTORS = 9;  // invisible detection results
+  PARK_FREESPACE = 10;
+}
+
+enum TargetSource {
+  TARGET_SOURCE_UNKNOWN = 0;
+  LIDAR = 1;
+  RSU = 2;
+  CAMERA = 3;
+  MILLIMETER_WAVE_RADAR = 4;
+}
+
+enum FreespaceType {
+  FS_OTHERS_STATIC = 0;
+  FS_OTHERS_MOTION = 1;
+  FS_WALL = 2;
+  FS_CHOCK = 3;
+  FS_LOCK_ON = 4;
+  FS_LOCK_OFF = 5;
+  FS_SPEEDBUMP = 6;
+  FS_FENCE = 7;
+}
+
+message PerceptionTarget {
+  int32 id = 1;
+  TargetType target_type = 2;
+  FreespaceType freespace_type = 3;
+
+  dr.base.Point3DWithHeading pos = 4;
+  double length = 5;  // obstacle length.
+  double width = 6;   // obstacle width.
+  double height = 7;  // obstacle height.
+
+  double speed = 8;
+
+  LightStatus light_status = 9;
+  dr.base.Polygon polygon_area = 10;
+}
+
+message CriticalObject {
+  int32 id = 1;
+  enum ObjectType {
+    UNKNOWN_OBJ = 0;
+    PERCEPTION_OBJECT = 1;
+    LANE_EDGE = 2;
+    HARD_BRAKE = 3;
+    FOLLOW = 4;
+    ILC_OBJ = 5;    // 变道特殊关注物体
+    NUDGE_OBJ = 6;  // 智慧避让物体
+  }
+  ObjectType object_type = 2;
+}
+
+message LightStatus {
+  bool brake_switch_on = 1;
+  bool left_turn_switch_on = 2;
+  bool right_turn_switch_on = 3;
+  bool left_right_turn_switch_on = 4;
+}

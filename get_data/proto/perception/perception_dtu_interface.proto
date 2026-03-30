@@ -1,0 +1,66 @@
+syntax = "proto2";
+
+package deeproute.perception;
+
+import "semantic_map/map_standby_area.proto";
+
+message DrivingMode {
+  enum Mode {
+    DRIVING = 0;
+    PARKING = 1;
+    LOW_SPEED = 2;
+  }
+  optional Mode mode = 1;
+}
+
+message StartParkingRequest {
+  optional deeproute.hdmap.StandbyArea parkspace = 1;
+}
+
+message StopParkingRequest {}
+
+message StartOutParkingRequest {}
+
+message StopOutParkingRequest {}
+
+message StartVPALearningRequest {}
+
+message StopVPALearningRequest {}
+
+message StartVPACruisingRequest {}
+
+message StopVPACruisingRequest {}
+
+message StartRPAStraightFrontBackRequest {}
+
+message StopRPAStraightFrontBackRequest {}
+
+message StartRADSRequest {}
+
+message StopRADSRequest {}
+
+// topic: /perception/dtu_request
+message PerceptionRequest {
+  optional string id = 1;
+  oneof Task {
+    StartParkingRequest start_parking_request = 2; // start auto parking, only send once
+    StopParkingRequest stop_parking_request = 3; // stop auto parking, only send once
+    StartOutParkingRequest start_out_parking_request = 4; // start auto park out, only send once
+    StopOutParkingRequest stop_out_parking_request = 5; // stop auto park out, only send once
+    DrivingMode set_driving_mode = 6;
+    StartVPALearningRequest start_vpa_learning_request = 7; // start vpa learning, only send once
+    StopVPALearningRequest stop_vpa_learning_request = 8; // stop vpa learning, only send once
+    StartVPACruisingRequest start_vpa_cruising_request = 9; // start vpa cruising, only send once
+    StopVPACruisingRequest stop_vpa_cruising_request = 10; // stop vpa cruising, only send once
+    StartRPAStraightFrontBackRequest start_rpa_straight_front_back_request = 11; // start straight front back in rpa, only send once
+    StopRPAStraightFrontBackRequest stop_rpa_straight_front_back_request = 12; // stop straight front back in rpa, only send once
+    StartRADSRequest start_rads_request = 13; // start rads, only send once
+    StopRADSRequest stop_rads_request = 14; // stop rads, only send once
+  }
+}
+
+// topic: /perception/dtu_response
+message PerceptionResponse {
+  optional string id = 1;
+  optional bool succeeded = 2 [default = false];
+}

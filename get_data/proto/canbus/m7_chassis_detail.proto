@@ -1,0 +1,342 @@
+syntax = "proto2";
+
+package deeproute.canbus;
+
+message M7ChassisDetail {
+  optional EPS_180 eps_180 = 1;
+  optional ESP_1F8 esp_1f8 = 2;
+  optional ESP_1FA esp_1fa = 3;
+  optional ESP_1B4 esp_1b4 = 4;
+  optional VCU_state_Cha1_3A1 vcu_state_cha1_3a1 = 5;
+  optional VCU_state_Cha2_185 vcu_state_cha2_185 = 6;
+  optional PLG_382 plg_382 = 7;
+  optional ESP_1C2 esp_1c2 = 8;
+}
+
+message EPS_180 {
+  enum EpsLkaCtrSts {
+    NO_REQUEST = 0x00;
+    REQUEST_HONORED = 0x01;
+    REQUEST_NOT_ALLOWEDTEMP = 0x02;
+    REQUEST_NOT_ALLOWEDPERMANENT = 0x03;
+  }
+  enum EpsApaControlSts {
+    APA_STANDBY = 0x00;
+    REPLY_FOR_CONTROL_EPS = 0x01;
+    APA_ACTIVE = 0x02;
+    APA_ABORT = 0x03;
+    EPS_APA_CONTROL_FAILURE = 0x07;
+  }
+  enum ApaControlFaultSts {
+    APA_NORMAL_OPERATION = 0x00;
+    EPS_INTERNAL_RECOVERABLE_FAILURE = 0x01;
+    ABNORMAL_SIGNAL = 0x02;
+    OVERSPEED = 0x03;
+    DRIVER_INTERFERENCE = 0x04;
+    EXCESS_ANGLE_DEVIATION = 0x05;
+    ABNORMAL_APA_REQUEST = 0x06;
+    APA_LOW_PRIORITY = 0x07;
+    APA_EPS_FAILURE = 0x0F;
+  }
+  enum EpsModeSts {
+    UNAVAILABLE = 0x00;
+    RESERVED = 0x01;
+    COMFORT = 0x02;
+    SPORT = 0x03;
+  }
+
+  optional EpsLkaCtrSts eps_lka_ctrl_status = 1;
+  optional EpsApaControlSts eps_apa_control_sts = 2;
+  optional ApaControlFaultSts eps_apa_control_fault_sts = 3;
+  optional EpsModeSts eps_mode_status = 4;
+}
+
+message ESP_1F8 {
+  enum EspEmergencyBrakeSts {
+    NO_REQUEST = 0;
+    ACTIVE = 1;
+  }
+  enum EspHdcAvailable {
+    HDC_NOT_AVAILABLE = 0;
+    HDC_AVAILABLE = 1;
+  }
+  enum EspDtcActive {
+    DTC_INACTIVE = 0;
+    DTC_ACTIVE = 1;
+  }
+  enum EspEspFault {
+    ESP_NORMAL = 0;
+    ESP_FAULT = 1;
+  }
+  enum EspEbdFault {
+    EBD_NORMAL = 0;
+    EBD_FAULT = 1;
+  }
+  enum EspHdcSts {
+    HDC_STS_OFF = 0;
+    HDC_STS_STANDBY = 1;
+    HDC_STS_ACTIVE = 2;
+  }
+  enum EspAvhAvailable {
+    AVH_NOT_AVAILABLE = 0;
+    AVH_AVAILABLE = 1;
+  }
+  enum EspAvhStandby {
+    AVH_NOT_STANDBY = 0;
+    AVH_STANDBY = 1;
+  }
+  enum EspAvhStatus {
+    AVH_INACTIVE = 0;
+    AVH_ACTIVE = 1;
+  }
+  enum EspAbsActive {
+    ABS_INACTIVE = 0;
+    ABS_ACTIVE = 1;
+  }
+  enum EspAbsFault {
+    ABS_NORMAL = 0;
+    ABS_FAULT = 1;
+  }
+
+  optional EspEmergencyBrakeSts esp_emergency_brake_status = 1;
+  optional EspHdcAvailable esp_hdc_available = 2;
+  optional EspDtcActive esp_dtc_active = 3;
+  optional EspEspFault esp_esp_fault = 4;
+  optional EspEbdFault esp_ebd_fault = 5;
+  optional EspHdcSts esp_hdc_status = 6;
+  optional EspAvhAvailable esp_avh_available = 7;
+  optional EspAvhStandby esp_avh_standby = 8;
+  optional EspAvhStatus esp_avh_status = 9;
+  optional EspAbsActive esp_abs_active = 10;
+  optional EspAbsFault esp_abs_fault = 11;
+}
+
+message ESP_1FA {
+  enum EspTcsFault {
+    TCS_NORMAL = 0;
+    TCS_FAULT = 1;
+  }
+  enum EspVdcFault {
+    VDC_NORMAL = 0;
+    VDC_FAULT = 1;
+  }
+  enum EspOffSwSts {
+    ESP_DISABLE = 0;
+    ESP_ENABLE = 1;
+  }
+  enum EspHhcAvailable {
+    HHC_NOT_AVAILABLE = 0;
+    HHC_AVAILABLE = 1;
+  }
+  enum EspHhcActive {
+    HHC_INACTIVE = 0;
+    HHC_ACTIVE = 1;
+  }
+  enum EspCdpAvailable {
+    CDP_NOT_AVAILABLE = 0;
+    CDP_AVAILABLE = 1;
+  }
+  enum EspVdcActive {
+    VDC_INACTIVE = 0;
+    VDC_ACTIVE = 1;
+  }
+  enum EspTcsActive {
+    TCS_INACTIVE = 0;
+    TCS_ACTIVE = 1;
+  }
+  enum EspEspActive {
+    ESP_INACTIVE = 0;
+    ESP_ACTIVE = 1;
+  }
+  enum EspCdpActive {
+    CDP_INACTIVE = 0;
+    CDP_ACTIVE = 1;
+  }
+
+  optional EspTcsFault esp_tcs_fault = 1;
+  optional EspVdcFault esp_vdc_fault = 2;
+  optional EspOffSwSts esp_off_sw_sts = 3;
+  optional EspHhcAvailable esp_hhc_available = 4;
+  optional EspHhcActive esp_hhc_active = 5;
+  optional EspCdpAvailable esp_cdp_available = 6;
+  optional EspVdcActive esp_vdc_active = 7;
+  optional EspTcsActive esp_tcs_active = 8;
+  optional EspEspActive esp_esp_active = 9;
+  optional EspCdpActive esp_cdp_active = 10;
+}
+
+message ESP_1B4 {
+  enum EspApaLongCtrlSts {
+    OFF = 0x0;
+    STANDBY = 0x1;
+    AUTOMATIC_PARK_ACTIVE = 0x2;
+    CTRL_ERROR = 0x7;
+  }
+  enum EspApaLongCtrlFaultSts {
+    NO_ERROR = 0x00;
+    VEHICLE_BLOCKED = 0x01;
+    UNEXPECTED_GEAR_POSITION = 0x02;
+    UNEXPECTED_EPB_ACTION = 0x03;
+    UNEXPECTED_GEAR_INTERVENTION = 0x04;
+    FAULT_ERROR = 0x07;
+  }
+  enum EspApaLongCtrlStsAvailable {
+    NOT_AVAILABLE = 0;
+    AUTOMATIC_PARK = 1;
+  }
+  enum EspApaCddActive {
+    NOT_ACTIVE = 0;
+    ACTIVE = 1;
+  }
+  enum EspApaCddHold {
+    NOT_HOLD = 0;
+    HOLD = 1;
+  }
+  enum EspVlcAvailable {
+    VLC_NOT_AVAILABLE = 0;
+    VLC_AVAILABLE = 1;
+  }
+  enum EspVlcError {
+    VLC_NOT_ERROR = 0;
+    VLC_ERROR = 1;
+  }
+  enum EspVlcIntervention {
+    VLC_NOT_ACTIVE  = 0;
+    VLC_ACTIVE = 1;
+  }
+
+  optional EspApaLongCtrlSts esp_apa_long_ctrl_sts = 1;
+  optional EspApaLongCtrlFaultSts esp_apa_long_ctrl_fault_sts = 2;
+  optional EspApaLongCtrlStsAvailable esp_apa_long_ctrl_sts_available = 3;
+  optional EspApaCddActive esp_apa_cdd_active = 4;
+  optional EspApaCddHold esp_apa_cdd_hold = 5;
+  optional EspVlcAvailable esp_vlc_available = 6;
+  optional EspVlcError esp_vlc_error = 7;
+  optional EspVlcIntervention esp_vlc_intervention = 8;
+}
+
+message VCU_state_Cha1_3A1 {
+  enum VcuDriveMode {
+    SOFT = 0x0;
+    NORMAL = 0x1;
+    POWERFUL = 0x2;
+    FREEDOM = 0x3;
+    ACCELERATE = 0x4;
+  }
+  enum VcuDriveReady {
+    NOT_READY = 0x0;
+    READY_FLASH = 0x1;
+    READY = 0x2;
+  }
+  enum VcuApaAvailable {
+    NOT_AVAILABLE = 0;
+    AVAILABLE = 1;
+  }
+  enum VcuExhibitionMode {
+    NO_ACTIVE = 0;
+    ACTIVE = 1;
+  }
+
+  optional VcuDriveMode vcu_drive_mode = 1;
+  optional VcuDriveReady vcu_drive_ready = 2;
+  optional VcuApaAvailable vcu_apa_available = 3;
+  optional VcuExhibitionMode vcu_exhibition_mode = 4;
+}
+
+message VCU_state_Cha2_185 {
+  enum VcuTcmfail {
+    NORMAL_TCM = 0;
+    LIMPHOME_TCM = 1;
+  }
+  enum VcuMotorRunning {
+    MOTOR_NOT_RUNNING = 0;
+    MOTOR_RUNNING = 1;
+  }
+  enum VcuAccPedalPosiotionValid {
+    INVALID = 0;
+    VALID = 1;
+  }
+
+  optional VcuTcmfail vcu_tcm_fail = 1;
+  optional VcuMotorRunning vcu_motor_running = 2;
+  optional VcuAccPedalPosiotionValid vcu_acc_pedal_position_valid = 3;
+  optional double vcu_acc_pedal_position = 4;
+}
+
+message PLG_382 {
+  enum PlgTailGateOpenSts2 {
+    CLOSED = 0x00;
+    OPENED = 0x01;
+    CLOSING = 0x02;
+    OPENING = 0x03;
+    STOPPED = 0x04;
+    CLOSED_NOT_COMPLETELY = 0x05;
+    LOCKING = 0x06;
+    UNLOCKING = 0x07;
+    FORCE_TO_OPEN_TO_THE_AREA = 0x08;
+  }
+  optional PlgTailGateOpenSts2 plg_tailgate_open_sts2 = 1;
+}
+
+message ESP_1C2 {
+  enum EspCddTempOff {
+    NOT_HIGH = 0;
+    TOO_HIGH = 1;
+  }
+  enum EspCddError {
+    NOT_ERROR = 0;
+    ERROR = 1;
+  }
+  enum EspCddActive {
+    CDD_NOT_ACTIVE = 0;
+    CDD_ACTIVE = 1;
+  }
+  enum EspCddAvailable {
+    CDD_NOT_AVAILABLE = 0;
+    CDD_AVAILABLE = 1;
+  }
+  enum EspAbaActive {
+    ABA_NOT_ACTIVE = 0;
+    ABA_ACTIVE = 1;
+  }
+  enum EspAbaAvailable {
+    ABA_NOT_AVAILABLE = 0;
+    ABA_AVAILABLE = 1;
+  }
+  enum EspAbpActive {
+    ABP_NOT_ACTIVE = 0;
+    ABP_ACTIVE = 1;
+  }
+  enum EspAbpAvailable {
+    ABP_NOT_AVAILABLE = 0;
+    ABP_AVAILABLE = 1;
+  }
+  enum EspAebActive {
+    AEB_NOT_ACTIVE = 0;
+    AEB_ACTIVE = 1;
+  }
+  enum EspAebAvailable {
+    AEB_NOT_AVAILABLE = 0;
+    AEB_AVAILABLE = 1;
+  }
+  enum EspAwbActive {
+    AWB_NOT_ACTIVE = 0;
+    AWB_ACTIVE = 1;
+  }
+  enum EspAwbAvailable {
+    AWB_NOT_AVAILABLE = 0;
+    AWB_AVAILABLE = 1;
+  }
+  optional EspCddTempOff esp_cdd_temp_off = 1;
+  optional EspCddError esp_cdd_error = 2;
+  optional EspCddActive esp_cdd_active = 3;
+  optional EspCddAvailable esp_cdd_available = 4;
+  optional EspAbaActive esp_aba_active = 5;
+  optional EspAbaAvailable esp_aba_available = 6;
+  optional EspAbpActive esp_abp_active = 7;
+  optional EspAbpAvailable esp_abp_available = 8;
+  optional EspAebActive esp_aeb_active = 9;
+  optional EspAebAvailable esp_aeb_available = 10;
+  optional EspAwbActive esp_awb_active = 11;
+  optional EspAwbAvailable esp_awb_available = 12;
+}

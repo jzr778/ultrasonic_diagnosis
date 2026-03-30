@@ -1,0 +1,9 @@
+syntax = "proto2";
+
+package deeproute.church;
+
+import "church/schedule_event.proto";
+
+message ScheduleEvents {
+  repeated ScheduleEvent schedule_events = 1;
+}

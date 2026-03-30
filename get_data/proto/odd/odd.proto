@@ -1,0 +1,50 @@
+syntax = "proto2";
+
+package deeproute.odd;
+
+import "graph_match/graph_matching.proto";
+
+enum OddLimitType {
+  ODD_UNKNOWN = 0;
+  ODD_REST_AREA = 1;
+  ODD_TOLL = 2;
+  ODD_GRAPH_MATCH_FAILED = 3;
+  ODD_U_TURN = 4;
+  ODD_ROUNDABOUT = 5;
+  ODD_SHARP_CORNER_JUNCTION = 6;
+  ODD_FIVE_FORKED_JUNCTION = 7;
+  ODD_SIX_FORKED_JUNCTION = 8;
+  ODD_TEMPORARY = 9;
+}
+
+message PreviewOddLimitAreaInfo {
+  optional OddLimitType odd_type = 1;
+  repeated deeproute.graph_match.AmapLinkMatchInfo odd_range = 2
+      [deprecated = true];
+
+  optional deeproute.graph_match.AmapLinkMatchInfo point_range = 3;
+}
+
+message PreviewRouteOddLimitInfo {
+  repeated PreviewOddLimitAreaInfo odd_infos = 1;
+}
+
+// only for preview on vis
+message OddLimitPreviewInfo {
+  optional string request_id = 1;
+  repeated PreviewRouteOddLimitInfo route_odd_infos = 2;
+}
+
+message OddLimitAreaInfo {
+  optional OddLimitType odd_type = 1;
+  // for sd map
+  repeated uint64 link_id = 2;
+  repeated int32 link_index = 3;
+  optional double distance_to_odd_start = 4;
+  optional double distance_to_odd_end = 5;
+}
+
+message OddLimitInfo {
+  optional string request_id = 1;
+  repeated OddLimitAreaInfo odd_area_infos = 2;
+}

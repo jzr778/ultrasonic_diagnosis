@@ -1,0 +1,136 @@
+syntax = "proto2";
+
+package dr.safety.uds;
+
+import "safety/dtc_info.proto";
+
+enum ErrorCode {  
+  SUCCESS = 0;
+  INTERNAL_ERROR = 1;
+  METHOD_NOT_FOUND_ERROR = 2; // 功能未支持
+  PARAMETER_ERROR = 3;
+  DTC_NOT_EXIST_ERROR = 4; // 找不到对应的 DTC
+}
+
+// GetDTCsByStatusRequest 用于根据特定的状态请求DTC（诊断故障代码）信息
+message GetDTCsByStatusRequest {
+  optional bool test_failed = 1;                                  // 测试失败（Bit 0）
+  optional bool test_failed_this_operation = 2;                   // 当前操作周期测试失败（Bit 1）
+  optional bool pending_dtc = 3;                                  // 待定DTC（Bit 2）
+  optional bool confirmed_dtc = 4;                                // 已确认DTC（Bit 3）
+  optional bool test_not_completed_since_last_clear = 5;          // 自上次清除以来测试未完成（Bit 4）
+  optional bool test_failed_since_last_clear = 6;                 // 自上次清除以来测试失败（Bit 5）
+  optional bool test_not_completed_this_operation = 7;            // 本操作周期测试未完成（Bit 6）
+  optional bool warning_indicator_requested = 8;                  // 警告指示灯请求（Bit 7）
+}
+
+// GetDTCsByStatusResponse 用于返回根据状态请求的DTC信息的响应。
+message GetDTCsByStatusResponse {
+  repeated dr.safety.dtc.DTCInfo dtc_info_list = 1;               // DTC信息列表，包含了满足请求条件的所有DTC信息。
+}
+
+// GetNumOfExpectedStatusRequest 用于根据特定的状态请求DTC的数量
+message GetNumOfExpectedStatusRequest {
+  optional bool test_failed = 1;                                  // 测试失败（Bit 0）
+  optional bool test_failed_this_operation = 2;                   // 当前操作周期测试失败（Bit 1）
+  optional bool pending_dtc = 3;                                  // 待定DTC（Bit 2）
+  optional bool confirmed_dtc = 4;                                // 已确认DTC（Bit 3）
+  optional bool test_not_completed_since_last_clear = 5;          // 自上次清除以来测试未完成（Bit 4）
+  optional bool test_failed_since_last_clear = 6;                 // 自上次清除以来测试失败（Bit 5）
+  optional bool test_not_completed_this_operation = 7;            // 本操作周期测试未完成（Bit 6）
+  optional bool warning_indicator_requested = 8;                  // 警告指示灯请求（Bit 7）
+}
+
+// GetNumOfExpectedStatusResponse 用于返回根据状态查询DTC的数量响应。
+message GetNumOfExpectedStatusResponse {
+  optional int32 dtc_count = 1;                                   // 符合查询条件的DTC数量。
+}
+
+// GetDTCDetailsByIdRequest 用于请求特定DTC ID的详细信息。
+message GetDTCDetailsByIdRequest {
+  repeated uint32 dtc_id = 1;                                     // 请求的DTC ID列表。
+}
+
+// GetDTCDetailsByIdResponse 用于返回请求的DTC详细信息响应。
+message GetDTCDetailsByIdResponse {
+  repeated dr.safety.dtc.DTCInfo dtc_info_list = 1;               // 包含请求的DTC详细信息的列表。
+}
+
+// GetDTCStatusRequest 用于请求DTC的状态信息。默认情况下请求所有DTC的状态。
+message GetDTCStatusRequest {
+  // default: all dtc
+}
+
+// GetDTCStatusResponse 用于返回DTC状态信息的响应。
+message GetDTCStatusResponse {
+  repeated dr.safety.dtc.DTCInfo dtc_info_list = 1;               // 包含DTC状态信息的列表
+}
+
+// ClearDTCInfoRequest 用于请求清除特定DTC信息。
+message ClearDTCInfoRequest {
+  // 定义清除操作的类型，可以是清除所有DTC信息，清除特定ID的DTC信息，或清除特定分组的DTC信息。
+  oneof operation {
+    bool clear_all = 1;                                           // 删除所有的 dtc info
+    uint32 dtc_id = 2;                                            // 删除该 dtc 的 info
+    dr.safety.dtc.DTCGroupType group_id = 3;                      // 删除该分组下所有 dtc 的 info                                  
+  }
+}
+
+// ClearDTCInfoResponse 用于返回DTC信息清除操作的响应。
+message ClearDTCInfoResponse {
+  // optional uint32 clear_count = 1;                             // 被删除的条数（待定）
+}
+
+// ConfigureDTCRequest 用于请求配置DTC生成的状态。
+message ConfigureDTCRequest {
+  optional bool enable_generate = 2;                              // true 为打开 DTC 生成，false 关闭 DTC 生成
+}
+
+// ConfigureDTCResponse 用于返回DTC生成配置操作的响应。
+message ConfigureDTCResponse {
+
+}
+
+// UDSRequest 代表统一诊断服务（Unified Diagnostic Services）与 safety 的请求
+message UDSRequest {
+  optional string id = 1;                                         // 请求的唯一标识符。
+  optional int64 timestamp = 2;                                   // 请求的时间戳，表示为自 Unix 纪元起的毫秒数。
+  oneof request {
+    GetDTCsByStatusRequest get_dtcs_by_status = 3;                // 请求根据状态获取DTC信息
+    GetNumOfExpectedStatusRequest get_num_of_expected_status = 4; // 请求根据状态查询DTC的数量。
+    GetDTCDetailsByIdRequest get_details_by_id = 5;               // 请求获取特定ID的DTC详细信息
+    GetDTCStatusRequest get_all_dtc_with_status = 6;              // 请求获取所有DTC及其状态
+    ClearDTCInfoRequest clear_dtc_info = 7;                       // 请求清除DTC信息
+    ConfigureDTCRequest configure_dtc_setting = 8;                // 请求配置DTC生成设置
+  }
+}
+
+// UDSResponse 代表统一诊断服务（Unified Diagnostic Services）与 safety 的响应 
+message UDSResponse {
+  optional string id = 1;                                         // 对应请求的唯一标识符
+  optional ErrorCode error_code = 2;                              // 响应的错误代码，来自dr.safety命名空间
+  oneof response {
+    GetDTCsByStatusResponse get_dtcs_by_status = 3;               // 根据状态获取DTC信息的响应
+    GetNumOfExpectedStatusResponse get_num_of_expected_status = 4;// 根据状态获取DTC数量的响应
+    GetDTCDetailsByIdResponse get_dtc_details_by_id = 5;          // 获取特定ID的DTC详细信息的响应
+    GetDTCStatusResponse get_all_dtc_with_status = 6;             // 获取所有DTC及其状态的响应
+    ClearDTCInfoResponse clear_dtc_info = 7;                      // 清除DTC信息的响应
+    ConfigureDTCResponse configure_dtc_setting = 8;               // 配置DTC生成设置的响应      
+  }
+}
+
+// DTC 增量改动的数据
+message DTCChangeSet {
+  repeated uint32 add_dtc = 1;                                    // 新增 DTC
+  repeated uint32 del_dtc = 2;                                    // 减少 DTC
+}
+
+// DTC相关广播信息
+message DTCUpdateInfo { // topic: /safety/dtcs
+  optional DTCChangeSet change_set = 1;
+}
+
+// 当前全量处于生效的 DTC，仅上传供云端解析使用
+message TotalDTCs {
+  repeated uint32 current_total_dtcs = 1;
+}

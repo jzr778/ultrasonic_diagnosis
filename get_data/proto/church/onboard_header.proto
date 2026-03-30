@@ -1,0 +1,26 @@
+syntax = "proto2";
+
+package deeproute.church;
+
+message OnboardHeader {
+  // Message publishing time (as control plane time) in nano-seconds
+  optional uint64 timestamp = 1 [ default = 0 ];
+
+  // Node name
+  optional string sender_name = 2;
+
+  // Topic
+  optional string topic = 3;
+
+  // Sequence number for each message. Each module maintains its own counter for
+  // sequence_num, always starting from 1 on boot.
+  optional uint32 sequence_num = 4;
+
+  // source timestamp (from sensors) for nano-second.
+  optional uint64 source_timestamp = 5;
+
+  optional uint32 version = 6 [ default = 1 ];
+
+  // Message publishing time (as data plane time) in nano-seconds
+  optional uint64 dataplane_timestamp = 7;
+}

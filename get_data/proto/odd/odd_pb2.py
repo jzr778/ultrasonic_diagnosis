@@ -25,7 +25,7 @@ _sym_db = _symbol_database.Default()
 from graph_match import graph_matching_pb2 as graph__match_dot_graph__matching__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rodd/odd.proto\x12\rdeeproute.odd\x1a graph_match/graph_matching.proto\"\xc8\x01\n\x17PreviewOddLimitAreaInfo\x12-\n\x08odd_type\x18\x01 \x01(\x0e\x32\x1b.deeproute.odd.OddLimitType\x12?\n\todd_range\x18\x02 \x03(\x0b\x32(.deeproute.graph_match.AmapLinkMatchInfoB\x02\x18\x01\x12=\n\x0bpoint_range\x18\x03 \x01(\x0b\x32(.deeproute.graph_match.AmapLinkMatchInfo\"U\n\x18PreviewRouteOddLimitInfo\x12\x39\n\todd_infos\x18\x01 \x03(\x0b\x32&.deeproute.odd.PreviewOddLimitAreaInfo\"k\n\x13OddLimitPreviewInfo\x12\x12\n\nrequest_id\x18\x01 \x01(\t\x12@\n\x0froute_odd_infos\x18\x02 \x03(\x0b\x32\'.deeproute.odd.PreviewRouteOddLimitInfo\"\xcc\x01\n\x10OddLimitAreaInfo\x12-\n\x08odd_type\x18\x01 \x01(\x0e\x32\x1b.deeproute.odd.OddLimitType\x12\x0f\n\x07link_id\x18\x02 \x03(\x04\x12\x12\n\nlink_index\x18\x03 \x03(\x05\x12\x14\n\x0cstart_offset\x18\x06 \x01(\x01\x12\x12\n\nend_offset\x18\x07 \x01(\x01\x12\x1d\n\x15\x64istance_to_odd_start\x18\x04 \x01(\x01\x12\x1b\n\x13\x64istance_to_odd_end\x18\x05 \x01(\x01\"\x9e\x02\n\x0cOddLimitInfo\x12\x12\n\nrequest_id\x18\x01 \x01(\t\x12?\n\x16only_notice_area_infos\x18\x03 \x03(\x0b\x32\x1f.deeproute.odd.OddLimitAreaInfo\x12\x37\n\x0eodd_area_infos\x18\x02 \x03(\x0b\x32\x1f.deeproute.odd.OddLimitAreaInfo\x12\x41\n\x18\x64owngrade_acc_area_infos\x18\x04 \x03(\x0b\x32\x1f.deeproute.odd.OddLimitAreaInfo\x12=\n\x14quit_auto_area_infos\x18\x05 \x03(\x0b\x32\x1f.deeproute.odd.OddLimitAreaInfo\"\x9a\x01\n\x0bOddTypeInfo\x12\x33\n\x0eodd_limit_type\x18\x01 \x01(\x0e\x32\x1b.deeproute.odd.OddLimitType\x12,\n\nodd_action\x18\x02 \x01(\x0e\x32\x18.deeproute.odd.OddAction\x12\x14\n\x0cstart_offset\x18\x03 \x01(\x01\x12\x12\n\nend_offset\x18\x04 \x01(\x01*\xd5\x03\n\x0cOddLimitType\x12\x0f\n\x0bODD_UNKNOWN\x10\x00\x12\x11\n\rODD_REST_AREA\x10\x01\x12\x0c\n\x08ODD_TOLL\x10\x02\x12\x1a\n\x16ODD_GRAPH_MATCH_FAILED\x10\x03\x12\x0e\n\nODD_U_TURN\x10\x04\x12\x12\n\x0eODD_ROUNDABOUT\x10\x05\x12\x1d\n\x19ODD_SHARP_CORNER_JUNCTION\x10\x06\x12\x1c\n\x18ODD_FIVE_FORKED_JUNCTION\x10\x07\x12\x1b\n\x17ODD_SIX_FORKED_JUNCTION\x10\x08\x12\x11\n\rODD_TEMPORARY\x10\t\x12\x12\n\x0eODD_ROI_REGION\x10\n\x12\x1b\n\x17ODD_CITY_AND_ROAD_CLASS\x10\x0b\x12\x1a\n\x16ODD_U_TURN_SINGLE_MOVE\x10\x0c\x12\x19\n\x15ODD_U_TURN_MULTI_MOVE\x10\r\x12\x0c\n\x08ODD_CITY\x10\x0e\x12\x12\n\x0eODD_ROAD_CLASS\x10\x0f\x12\x1b\n\x17ODD_MAIN_SECONDARY_ROAD\x10\x10\x12\x14\n\x10ODD_PARKING_AREA\x10\x11\x12\x12\n\x0eODD_CHECKPOINT\x10\x12\x12\x15\n\x11ODD_EARLY_DEGRADE\x10\x13*\xd6\x01\n\tOddAction\x12\x16\n\x12ODD_ACTION_UNKNOWN\x10\x00\x12\x19\n\x15ODD_ACTION_NCA_ACTIVE\x10\x01\x12-\n)ODD_ACTION_NCA_ACTIVE_WITH_TOAST_REMINDER\x10\x02\x12!\n\x1dODD_ACTION_NCA_DEGRADE_TO_LCC\x10\x03\x12!\n\x1dODD_ACTION_NCA_DEGRADE_TO_ACC\x10\x04\x12!\n\x1dODD_ACTION_NCA_EXIT_TO_MANUAL\x10\x05')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rodd/odd.proto\x12\rdeeproute.odd\x1a graph_match/graph_matching.proto\"\xc8\x01\n\x17PreviewOddLimitAreaInfo\x12-\n\x08odd_type\x18\x01 \x01(\x0e\x32\x1b.deeproute.odd.OddLimitType\x12?\n\todd_range\x18\x02 \x03(\x0b\x32(.deeproute.graph_match.AmapLinkMatchInfoB\x02\x18\x01\x12=\n\x0bpoint_range\x18\x03 \x01(\x0b\x32(.deeproute.graph_match.AmapLinkMatchInfo\"U\n\x18PreviewRouteOddLimitInfo\x12\x39\n\todd_infos\x18\x01 \x03(\x0b\x32&.deeproute.odd.PreviewOddLimitAreaInfo\"k\n\x13OddLimitPreviewInfo\x12\x12\n\nrequest_id\x18\x01 \x01(\t\x12@\n\x0froute_odd_infos\x18\x02 \x03(\x0b\x32\'.deeproute.odd.PreviewRouteOddLimitInfo\"\xa2\x01\n\x10OddLimitAreaInfo\x12-\n\x08odd_type\x18\x01 \x01(\x0e\x32\x1b.deeproute.odd.OddLimitType\x12\x0f\n\x07link_id\x18\x02 \x03(\x04\x12\x12\n\nlink_index\x18\x03 \x03(\x05\x12\x1d\n\x15\x64istance_to_odd_start\x18\x04 \x01(\x01\x12\x1b\n\x13\x64istance_to_odd_end\x18\x05 \x01(\x01\"[\n\x0cOddLimitInfo\x12\x12\n\nrequest_id\x18\x01 \x01(\t\x12\x37\n\x0eodd_area_infos\x18\x02 \x03(\x0b\x32\x1f.deeproute.odd.OddLimitAreaInfo*\xed\x01\n\x0cOddLimitType\x12\x0f\n\x0bODD_UNKNOWN\x10\x00\x12\x11\n\rODD_REST_AREA\x10\x01\x12\x0c\n\x08ODD_TOLL\x10\x02\x12\x1a\n\x16ODD_GRAPH_MATCH_FAILED\x10\x03\x12\x0e\n\nODD_U_TURN\x10\x04\x12\x12\n\x0eODD_ROUNDABOUT\x10\x05\x12\x1d\n\x19ODD_SHARP_CORNER_JUNCTION\x10\x06\x12\x1c\n\x18ODD_FIVE_FORKED_JUNCTION\x10\x07\x12\x1b\n\x17ODD_SIX_FORKED_JUNCTION\x10\x08\x12\x11\n\rODD_TEMPORARY\x10\t')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -34,10 +34,8 @@ if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
   _globals['_PREVIEWODDLIMITAREAINFO'].fields_by_name['odd_range']._loaded_options = None
   _globals['_PREVIEWODDLIMITAREAINFO'].fields_by_name['odd_range']._serialized_options = b'\030\001'
-  _globals['_ODDLIMITTYPE']._serialized_start=1119
-  _globals['_ODDLIMITTYPE']._serialized_end=1588
-  _globals['_ODDACTION']._serialized_start=1591
-  _globals['_ODDACTION']._serialized_end=1805
+  _globals['_ODDLIMITTYPE']._serialized_start=724
+  _globals['_ODDLIMITTYPE']._serialized_end=961
   _globals['_PREVIEWODDLIMITAREAINFO']._serialized_start=67
   _globals['_PREVIEWODDLIMITAREAINFO']._serialized_end=267
   _globals['_PREVIEWROUTEODDLIMITINFO']._serialized_start=269
@@ -45,9 +43,7 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_ODDLIMITPREVIEWINFO']._serialized_start=356
   _globals['_ODDLIMITPREVIEWINFO']._serialized_end=463
   _globals['_ODDLIMITAREAINFO']._serialized_start=466
-  _globals['_ODDLIMITAREAINFO']._serialized_end=670
-  _globals['_ODDLIMITINFO']._serialized_start=673
-  _globals['_ODDLIMITINFO']._serialized_end=959
-  _globals['_ODDTYPEINFO']._serialized_start=962
-  _globals['_ODDTYPEINFO']._serialized_end=1116
+  _globals['_ODDLIMITAREAINFO']._serialized_end=628
+  _globals['_ODDLIMITINFO']._serialized_start=630
+  _globals['_ODDLIMITINFO']._serialized_end=721
 # @@protoc_insertion_point(module_scope)

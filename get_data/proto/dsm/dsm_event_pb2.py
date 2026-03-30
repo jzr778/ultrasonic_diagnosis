@@ -25,15 +25,15 @@ _sym_db = _symbol_database.Default()
 from dsm import dsm_pb2 as dsm_dot_dsm__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x13\x64sm/dsm_event.proto\x12\x06\x64r.dsm\x1a\rdsm/dsm.proto\"\xca\x01\n\x08\x44SMEvent\x12\n\n\x02id\x18\x01 \x01(\t\x12#\n\x08\x64sm_init\x18\x64 \x01(\x0b\x32\x0f.dr.dsm.DSMInitH\x00\x12\x33\n\x13module_state_update\x18\x65 \x01(\x0b\x32\x14.dr.dsm.UpdateModuleH\x00\x12)\n\x0b\x61pi_version\x18\x66 \x01(\x0b\x32\x12.dr.dsm.APIVersionH\x00\x12$\n\x08recovery\x18g \x01(\x0b\x32\x10.dr.dsm.RecoveryH\x00\x42\x07\n\x05\x65vent\"}\n\x07\x44SMInit\x12&\n\x06status\x18\x01 \x01(\x0e\x32\x16.dr.dsm.DSMInit.Status\x12\x16\n\x0e\x66\x61iled_modules\x18\x02 \x03(\t\"2\n\x06Status\x12\x0f\n\x0bIN_PROGRESS\x10\x00\x12\x0b\n\x07SUCCESS\x10\x01\x12\n\n\x06\x46\x41ILED\x10\x02\"!\n\nAPIVersion\x12\x13\n\x0bota_setting\x18\x01 \x01(\x08\"G\n\x08Recovery\x12\x13\n\x0brecovery_id\x18\x01 \x01(\x05\x12&\n\x06\x61\x63tion\x18\x02 \x01(\x0e\x32\x16.dr.dsm.RecoveryAction\"$\n\rDSMResetEvent\x12\x13\n\x0btotal_reset\x18\x01 \x01(\x08\"J\n\x14\x45ntityAbnormalNotify\x12\x32\n\x0e\x61\x62normal_infos\x18\x01 \x03(\x0b\x32\x1a.dr.dsm.EntityAbnormalInfo\")\n\x12\x45ntityAbnormalInfo\x12\x13\n\x0b\x65ntity_name\x18\x01 \x01(\t*O\n\x0eRecoveryAction\x12\x0c\n\x08RA_START\x10\x00\x12\x0f\n\x0bRA_COMPLETE\x10\x01\x12\r\n\tRA_FAILED\x10\x02\x12\x0f\n\x0bRA_CANCELED\x10\x03\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x13\x64sm/dsm_event.proto\x12\x06\x64r.dsm\x1a\rdsm/dsm.proto\"\xca\x01\n\x08\x44SMEvent\x12\n\n\x02id\x18\x01 \x01(\t\x12#\n\x08\x64sm_init\x18\x64 \x01(\x0b\x32\x0f.dr.dsm.DSMInitH\x00\x12\x33\n\x13module_state_update\x18\x65 \x01(\x0b\x32\x14.dr.dsm.UpdateModuleH\x00\x12)\n\x0b\x61pi_version\x18\x66 \x01(\x0b\x32\x12.dr.dsm.APIVersionH\x00\x12$\n\x08recovery\x18g \x01(\x0b\x32\x10.dr.dsm.RecoveryH\x00\x42\x07\n\x05\x65vent\"}\n\x07\x44SMInit\x12&\n\x06status\x18\x01 \x01(\x0e\x32\x16.dr.dsm.DSMInit.Status\x12\x16\n\x0e\x66\x61iled_modules\x18\x02 \x03(\t\"2\n\x06Status\x12\x0f\n\x0bIN_PROGRESS\x10\x00\x12\x0b\n\x07SUCCESS\x10\x01\x12\n\n\x06\x46\x41ILED\x10\x02\"!\n\nAPIVersion\x12\x13\n\x0bota_setting\x18\x01 \x01(\x08\"G\n\x08Recovery\x12\x13\n\x0brecovery_id\x18\x01 \x01(\x05\x12&\n\x06\x61\x63tion\x18\x02 \x01(\x0e\x32\x16.dr.dsm.RecoveryAction\"$\n\rDSMResetEvent\x12\x13\n\x0btotal_reset\x18\x01 \x01(\x08*O\n\x0eRecoveryAction\x12\x0c\n\x08RA_START\x10\x00\x12\x0f\n\x0bRA_COMPLETE\x10\x01\x12\r\n\tRA_FAILED\x10\x02\x12\x0f\n\x0bRA_CANCELED\x10\x03\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'dsm.dsm_event_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_RECOVERYACTION']._serialized_start=643
-  _globals['_RECOVERYACTION']._serialized_end=722
+  _globals['_RECOVERYACTION']._serialized_start=524
+  _globals['_RECOVERYACTION']._serialized_end=603
   _globals['_DSMEVENT']._serialized_start=47
   _globals['_DSMEVENT']._serialized_end=249
   _globals['_DSMINIT']._serialized_start=251
@@ -46,8 +46,4 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_RECOVERY']._serialized_end=484
   _globals['_DSMRESETEVENT']._serialized_start=486
   _globals['_DSMRESETEVENT']._serialized_end=522
-  _globals['_ENTITYABNORMALNOTIFY']._serialized_start=524
-  _globals['_ENTITYABNORMALNOTIFY']._serialized_end=598
-  _globals['_ENTITYABNORMALINFO']._serialized_start=600
-  _globals['_ENTITYABNORMALINFO']._serialized_end=641
 # @@protoc_insertion_point(module_scope)

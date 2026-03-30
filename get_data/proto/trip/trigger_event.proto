@@ -1,0 +1,29 @@
+syntax = "proto2";
+
+package deeproute.trip;
+
+message TriggerEvent {
+  optional string trip_name = 1;
+  optional uint32 backward_time_sec = 2;                 // second
+  optional uint32 forward_time_sec = 3;                  // second
+  optional string car_id = 4;
+  optional string description = 5;
+  optional string trigger_level = 6;
+  optional string system_timestamp_ns = 7;               // ns
+  optional string module_name = 8;
+  optional string trigger_type = 9;
+  repeated string bags_name = 10;                        // len(bags_name) == len(bags_start) == len(bags_end)
+  repeated string bags_start_timestamp_ns = 11;          // ns
+  repeated string bags_end_timestamp_ns = 12;            // ns
+
+  optional int32 task_id = 13; //task_id may be -1
+  optional string security_officer = 14;
+  optional string tester = 15;
+  repeated string package_version = 16;
+  optional string driver_version = 17;
+  optional string trigger_name = 18;
+
+  optional uint32 event_id = 19;
+  optional string event = 20;
+  optional string event_uuid = 21;
+}

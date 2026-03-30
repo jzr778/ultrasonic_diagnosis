@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1a\x64rapi/navigation_map.proto\x12\x11\x64r.navigation_map*R\n\tRoadClass\x12\x0e\n\nRC_HIGHWAY\x10\x00\x12\x17\n\x13RC_URBAN_EXPRESSWAY\x10\x01\x12\x0c\n\x08RC_OTHER\x10\x63\x12\x0e\n\nRC_UNKNOWN\x10\x64\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1a\x64rapi/navigation_map.proto\x12\x11\x64r.navigation_map*B\n\tRoadClass\x12\x0e\n\nRC_HIGHWAY\x10\x00\x12\x17\n\x13RC_URBAN_EXPRESSWAY\x10\x01\x12\x0c\n\x08RC_OTHER\x10\x63\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -32,5 +32,5 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'drapi.navigation_map_pb2', 
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
   _globals['_ROADCLASS']._serialized_start=49
-  _globals['_ROADCLASS']._serialized_end=131
+  _globals['_ROADCLASS']._serialized_end=115
 # @@protoc_insertion_point(module_scope)

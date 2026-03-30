@@ -1,0 +1,210 @@
+syntax = "proto3";
+
+import "drapi/base.proto";
+
+package dr.routeplanning;
+
+/*****************************规划决策实时数据*********************************/
+message PlanningTrajectory {
+  uint64 timestamp = 1;
+  repeated TrajectoryPoint trajectory_point = 2;
+  repeated dr.base.Point2DWithHeading visual_trajectory_points = 3;
+  dr.base.GearPosition gear_position = 4;
+}
+
+message PlanningSemanticInfo {
+  LaneChangeRelated lane_change_related = 1;
+  DisengagementWarning disengagement_warning = 2;
+  StopLine nearest_stop = 3;
+  BroadcastInfo broadcast_info = 4;
+  TrafficCondition traffic_condition = 5;
+}
+
+/****************************规划决策数据引用的结构体定义**********************/
+enum TrafficCondition {
+  CONDITION_UNKNOWN = 0;
+  LIGHT = 1;
+  MEDIUM = 2;
+  HEAVY = 3;
+  SLOW = 4;
+  JAM = 5;
+}
+
+enum BroadcastReason {
+  BROADCAST_REASON_UNKNOWN = 0;
+  DANGER_FRONT_OBJECT = 1;
+  CROSSWALK = 2;
+}
+
+enum SafetyRelatedWarning {
+  NO_SAFETY_WARNING = 0;
+  PLANNING_FAILED = 1;
+  INVALID_TRAJECTORY = 2;
+  PLANNING_BLOCKED = 3;
+}
+
+enum HumanInterferenceRelatedWarning {
+  NO_INTERFERENCE_WARNING = 0;
+  LONGITUDINAL = 1;
+  LATERAL = 2;
+  BOTH = 3;
+}
+
+enum TargetLane {
+  MIDDLE = 0;
+  LEFT = 1;
+  RIGHT = 2;
+}
+
+enum NudgeStatus {
+  NUDGE_UNKNOWN = 0;
+  NUDGE_KEEP = 1;
+  NUDGE_NUDGE = 2;
+}
+
+enum NudgeType {
+  NUDGETYPE_UNKNOWN = 0;
+  IN_LANE = 1;
+  OUT_OF_LANE = 2;
+}
+
+enum BehaviorReason {
+  // commom 1~100
+  CHANGE_REASON_UNKNOWN = 0;
+
+  // lane change 101~199
+  ROUTING = 101;
+  MERGE = 102;
+  SLOW_OBJECT = 103;
+  FASTER_LANE = 104;
+  PARKED_CARS = 105;
+  BREAK_DOWN_CARS = 106;
+  CONSTRUCTION_ZONE = 107;
+  UNMOVABLE_OBSTACLE = 108;
+  POLE = 109;
+  DRIVER_VIOCE = 110;
+  TRAFFIC_CONE = 111;
+  /* LaneChangeFailureReason */
+  REAR_CAR_TOO_CLOSE = 112;
+  SURROUNDING_CAR_TOO_CLOSE = 113;
+  NO_LANE_CHANGE_TRAJECTORY = 114;
+  EXCESSIVE_BRAKING = 115;
+  ILC_HUMAN_CANCELLED = 116;  // cancelled by human
+  NO_ROOM = 117;              // no lane
+  NONCROSSABLE = 118;         // solid lane boundary
+  ILC_TIMEOUT = 119;          // at the end of 10 seconds
+  HEAVY_TRAFFIC = 120;
+  BLIND_SPOT_OCCUPIED = 121;
+  BAD_LANE_CHANGE_POS = 122;
+  /* other LaneChangeReason */
+  HUMAN_INPUT = 140;
+  WRONG_LANE = 141;
+  HIGHWAY_LANE = 142;
+  MERGE_IN_LANE = 143;
+  MERGE_OUT_LANE = 144;
+  PARALLEL_TRUCK = 145;
+  // nudge 200~300
+  STATIC_OBJECT = 200;
+  LARGE_VEHICLE = 201;
+}
+
+enum LaneChangeStatus {
+  NO_LANE_CHANGE = 0;
+  DURING = 1;
+  SUCCESS = 2;
+  FAIL = 3;
+  WAIT = 4;
+  BOX_ON_BOUNDARY = 5;
+  BOX_IN_LANE = 6;
+  LANE_CHANGE_BUFFER = 7;
+  RECOVERING = 8;
+  FRONT_CENTER_CROSSED = 9;
+  LANE_CHANGE_HOLD = 10;
+}
+
+enum StopReason {
+  STOP_REASON_UNKNOWN = 0;
+  DESTINATION = 1;
+  VEHICLE = 2;
+  PEDESTRIAN = 3;
+  OBSTACLE = 4;
+  PARKING = 5;
+  TRAFFIC_LIGHT = 6;
+  STOP_SIGN = 7;
+  YIELD_SIGN = 8;
+  CLEAR_ZONE = 9;
+  CROSS_WALK = 10;
+  TEST = 11;
+}
+
+message NudgeInfo {
+  NudgeStatus nudge_status = 1;
+  repeated BehaviorReason nudge_reason = 2;
+  repeated int32 nudge_object_ids = 3;
+  dr.base.Direction nudge_direction = 4;
+  NudgeType nudge_type = 5;
+}
+
+message LaneChangeRelated {
+  TargetLane target_lane = 1;
+  repeated int32 target_lane_id = 2;
+  dr.base.Point2DWithHeading target_position = 3;
+  BehaviorReason lane_change_reason = 4;
+  LaneChangeStatus lane_change_status = 5;
+}
+
+message DisengagementWarning {
+  SafetyRelatedWarning safety_related_warning = 1;
+  HumanInterferenceRelatedWarning human_interference_related_warning =
+      2;  // This may not be output of planning.
+}
+
+message StopLine {
+  dr.base.Point2DWithHeading point = 1;
+  StopReason reason = 2;
+}
+
+message BroadcastInfo {
+  BroadcastReason broadcast_reason = 1;
+  StopReason stop_reason = 2;
+}
+
+message PathPoint {
+  // coordinates
+  double x = 1;
+  double y = 2;
+  double z = 3;
+
+  // direction on the x-y plane
+  double theta = 4;
+  // curvature on the x-y planning
+  double kappa = 5;
+  // accumulated distance from beginning of the path
+  double s = 6;
+
+  // derivative of kappa w.r.t s.
+  double dkappa = 7;
+  // derivative of derivative of kappa w.r.t s.
+  double ddkappa = 8;
+  // The lane ID where the path point is on
+  string lane_id = 9;
+
+  // derivative of x and y w.r.t parametric parameter t in CosThetareferenceline
+  double x_derivative = 10;
+  double y_derivative = 11;
+}
+
+message TrajectoryPoint {
+  // path point
+  PathPoint path_point = 1;
+  // linear velocity
+  double v = 2;  // in [m/s]
+  // linear acceleration
+  double a = 3;
+  // relative time from beginning of the trajectory
+  double relative_time = 4;
+  // longitudinal jerk
+  double da = 5;
+  // The angle between vehicle front wheel and vehicle longitudinal axis
+  double steer = 6;
+}

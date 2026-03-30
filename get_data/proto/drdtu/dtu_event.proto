@@ -1,0 +1,110 @@
+// all message described in this file are sent or recived in
+// dtu_event&dtu_event_response topic!!!!!!
+syntax = "proto3";
+
+import "drdtu/dtu_data.proto";
+
+package deeproute.dtu.event;
+
+message ArrivedEvent {
+  string point_id = 2;
+  int32 point_index = 3;
+}
+
+message WaitEvent {
+  string point_id = 1;
+  int32 point_index = 2;
+  bool start = 3;
+}
+
+message AbnormalEvent {
+  string reason = 1;
+}
+
+enum TakeOverReason {
+  BLOCK_ALL_ROAD = 0;
+  ABNORMAL_SINGLE_ROAD = 1;
+  UPSTREAM_DATA_FAILURE = 2;
+  BLOCK_NONE = 3;
+}
+
+message TakeOverRequestEvent {
+  TakeOverReason reason = 1;
+}
+
+message LocalizationEvent {
+  double x = 1;
+  double y = 2;
+}
+
+message ParkingEvent {
+  int32 parking_space_id = 1;
+  bool successful = 2;
+  string reason = 3;
+}
+
+message GoDirectPointEvent {
+  bool successful = 1;
+  string reason = 2;
+}
+
+message RestartEvent {
+}
+
+message PullOverDoneEvent {
+}
+
+message EmergencyStopDoneEvent {
+}
+
+message DetourDoneEvent {
+}
+
+message TracingPointsDoneEvent {
+}
+
+message ILCDoneEvent {
+  enum Status {
+    ILC_SUCCEEDED = 0; 
+    ILC_FAILED = 1;
+  }
+  Status status = 1;
+}
+
+message AutoLevelDoneEvent { 
+}
+
+message DTUEvent {  // algorithm modules send 'DTUEvent' message to DTU use
+                    // '/dtu/event' topic
+  deeproute.dtu.data.Module source = 1;
+  deeproute.dtu.data.Module destination = 2;
+  string timestamp = 3;
+  string event_id = 4;
+  string semantic_map_id = 5;
+  double x = 6;
+  double y = 7;
+  oneof type {
+    ArrivedEvent arrived = 8;
+    WaitEvent wait = 9;
+    AbnormalEvent abnormal = 10;
+    LocalizationEvent localization = 11;
+    RestartEvent restart = 12;
+    TakeOverRequestEvent take_over = 13;
+    PullOverDoneEvent pull_over_done = 14;
+    EmergencyStopDoneEvent emergency_stop_done = 15;
+    DetourDoneEvent detour_done = 16;
+    TracingPointsDoneEvent tracing_points_done = 17;
+    ParkingEvent Parking = 18;
+    GoDirectPointEvent go_direct_point = 19;
+    ILCDoneEvent ilc = 20;
+    AutoLevelDoneEvent auto_level = 21;
+  }
+}
+
+message DTUEventRP {  // DTU send 'DTUEventRP' message to algorithm modules use
+                      // '/dtu/event_response' topic
+  deeproute.dtu.data.Module source = 1;
+  deeproute.dtu.data.Module destination = 2;
+  string event_id = 3;
+  deeproute.dtu.data.ErrorCode err = 4;
+}

@@ -1,0 +1,199 @@
+syntax = "proto3";
+
+package deeproute.localization.command;
+
+import "common/geometry.proto";
+import "semantic_map/map_standby_area.proto";
+import "localization/localization_external_events.proto";
+import "perception/deeproute_perception_ras_map.proto";
+import "map/deeproute_map_ras_map_plus.proto";
+
+/*** Begin of VPA Test ***/
+
+enum LocalizationMode {
+  ODOMETRY = 0;
+  LIO = 1;
+  MAP_REGISTRATION = 2;
+}
+
+enum ErrorCode {
+  // General status (0 ~ 99)
+  UNSET = 0;                                          // deprecated             
+  SUCCESS = 1;                                        // SUCCESS with no error
+  FAIL = 2;                                           // deprecated
+  VPA_CMD_STATUS_NOT_MATCH = 3;                       // blc cmd doesn't match current status 
+
+  // VPA END_MAPPING related error code (100 ~ 199)
+  VPA_MAPPING_LOOP_DETECTED = 100;                     // deprecated
+  VPA_MAPPING_REVERSING_BEFORE_PARKING = 101;          // deprecated
+  VPA_MAPPING_MULTI_LEVEL = 102;                       // deprecated
+  VPA_MAPPING_BAD_QUALITY_TRAJECTORY = 103;            // deprecated
+  VPA_MAPPING_NOT_IN_MAP = 104;                        // deprecated
+
+  VPA_END_MAPPING_ADC_NOT_IN_PARKING_SPACE = 105;
+  VPA_END_MAPPING_LEARNED_TRAJECORY_TOO_SHORT = 106;
+  VPA_END_MAPPING_NO_PARKING_SPACE_NEARBY = 107;
+  VPA_END_MAPPING_LEARNED_TRAJECORY_TOO_LONG = 108;
+  VPA_END_MAPPING_LEARNED_TRAJECTORY_REACH_MAX_LIMITS = 109;
+  VPA_END_MAPPING_TRAJECTORY_TOO_STEEP = 110;
+  VPA_END_MAPPING_TRAJECTORY_ENVIRONMENT_TOO_SPARSE = 111;
+  VPA_END_MAPPING_TRAJECTORY_REVERSE_TOO_FAR = 112;
+  VPA_END_MAPPING_TRAJECTORY_NOT_REACH_PARKING_SPACE = 113;
+  VPA_END_MAPPING_TRAJECTORY_CROSS_TARGET_PARKING_SPACE = 114;
+  VPA_END_MAPPING_TRAJECTORY_LOOP_DETECTED = 115;
+  VPA_END_MAPPING_MAPPING_TIME_TOO_LONG = 116;
+  VPA_END_MAPPING_MAPPING_SAVE_FAILURE = 117;
+  VPA_END_MAPPING_NOT_ENOUGH_DISK_FREE_SPACE = 118;
+  VPA_END_MAPPING_INPUT_DATA_INVALID = 119;
+
+  VPA_END_MAPPING_UNKNOWN_REASON_FAILURE = 199;
+
+  // VPA start mapping related error code (200 ~ 299)
+  VPA_START_MAPPING_GNSS_NOT_READY = 200;
+  VPA_START_MAPPING_GNSS_TOO_OLD = 201;
+  VPA_START_MAPPING_LOCAL_POSE_NOT_READY = 202;
+
+  // VPA start routing related error code (300 ~ 349)
+  VPA_START_ROUTING_NOT_MATCHED = 301;
+
+  // VPA end routing related error code (350 ~ 399)
+}
+
+message LocalizationModeChangeCMD {
+  LocalizationMode localization_mode = 1;
+}
+message LocalizationModeChangeCMDRP {
+  bool success = 1;
+  string semantic_map_path = 2;                  // deprecated
+  deeproute.hdmap.StandbyArea parking_space = 3; // deprecated
+}
+
+message StartMapLocalizationCMD {
+}
+message StartMapLocalizationCMDRP {
+  string semantic_map_path = 1;
+  deeproute.hdmap.StandbyArea parking_space = 2;  // in odometry frame
+}
+
+message EndMapLocalizationCMD {
+}
+message EndMapLocalizationCMDRP {
+}
+
+message StartMappingCMD {
+}
+message StartMappingCMDRP {
+}
+
+enum CancelMappingType {
+  USER_REQUEST = 0;
+  MAPPING_FAILURE = 1;
+  OTHERS = 2;
+}
+
+message CancelMappingCMD {
+  CancelMappingType cancel_mapping_type = 1;
+}
+message CancelMappingCMDRP {
+  ErrorCode error_code = 1; // if cancel mapping due to mapping failure, here put the failure reason
+}
+
+enum MappingErrorCode {
+  LOOP_DETECTED = 0;
+  REVERSING_BEFORE_PARKING = 1;
+  MULTI_LEVEL = 2;
+  BAD_QUALITY_TRAJECTORY = 3;
+}
+
+message EndMappingCMD {
+}
+message EndMappingCMDRP {
+  bool success = 1;
+  deeproute.localization.event.MappingErrorCode error_code = 2;
+  perception.RASMap semantic_map = 3;                       // in odometry frame
+  deeproute.map.MapObstacles semantic_map_obstacles = 4;    // in odometry frame
+  double mapped_trajectory_length = 5;
+  uint32 mapped_speedbump_count = 6;
+  int32 target_parking_space_id = 7;
+}
+
+message SaveMapCMD {
+  bool save_map = 1;
+}
+message SaveMapCMDRP {
+}
+
+message GetMapTargetParkingSpaceCMD {
+}
+message GetMapTargetParkingSpaceCMDRP {
+  deeproute.hdmap.StandbyArea parking_space = 1; // in odometry frame, if there is no nearest parking space or vehicle isn't in parking space, return null
+}
+
+message GetMapCMD {
+}
+message GetMapCMDRP {
+  perception.RASMap semantic_map = 1;  // in map frame
+  deeproute.map.MapObstacles semantic_map_obstacles = 2; // in map frame
+  double map_trajectory_length = 3;
+  deeproute.common.Transformation3 odometry_to_map_transformation = 4; // can be used to transform map to odometry
+}
+
+message CancelPreMappingCMD {
+}
+message CancelPreMappingCMDRP {
+}
+
+/*** End of VPA Test ***/
+
+enum CurrentMode {
+  DRIVING = 0;  // auto-driving
+  APA = 1;
+  RADS = 2;
+  VPA = 3;
+  MANUAL = 4;
+}
+message DrivingModeChangeCMD {
+  CurrentMode driving_mode = 1;
+}
+message DrivingModeChangeCMDRP {
+}
+
+message LocalizationCommand {  // external users send commands in
+                               // '/localization/command' topic to
+                               // localization modules
+  string cmd_id = 1;
+  double timestamp_ms = 2;
+  oneof command {
+    // testing command
+    StartMapLocalizationCMD start_map_localization_cmd = 3;
+    StartMappingCMD start_mapping_cmd = 4;
+    EndMappingCMD end_mapping_cmd = 5;
+    EndMapLocalizationCMD end_map_localization_cmd = 6;
+    CancelMappingCMD cancel_mapping_cmd = 7;
+    LocalizationModeChangeCMD localization_mode_change_cmd = 8;
+    GetMapTargetParkingSpaceCMD get_map_target_parking_space_cmd = 9;
+    GetMapCMD get_map_cmd = 10;
+    CancelPreMappingCMD cancel_pre_mapping_cmd = 11;
+    DrivingModeChangeCMD driving_mode_change_cmd = 12;
+  }
+}
+
+message LocalizationResponse {  // external users receive 'LocalizationResponse'
+                                // in '/localization/command_response' topic
+                                // from localization modules
+  string cmd_id = 1;
+  double timestamp_ms = 2;
+  ErrorCode error_code = 3;
+  oneof command_response {
+    StartMapLocalizationCMDRP start_map_localization_cmd = 4;
+    StartMappingCMDRP start_mapping = 5;
+    EndMappingCMDRP end_mapping = 6;
+    EndMapLocalizationCMDRP end_map_localization = 7;
+    CancelMappingCMDRP cancel_mapping = 8;
+    LocalizationModeChangeCMDRP localization_mode_change = 9;
+    GetMapTargetParkingSpaceCMDRP get_map_target_parking_space = 10;
+    GetMapCMDRP get_map = 11;
+    CancelPreMappingCMDRP cancel_pre_mapping = 12;
+    DrivingModeChangeCMDRP driving_mode_change = 13;
+  }
+}

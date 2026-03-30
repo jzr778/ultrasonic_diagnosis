@@ -172,11 +172,10 @@ def avm_positions_to_yuyan_camera(positions):
 
 
 def select_yuyan_camera_from_fisheye_markers(index_fisheye, bev_chaosheng_positions):
-    """在 plot_fisheye_polygon 标红之后，选一路鱼眼送进 VLM。
+    """选一路鱼眼送进 VLM（鱼眼仅叠相机绿/黄，不再叠红色超声点）。
 
-    - 仅一路有红色超声标记 → 用该路。
-    - 多路有标记：若 BEV 主方位对应相机也在其中 → 与 AVM 一致；否则取标记点最多的那路。
-    - 无路有标记：回退 BEV 主方位相机；无 BEV 点时回退 panoramic_1。
+    ``index_fisheye`` 中路内参考点列表现恒为空时，按 **AVM 超声主方位**（``bev_chaosheng_positions``）
+    映射相机；无 BEV 红点时回退 ``panoramic_1``。保留参数以兼容旧索引文件。
     """
     order = ["panoramic_1", "panoramic_2", "panoramic_3", "panoramic_4"]
     non_empty = [c for c in order if index_fisheye.get(c)]
@@ -299,7 +298,7 @@ def draw_single_tag(tag_id, args):
             if has_non_fs_car:
                 bev_img_with_obstacles, pos, yellow_fs = projector.draw_obstacles_on_bev(
                     avm_image, obstacle, chaosheng, ground, focal_length, camera_height, planning_point,
-                    chaosheng_pixel_radius=30,
+                    chaosheng_pixel_radius=args.chaosheng_pixel_radius,
                     ignore_camera_freespace_types=ignore_fs if ignore_fs else None,
                 )
                 index = {"avm": pos, "yellow_freespace": yellow_fs}
@@ -339,7 +338,7 @@ def draw_single_tag(tag_id, args):
                             ground,
                             focal_length,
                             camera_height,
-                            chaosheng_pixel_radius=30,
+                            chaosheng_pixel_radius=args.chaosheng_pixel_radius,
                             ignore_camera_freespace_types=ignore_fs
                             if ignore_fs
                             else None,
@@ -384,7 +383,7 @@ def draw_single_tag(tag_id, args):
             if has_fs_car:
                 bev_img_with_fs_car, box_list, point_list = projector.draw_fs_car_on_bev(
                     avm_image, obstacle, chaosheng, ground, focal_length, camera_height, planning_point,
-                    chaosheng_pixel_radius=30
+                    chaosheng_pixel_radius=args.chaosheng_pixel_radius,
                 )
                 cv2.imwrite(item_save_path + '/avm_fs_car.jpg', bev_img_with_fs_car)
                 with open(item_save_path + "/box_list_avm.json", 'w', encoding='utf-8') as f:
@@ -607,6 +606,12 @@ def main():
         help="绘图时忽略的超声 freespaceType 列表，如 --ignore-fs-types FS_CURB FS_CHOCK"
     )
     parser.add_argument(
+        "--chaosheng-pixel-radius",
+        type=int,
+        default=30,
+        help="BEV 上超声与相机障碍关联的像素半径（draw / all 模式，默认 30）",
+    )
+    parser.add_argument(
         "--debug-thinking",
         action="store_true",
         default=False,
@@ -634,7 +639,10 @@ def main():
         id_mapping = json.load(f)
 
     total_tags = len(id_mapping)
-    logger.info(f"参数: mode={args.mode}, workers={args.workers}, model={args.model}, tag数量={total_tags}")
+    logger.info(
+        f"参数: mode={args.mode}, workers={args.workers}, model={args.model}, "
+        f"chaosheng_pixel_radius={args.chaosheng_pixel_radius}, tag数量={total_tags}"
+    )
 
     all_stats = {
         "missing_files":   [],   # [(tag_id, [缺失文件])]

@@ -1,0 +1,75 @@
+syntax = "proto2";
+
+package deeproute.hdmap;
+
+import "semantic_map/map_geometry.proto";
+import "common/geometry.proto";
+import "semantic_map/map_overlap.proto";
+// A stop sign is a traffic sign to notify drivers that they must stop before
+// proceeding.
+message StopSign {
+
+  optional int32 id = 1;
+
+  repeated Curve stop_line = 2;
+
+  repeated int32 overlap_id = 3;
+
+  enum StopType {
+    UNKNOWN = 0;
+    ONE_WAY = 1;
+    TWO_WAY = 2;
+    THREE_WAY = 3;
+    FOUR_WAY = 4;
+    ALL_WAY = 5;
+  };
+  optional StopType type = 4;
+
+  optional deeproute.common.Point3D location = 5;
+
+  optional double cost = 6;
+
+  repeated int32 layers = 7;
+}
+
+message StopLine {
+  optional int32 id = 1;
+
+  optional common.Polyline stop_line = 2;
+
+  // A StopLine corresponds to one of the followings:
+  optional int32 stop_sign_id = 3;
+
+  optional int32 yield_sign_id = 4;
+  // Corresponding to the traffic light id of this stop_line, it should be noted that a stop line may be associated with multiple traffic lights.
+  // Generally, the red and green states of these traffic lights are synchronized at this time.
+  repeated int32 traffic_light_id = 5 [ packed = true ];
+
+  optional double cost = 6; // Currently unused, only use 'cost' in Lane.
+  // The stop_line_id corresponding to this stop_line. Used on American maps, 
+  // used in conjunction with yield_sign, need to slow down and give way to other stopline, lane cars.
+  optional int32 yield_stop_line_id = 7;
+  repeated int32 yield_to_lane_id = 8;
+  repeated int32 layers = 9;
+  optional int32 toll_station_id = 10;
+  repeated int32 junction_end_line_id = 11;
+  optional bool virtual = 12;
+  
+  // 停止线类型
+  enum StopType{
+    Car = 0;       // 小车停止线类型
+    Truck = 1;     // 大车停止线类型
+  };
+  optional StopType type = 13;
+
+  repeated Overlap overlaps = 14;
+}
+
+message JunctionEndLine {
+  optional int32 id = 1;
+  optional common.Polyline junction_end_line = 2;  
+  repeated int32 traffic_light_id = 3;
+  repeated int32 layers = 4;
+  optional bool virtual = 5;
+  repeated Overlap overlaps = 6;
+}

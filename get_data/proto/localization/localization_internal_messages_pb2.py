@@ -24,11 +24,9 @@ _sym_db = _symbol_database.Default()
 
 from common import geometry_pb2 as common_dot_geometry__pb2
 from drivers import pointcloud2_pb2 as drivers_dot_pointcloud2__pb2
-from perception import deeproute_perception_ras_map_pb2 as perception_dot_deeproute__perception__ras__map__pb2
-from localization import havp_map_pb2 as localization_dot_havp__map__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n1localization/localization_internal_messages.proto\x12\x1e\x64\x65\x65proute.localization.message\x1a\x15\x63ommon/geometry.proto\x1a\x19\x64rivers/pointcloud2.proto\x1a-perception/deeproute_perception_ras_map.proto\x1a\x1blocalization/havp_map.proto\"\xd4\x04\n\x14LidarMatchingMessage\x12\x18\n\x10measurement_time\x18\x01 \x01(\x03\x12\x16\n\x0ereference_time\x18\x02 \x01(\x03\x12\x43\n\rodometry_mode\x18\x03 \x01(\x0e\x32,.deeproute.localization.message.OdometryMode\x12\x35\n\ndelta_pose\x18\x04 \x01(\x0b\x32!.deeproute.common.Transformation3\x12\x1f\n\x13position_covariance\x18\x05 \x03(\x02\x42\x02\x10\x01\x12\x1f\n\x13\x61ttitude_covariance\x18\x06 \x03(\x02\x42\x02\x10\x01\x12;\n\x10pose_for_sensing\x18\x07 \x01(\x0b\x32!.deeproute.common.Transformation3\x12\x15\n\roverlap_ratio\x18\x08 \x01(\x01\x12\x15\n\ris_degenerate\x18\t \x01(\x08\x12\x33\n\x08map_pose\x18\n \x01(\x0b\x32!.deeproute.common.Transformation3\x12\x39\n\x0ereference_pose\x18\x0b \x01(\x0b\x32!.deeproute.common.Transformation3\x12\x1f\n\x17lidar_mapping_init_time\x18\x0c \x01(\x03\x12\x1b\n\x13matching_mean_error\x18\r \x01(\x01\x12\x14\n\x0cis_converged\x18\x0e \x01(\x08\x12\x1d\n\x15is_available_for_odom\x18\x0f \x01(\x08\"g\n\x14KeyframeUpdateStatus\x12\x18\n\x10measurement_time\x18\x01 \x01(\x03\x12\x17\n\x0fupdate_keyframe\x18\x02 \x01(\x08\x12\x1c\n\x14update_keyframe_time\x18\x03 \x01(\x03\"\xf1\x01\n\x11MapMatchingStatus\x12\x18\n\x10measurement_time\x18\x01 \x01(\x03\x12M\n\x1emap_to_odometry_transformation\x18\x02 \x01(\x0b\x32!.deeproute.common.Transformation3B\x02\x18\x01\x12H\n\x1dmap_to_vehicle_transformation\x18\x03 \x01(\x0b\x32!.deeproute.common.Transformation3\x12\x13\n\x0b\x65go_lane_id\x18\x04 \x01(\x03\x12\x14\n\x0c\x65go_floor_id\x18\x05 \x01(\x03\"\xca\x01\n\x10LidarMappingInfo\x12\x18\n\x10measurement_time\x18\x01 \x01(\x03\x12\x31\n\tlocal_map\x18\x02 \x01(\x0b\x32\x1e.deeproute.drivers.PointCloud2\x12H\n\x1dtransformation_map_to_sensing\x18\x03 \x01(\x0b\x32!.deeproute.common.Transformation3\x12\x1f\n\x17lidar_mapping_init_time\x18\x04 \x01(\x03\"\xba\x03\n\x11GlobalRoutingInfo\x12\x18\n\x10measurement_time\x18\x01 \x01(\x03\x12.\n\x0bglobal_path\x18\x02 \x03(\x0b\x32\x19.deeproute.common.Point3D\x12\x1b\n\x13speed_limit_current\x18\x03 \x01(\x01\x12\x1e\n\x16route_remaining_length\x18\x04 \x01(\x01\x12\x34\n\x11\x64\x65stination_point\x18\x05 \x01(\x0b\x32\x19.deeproute.common.Point3D\x12@\n\x14target_parking_space\x18\x06 \x01(\x0b\x32\".deeproute.perception.ParkingSpace\x12I\n\x10map_trajectories\x18\x07 \x03(\x0b\x32/.deeproute.localization.havp_map.HAVPTrajectory\x12<\n\x11localization_pose\x18\x08 \x01(\x0b\x32!.deeproute.common.Transformation3\x12\x1d\n\x15next_gate_remaining_s\x18\t \x01(\x01*;\n\x0cOdometryMode\x12\x0c\n\x08ODOMETRY\x10\x01\x12\x07\n\x03LIO\x10\x02\x12\x14\n\x10MAP_REGISTRATION\x10\x03')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n1localization/localization_internal_messages.proto\x12\x1e\x64\x65\x65proute.localization.message\x1a\x15\x63ommon/geometry.proto\x1a\x19\x64rivers/pointcloud2.proto\"\x82\x04\n\x14LidarMatchingMessage\x12\x18\n\x10measurement_time\x18\x01 \x01(\x03\x12\x16\n\x0ereference_time\x18\x02 \x01(\x03\x12\x43\n\rodometry_mode\x18\x03 \x01(\x0e\x32,.deeproute.localization.message.OdometryMode\x12\x35\n\ndelta_pose\x18\x04 \x01(\x0b\x32!.deeproute.common.Transformation3\x12\x1f\n\x13position_covariance\x18\x05 \x03(\x02\x42\x02\x10\x01\x12\x1f\n\x13\x61ttitude_covariance\x18\x06 \x03(\x02\x42\x02\x10\x01\x12;\n\x10pose_for_sensing\x18\x07 \x01(\x0b\x32!.deeproute.common.Transformation3\x12\x15\n\roverlap_ratio\x18\x08 \x01(\x01\x12\x15\n\ris_degenerate\x18\t \x01(\x08\x12\x33\n\x08map_pose\x18\n \x01(\x0b\x32!.deeproute.common.Transformation3\x12\x39\n\x0ereference_pose\x18\x0b \x01(\x0b\x32!.deeproute.common.Transformation3\x12\x1f\n\x17lidar_mapping_init_time\x18\x0c \x01(\x03\"g\n\x14KeyframeUpdateStatus\x12\x18\n\x10measurement_time\x18\x01 \x01(\x03\x12\x17\n\x0fupdate_keyframe\x18\x02 \x01(\x08\x12\x1c\n\x14update_keyframe_time\x18\x03 \x01(\x03\"\xdb\x01\n\x11MapMatchingStatus\x12\x18\n\x10measurement_time\x18\x01 \x01(\x03\x12M\n\x1emap_to_odometry_transformation\x18\x02 \x01(\x0b\x32!.deeproute.common.Transformation3B\x02\x18\x01\x12H\n\x1dmap_to_vehicle_transformation\x18\x03 \x01(\x0b\x32!.deeproute.common.Transformation3\x12\x13\n\x0b\x65go_lane_id\x18\x04 \x01(\x03\"\xca\x01\n\x10LidarMappingInfo\x12\x18\n\x10measurement_time\x18\x01 \x01(\x03\x12\x31\n\tlocal_map\x18\x02 \x01(\x0b\x32\x1e.deeproute.drivers.PointCloud2\x12H\n\x1dtransformation_map_to_sensing\x18\x03 \x01(\x0b\x32!.deeproute.common.Transformation3\x12\x1f\n\x17lidar_mapping_init_time\x18\x04 \x01(\x03*;\n\x0cOdometryMode\x12\x0c\n\x08ODOMETRY\x10\x01\x12\x07\n\x03LIO\x10\x02\x12\x14\n\x10MAP_REGISTRATION\x10\x03')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -41,16 +39,14 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_LIDARMATCHINGMESSAGE'].fields_by_name['attitude_covariance']._serialized_options = b'\020\001'
   _globals['_MAPMATCHINGSTATUS'].fields_by_name['map_to_odometry_transformation']._loaded_options = None
   _globals['_MAPMATCHINGSTATUS'].fields_by_name['map_to_odometry_transformation']._serialized_options = b'\030\001'
-  _globals['_ODOMETRYMODE']._serialized_start=1809
-  _globals['_ODOMETRYMODE']._serialized_end=1868
-  _globals['_LIDARMATCHINGMESSAGE']._serialized_start=212
-  _globals['_LIDARMATCHINGMESSAGE']._serialized_end=808
-  _globals['_KEYFRAMEUPDATESTATUS']._serialized_start=810
-  _globals['_KEYFRAMEUPDATESTATUS']._serialized_end=913
-  _globals['_MAPMATCHINGSTATUS']._serialized_start=916
-  _globals['_MAPMATCHINGSTATUS']._serialized_end=1157
-  _globals['_LIDARMAPPINGINFO']._serialized_start=1160
-  _globals['_LIDARMAPPINGINFO']._serialized_end=1362
-  _globals['_GLOBALROUTINGINFO']._serialized_start=1365
-  _globals['_GLOBALROUTINGINFO']._serialized_end=1807
+  _globals['_ODOMETRYMODE']._serialized_start=1184
+  _globals['_ODOMETRYMODE']._serialized_end=1243
+  _globals['_LIDARMATCHINGMESSAGE']._serialized_start=136
+  _globals['_LIDARMATCHINGMESSAGE']._serialized_end=650
+  _globals['_KEYFRAMEUPDATESTATUS']._serialized_start=652
+  _globals['_KEYFRAMEUPDATESTATUS']._serialized_end=755
+  _globals['_MAPMATCHINGSTATUS']._serialized_start=758
+  _globals['_MAPMATCHINGSTATUS']._serialized_end=977
+  _globals['_LIDARMAPPINGINFO']._serialized_start=980
+  _globals['_LIDARMAPPINGINFO']._serialized_end=1182
 # @@protoc_insertion_point(module_scope)

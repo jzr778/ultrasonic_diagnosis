@@ -24,19 +24,27 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1b\x63ommon/onboard_status.proto\x12\x10\x64\x65\x65proute.common\"r\n\x06Syslog\x12\x13\n\x0b\x64\x65\x62ug_level\x18\x01 \x01(\t\x12\x13\n\x0bmodule_name\x18\x02 \x01(\t\x12\x10\n\x08\x65vent_id\x18\x03 \x01(\x05\x12\x12\n\nevent_name\x18\x04 \x01(\t\x12\x0b\n\x03msg\x18\x05 \x01(\t\x12\x0b\n\x03\x63md\x18\x06 \x01(\t\"W\n\x0cNotification\x12\x13\n\x0b\x64\x65\x62ug_level\x18\x01 \x01(\t\x12\x13\n\x0bmodule_name\x18\x02 \x01(\t\x12\x0b\n\x03msg\x18\x03 \x01(\t\x12\x10\n\x08\x65vent_id\x18\x04 \x01(\x05\"9\n\tCarStatus\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x13\n\x0bmodule_name\x18\x02 \x01(\t\x12\x0b\n\x03msg\x18\x03 \x01(\t\"V\n\x0cOperationlog\x12\x10\n\x08\x65vent_id\x18\x01 \x01(\x05\x12\x13\n\x0bmodule_name\x18\x02 \x01(\t\x12\x0b\n\x03msg\x18\x03 \x01(\t\x12\x12\n\nevent_name\x18\x04 \x01(\t')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1b\x63ommon/onboard_status.proto\x12\x10\x64\x65\x65proute.common\"\x8e\x01\n\x08NodeInfo\x12\x11\n\tnode_name\x18\x01 \x01(\t\x12\x13\n\x0bnode_status\x18\x02 \x01(\x05\x12\x10\n\x08node_log\x18\x03 \x01(\t\x12\x1a\n\x12is_first_dead_node\x18\x04 \x01(\x08\x12,\n\x06status\x18\x05 \x01(\x0e\x32\x1c.deeproute.common.NodeStatus\"@\n\x0fStarterNodeInfo\x12-\n\tnode_info\x18\x01 \x03(\x0b\x32\x1a.deeproute.common.NodeInfo\"\x80\x01\n\x14\x44\x65mFunctionGroupInfo\x12-\n\tnode_info\x18\x01 \x03(\x0b\x32\x1a.deeproute.common.NodeInfo\x12\x1b\n\x13\x66unction_group_name\x18\x02 \x01(\t\x12\x1c\n\x14\x66unction_group_state\x18\x03 \x01(\t\"r\n\x06Syslog\x12\x13\n\x0b\x64\x65\x62ug_level\x18\x01 \x01(\t\x12\x13\n\x0bmodule_name\x18\x02 \x01(\t\x12\x10\n\x08\x65vent_id\x18\x03 \x01(\x05\x12\x12\n\nevent_name\x18\x04 \x01(\t\x12\x0b\n\x03msg\x18\x05 \x01(\t\x12\x0b\n\x03\x63md\x18\x06 \x01(\t\"W\n\x0cNotification\x12\x13\n\x0b\x64\x65\x62ug_level\x18\x01 \x01(\t\x12\x13\n\x0bmodule_name\x18\x02 \x01(\t\x12\x0b\n\x03msg\x18\x03 \x01(\t\x12\x10\n\x08\x65vent_id\x18\x04 \x01(\x05\"9\n\tCarStatus\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x13\n\x0bmodule_name\x18\x02 \x01(\t\x12\x0b\n\x03msg\x18\x03 \x01(\t\"V\n\x0cOperationlog\x12\x10\n\x08\x65vent_id\x18\x01 \x01(\x05\x12\x13\n\x0bmodule_name\x18\x02 \x01(\t\x12\x0b\n\x03msg\x18\x03 \x01(\t\x12\x12\n\nevent_name\x18\x04 \x01(\t*\x95\x01\n\nNodeStatus\x12\x17\n\x13PARSE_CONFIG_FAILED\x10\x00\x12\x14\n\x10PREPARE_TO_START\x10\x01\x12\x10\n\x0cSTART_FAILED\x10\x02\x12\x0b\n\x07RUNNING\x10\x03\x12\x11\n\rABNORMAL_EXIT\x10\x04\x12\x15\n\x11\x43LOSED_BY_STARTER\x10\x05\x12\x0f\n\x0bNORMAL_EXIT\x10\x06')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'common.onboard_status_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_SYSLOG']._serialized_start=49
-  _globals['_SYSLOG']._serialized_end=163
-  _globals['_NOTIFICATION']._serialized_start=165
-  _globals['_NOTIFICATION']._serialized_end=252
-  _globals['_CARSTATUS']._serialized_start=254
-  _globals['_CARSTATUS']._serialized_end=311
-  _globals['_OPERATIONLOG']._serialized_start=313
-  _globals['_OPERATIONLOG']._serialized_end=399
+  _globals['_NODESTATUS']._serialized_start=744
+  _globals['_NODESTATUS']._serialized_end=893
+  _globals['_NODEINFO']._serialized_start=50
+  _globals['_NODEINFO']._serialized_end=192
+  _globals['_STARTERNODEINFO']._serialized_start=194
+  _globals['_STARTERNODEINFO']._serialized_end=258
+  _globals['_DEMFUNCTIONGROUPINFO']._serialized_start=261
+  _globals['_DEMFUNCTIONGROUPINFO']._serialized_end=389
+  _globals['_SYSLOG']._serialized_start=391
+  _globals['_SYSLOG']._serialized_end=505
+  _globals['_NOTIFICATION']._serialized_start=507
+  _globals['_NOTIFICATION']._serialized_end=594
+  _globals['_CARSTATUS']._serialized_start=596
+  _globals['_CARSTATUS']._serialized_end=653
+  _globals['_OPERATIONLOG']._serialized_start=655
+  _globals['_OPERATIONLOG']._serialized_end=741
 # @@protoc_insertion_point(module_scope)

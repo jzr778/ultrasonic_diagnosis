@@ -1,0 +1,23 @@
+syntax = "proto2";
+
+package deeproute.hdmap;
+
+import "common/geometry.proto";
+import "semantic_map/map_overlap.proto";
+// A junction is the junction at-grade of two or more roads crossing.
+message Junction {
+  optional int32 id = 1;
+
+  optional common.Polygon polygon = 2;
+  // Currently unused, use lane_id crosswalk_id stopline_id to represents overlap_id
+  repeated int32 overlap_id = 3;
+
+  repeated int32 lane_id = 4 [packed = true];
+  repeated int32 crosswalk_id = 5 [packed = true];
+  repeated int32 stopline_id = 6 [packed = true];
+
+  optional double cost = 7; // Currently unused, only use 'cost' in Lane.
+  repeated int32 layers = 8;
+
+  repeated Overlap overlaps = 9;
+}

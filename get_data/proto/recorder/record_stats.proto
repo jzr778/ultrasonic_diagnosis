@@ -1,0 +1,74 @@
+syntax = "proto2";
+
+package deeproute.recorder;
+
+message BagInfo {
+  /**
+   @~english the filename of the bag
+   @~chinese bag文件路径
+   **/
+  optional string path = 1;
+
+  /**
+   @~english the start time of the bag, in nanoseconds
+   @~chinese bag开始时间，单位是ns
+   **/
+  optional uint64 start_time = 2;
+
+  /**
+   @~english the end time of the bag, in nanoseconds
+   @~chinese bag结束时间，单位是ns
+   **/
+  optional uint64 end_time = 3;
+}
+
+message RecordStats {
+  /**
+   @~english a list of files we have written to
+   @~chinese 写入过的所有文件路径
+   **/
+  repeated string output_paths = 1;
+
+  /**
+   @~english the earliest msg time, in nanoseconds
+   @~chinese 最早的消息时间，单位是ns
+   **/
+  optional uint64 min_msg_time = 2;
+
+  /**
+   @~english the latest msg time, in nanoseconds
+   @~chinese 最晚的消息时间，单位是ns
+   **/
+  optional uint64 max_msg_time = 3;
+
+  /**
+   @~english count of all msgs written
+   @~chinese 总写入消息数目
+   **/
+  optional uint64 msg_count = 4;
+
+  /**
+   @~english count of rosbag chunks, not always reliable
+   @~chinese rosbag格式的chunk数量，不总是可靠的
+   **/
+  optional uint64 chunk_count = 5;
+
+  /**
+   @~english count of msgs dropped without writing
+   @~chinese 被丢弃没有写入的消息总数
+   **/
+  optional uint64 dropped_count = 6;
+
+  /**
+   @~english information of each bag, used to generate bags_info.json
+   @~chinese 每个bag的信息，可用于生成bags_info.json
+   **/
+  repeated BagInfo bags_info = 7;
+
+  /**
+   @~english count of msgs pushed into queue
+   @~chinese 成功入队的消息总数
+   **/
+  optional uint64 queued_count = 8;
+}
+

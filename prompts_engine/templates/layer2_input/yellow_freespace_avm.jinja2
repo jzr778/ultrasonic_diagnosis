@@ -5,7 +5,7 @@
 - 第 {{ loop.index }} 条：freespaceType = **{{ item.freespaceType }}**（{{ item.freespaceTypeZh }}），质心 [u, v] = **[{{ item.centroid[0] }}, {{ item.centroid[1] }}]**
 {% endfor %}
 
-请注意：根据黄色质心像素坐标在图像中找到对应的黄线，再结合 freespaceType 判断障碍物的类型，但是必须根据真实图像实体进行判断
+请注意：根据黄色质心像素坐标在图像中找到对应的黄线，再结合 freespaceType 判断障碍物的类型；**最终要以 AVM（及必要时鱼眼）中可见的真实相机障碍实体为准**，黄线用于辅助对齐该实体，而非替代对实物的辨认。
 
 {% else %}
 本帧未附带黄色障碍结构化列表（可能无相机障碍通过距离筛选）。请直接依据图像中的黄色边缘线分析。

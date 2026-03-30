@@ -1,0 +1,18 @@
+syntax = "proto2";
+
+package dr.safety;
+
+import "common/module_event.proto";
+
+message RealTimeEvent {
+  optional common.Module module = 1;
+  optional common.Event event = 2;
+  oneof info {
+    string json_info = 5;
+    string serialized_proto_info = 6;
+  }
+}
+
+message SafetyRealTimeEvents { //topic: /safety/real_time_events
+  repeated RealTimeEvent events = 1;
+}

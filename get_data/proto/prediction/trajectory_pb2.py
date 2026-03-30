@@ -24,15 +24,19 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1bprediction/trajectory.proto\x12\x14\x64\x65\x65proute.prediction\"\x82\x01\n\nLocusPoint\x12\t\n\x01x\x18\x01 \x01(\x01\x12\t\n\x01y\x18\x02 \x01(\x01\x12\t\n\x01z\x18\x03 \x01(\x01\x12\t\n\x01v\x18\x04 \x01(\x01\x12\t\n\x01\x61\x18\x05 \x01(\x01\x12\x15\n\rrelative_time\x18\x06 \x01(\x03\x12\x0f\n\x07heading\x18\x07 \x01(\x01\x12\x15\n\raccumulated_s\x18\x08 \x01(\x01\"]\n\nTrajectory\x12\x13\n\x0bprobability\x18\x01 \x01(\x01\x12:\n\x10trajectory_point\x18\x02 \x03(\x0b\x32 .deeproute.prediction.LocusPoint')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1bprediction/trajectory.proto\x12\x14\x64\x65\x65proute.prediction\"k\n\nLocusPoint\x12\t\n\x01x\x18\x01 \x01(\x01\x12\t\n\x01y\x18\x02 \x01(\x01\x12\t\n\x01z\x18\x03 \x01(\x01\x12\t\n\x01v\x18\x04 \x01(\x01\x12\t\n\x01\x61\x18\x05 \x01(\x01\x12\x15\n\rrelative_time\x18\x06 \x01(\x03\x12\x0f\n\x07heading\x18\x07 \x01(\x01\"]\n\nTrajectory\x12\x13\n\x0bprobability\x18\x01 \x01(\x01\x12:\n\x10trajectory_point\x18\x02 \x03(\x0b\x32 .deeproute.prediction.LocusPoint\"l\n\x08SpeedSeq\x12\x14\n\x0ctimestamp_us\x18\x01 \x01(\x03\x12\x13\n\x0bprobability\x18\x02 \x01(\x01\x12\x35\n\x0bspeed_point\x18\x03 \x03(\x0b\x32 .deeproute.prediction.SpeedPoint\".\n\nSpeedPoint\x12\t\n\x01v\x18\x01 \x01(\x01\x12\x15\n\rrelative_time\x18\x02 \x01(\x03')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'prediction.trajectory_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_LOCUSPOINT']._serialized_start=54
-  _globals['_LOCUSPOINT']._serialized_end=184
-  _globals['_TRAJECTORY']._serialized_start=186
-  _globals['_TRAJECTORY']._serialized_end=279
+  _globals['_LOCUSPOINT']._serialized_start=53
+  _globals['_LOCUSPOINT']._serialized_end=160
+  _globals['_TRAJECTORY']._serialized_start=162
+  _globals['_TRAJECTORY']._serialized_end=255
+  _globals['_SPEEDSEQ']._serialized_start=257
+  _globals['_SPEEDSEQ']._serialized_end=365
+  _globals['_SPEEDPOINT']._serialized_start=367
+  _globals['_SPEEDPOINT']._serialized_end=413
 # @@protoc_insertion_point(module_scope)

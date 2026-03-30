@@ -23,24 +23,28 @@ _sym_db = _symbol_database.Default()
 
 
 from common import geometry_pb2 as common_dot_geometry__pb2
-from drapi import navigation_pb2 as drapi_dot_navigation__pb2
+from drapi import gwm_navigation_pb2 as drapi_dot_gwm__navigation__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n#map/amap_drive_route_planning.proto\x12\rdeeproute.map\x1a\x15\x63ommon/geometry.proto\x1a\x16\x64rapi/navigation.proto\"\xab\x02\n\x08\x41mapLink\x12\n\n\x02id\x18\x64 \x01(\x05\x12\x30\n\x0cpolyline_llh\x18\x01 \x03(\x0b\x32\x1a.deeproute.common.PointLLH\x12\x13\n\x0blink_length\x18\x02 \x01(\x05\x12\x11\n\tlink_type\x18\x03 \x01(\x05\x12\x12\n\nroad_class\x18\x04 \x01(\x05\x12\x11\n\troad_name\x18\x05 \x01(\t\x12\x11\n\troad_type\x18\x06 \x01(\x05\x12\x15\n\rtraffic_light\x18\x07 \x01(\x08\x12.\n\x0bmain_action\x18\x08 \x01(\x0e\x32\x19.dr.navigation.MainAction\x12\x38\n\x10\x61ssistant_action\x18\t \x01(\x0e\x32\x1e.dr.navigation.AssistantAction\"\xc0\x02\n\x08\x41mapStep\x12\n\n\x02id\x18\x64 \x01(\x05\x12\x13\n\x0binstruction\x18\x01 \x01(\t\x12\x13\n\x0borientation\x18\x02 \x01(\t\x12\x11\n\troad_name\x18\x03 \x01(\t\x12\x15\n\rstep_distance\x18\x04 \x01(\t\x12\x10\n\x08polyline\x18\x05 \x01(\t\x12\x30\n\x0cpolyline_llh\x18\x06 \x03(\x0b\x32\x1a.deeproute.common.PointLLH\x12&\n\x05links\x18\x07 \x03(\x0b\x32\x17.deeproute.map.AmapLink\x12.\n\x0bmain_action\x18\x08 \x01(\x0e\x32\x19.dr.navigation.MainAction\x12\x38\n\x10\x61ssistant_action\x18\t \x01(\x0e\x32\x1e.dr.navigation.AssistantAction\"~\n\x08\x41mapPath\x12\x0f\n\x07path_id\x18\x64 \x01(\x05\x12\x12\n\npath_id_64\x18\x65 \x01(\x04\x12\x10\n\x08\x64istance\x18\x01 \x01(\t\x12\x13\n\x0brestriction\x18\x02 \x01(\t\x12&\n\x05steps\x18\x03 \x03(\x0b\x32\x17.deeproute.map.AmapStep\"k\n\tAmapRoute\x12\x0e\n\x06origin\x18\x01 \x01(\t\x12\x13\n\x0b\x64\x65stination\x18\x02 \x01(\t\x12\x11\n\ttaxi_cost\x18\x03 \x01(\t\x12&\n\x05paths\x18\x04 \x03(\x0b\x32\x17.deeproute.map.AmapPath\"\x88\x01\n\x1e\x41mapDriveRoutePlanningResponse\x12\x0e\n\x06status\x18\x01 \x01(\t\x12\x0c\n\x04info\x18\x02 \x01(\t\x12\x10\n\x08infocode\x18\x03 \x01(\t\x12\r\n\x05\x63ount\x18\x04 \x01(\t\x12\'\n\x05route\x18\x05 \x01(\x0b\x32\x18.deeproute.map.AmapRoute')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n#map/amap_drive_route_planning.proto\x12\rdeeproute.map\x1a\x15\x63ommon/geometry.proto\x1a\x1a\x64rapi/gwm_navigation.proto\"\xb6\x03\n\x1d\x41mapDriveRoutePlanningRequest\x12\x0c\n\x03key\x18\x90N \x01(\t\x12*\n\x06origin\x18\x01 \x01(\x0b\x32\x1a.deeproute.common.PointLLH\x12/\n\x0b\x64\x65stination\x18\x02 \x01(\x0b\x32\x1a.deeproute.common.PointLLH\x12\x12\n\noriginType\x18\x03 \x01(\x05\x12\x10\n\x08strategy\x18\x04 \x01(\x05\x12-\n\twaypoints\x18\x05 \x03(\x0b\x32\x1a.deeproute.common.PointLLH\x12\x31\n\ravoidpolygons\x18\x06 \x03(\x0b\x32\x1a.deeproute.common.PointLLH\x12T\n\x0bshow_fileds\x18\x07 \x03(\x0e\x32?.deeproute.map.AmapDriveRoutePlanningRequest.ShowFieldsCondType\"L\n\x12ShowFieldsCondType\x12\x08\n\x04\x43OST\x10\x00\x12\x08\n\x04TMCS\x10\x01\x12\x08\n\x04NAVI\x10\x02\x12\n\n\x06\x43ITIES\x10\x03\x12\x0c\n\x08POLYLINE\x10\x04\"\xb3\x02\n\x08\x41mapLink\x12\n\n\x02id\x18\x64 \x01(\x05\x12\x30\n\x0cpolyline_llh\x18\x01 \x03(\x0b\x32\x1a.deeproute.common.PointLLH\x12\x13\n\x0blink_length\x18\x02 \x01(\x05\x12\x11\n\tlink_type\x18\x03 \x01(\x05\x12\x12\n\nroad_class\x18\x04 \x01(\x05\x12\x11\n\troad_name\x18\x05 \x01(\t\x12\x11\n\troad_type\x18\x06 \x01(\x05\x12\x15\n\rtraffic_light\x18\x07 \x01(\x08\x12\x32\n\x0bmain_action\x18\x08 \x01(\x0e\x32\x1d.dr.gwm.navigation.MainAction\x12<\n\x10\x61ssistant_action\x18\t \x01(\x0e\x32\".dr.gwm.navigation.AssistantAction\"\xc8\x02\n\x08\x41mapStep\x12\n\n\x02id\x18\x64 \x01(\x05\x12\x13\n\x0binstruction\x18\x01 \x01(\t\x12\x13\n\x0borientation\x18\x02 \x01(\t\x12\x11\n\troad_name\x18\x03 \x01(\t\x12\x15\n\rstep_distance\x18\x04 \x01(\t\x12\x10\n\x08polyline\x18\x05 \x01(\t\x12\x30\n\x0cpolyline_llh\x18\x06 \x03(\x0b\x32\x1a.deeproute.common.PointLLH\x12&\n\x05links\x18\x07 \x03(\x0b\x32\x17.deeproute.map.AmapLink\x12\x32\n\x0bmain_action\x18\x08 \x01(\x0e\x32\x1d.dr.gwm.navigation.MainAction\x12<\n\x10\x61ssistant_action\x18\t \x01(\x0e\x32\".dr.gwm.navigation.AssistantAction\"~\n\x08\x41mapPath\x12\x0f\n\x07path_id\x18\x64 \x01(\x05\x12\x12\n\npath_id_64\x18\x65 \x01(\x04\x12\x10\n\x08\x64istance\x18\x01 \x01(\t\x12\x13\n\x0brestriction\x18\x02 \x01(\t\x12&\n\x05steps\x18\x03 \x03(\x0b\x32\x17.deeproute.map.AmapStep\"k\n\tAmapRoute\x12\x0e\n\x06origin\x18\x01 \x01(\t\x12\x13\n\x0b\x64\x65stination\x18\x02 \x01(\t\x12\x11\n\ttaxi_cost\x18\x03 \x01(\t\x12&\n\x05paths\x18\x04 \x03(\x0b\x32\x17.deeproute.map.AmapPath\"\x88\x01\n\x1e\x41mapDriveRoutePlanningResponse\x12\x0e\n\x06status\x18\x01 \x01(\t\x12\x0c\n\x04info\x18\x02 \x01(\t\x12\x10\n\x08infocode\x18\x03 \x01(\t\x12\r\n\x05\x63ount\x18\x04 \x01(\t\x12\'\n\x05route\x18\x05 \x01(\x0b\x32\x18.deeproute.map.AmapRoute')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'map.amap_drive_route_planning_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_AMAPLINK']._serialized_start=102
-  _globals['_AMAPLINK']._serialized_end=401
-  _globals['_AMAPSTEP']._serialized_start=404
-  _globals['_AMAPSTEP']._serialized_end=724
-  _globals['_AMAPPATH']._serialized_start=726
-  _globals['_AMAPPATH']._serialized_end=852
-  _globals['_AMAPROUTE']._serialized_start=854
-  _globals['_AMAPROUTE']._serialized_end=961
-  _globals['_AMAPDRIVEROUTEPLANNINGRESPONSE']._serialized_start=964
-  _globals['_AMAPDRIVEROUTEPLANNINGRESPONSE']._serialized_end=1100
+  _globals['_AMAPDRIVEROUTEPLANNINGREQUEST']._serialized_start=106
+  _globals['_AMAPDRIVEROUTEPLANNINGREQUEST']._serialized_end=544
+  _globals['_AMAPDRIVEROUTEPLANNINGREQUEST_SHOWFIELDSCONDTYPE']._serialized_start=468
+  _globals['_AMAPDRIVEROUTEPLANNINGREQUEST_SHOWFIELDSCONDTYPE']._serialized_end=544
+  _globals['_AMAPLINK']._serialized_start=547
+  _globals['_AMAPLINK']._serialized_end=854
+  _globals['_AMAPSTEP']._serialized_start=857
+  _globals['_AMAPSTEP']._serialized_end=1185
+  _globals['_AMAPPATH']._serialized_start=1187
+  _globals['_AMAPPATH']._serialized_end=1313
+  _globals['_AMAPROUTE']._serialized_start=1315
+  _globals['_AMAPROUTE']._serialized_end=1422
+  _globals['_AMAPDRIVEROUTEPLANNINGRESPONSE']._serialized_start=1425
+  _globals['_AMAPDRIVEROUTEPLANNINGRESPONSE']._serialized_end=1561
 # @@protoc_insertion_point(module_scope)

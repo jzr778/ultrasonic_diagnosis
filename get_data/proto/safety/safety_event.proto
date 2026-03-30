@@ -1,0 +1,96 @@
+syntax = "proto2";
+
+package dr.safety;
+
+import "common/module_event.proto";
+import "drapi/operation_status.proto";
+import "vhr/event_extra_info.proto";
+import "safety/vehicle_info.proto";
+
+message Modules {
+  repeated common.Module modules = 1;
+}
+
+message Events {
+  repeated common.Event events = 2;
+}
+
+enum EventLevel {
+  DEBUG = 0;
+  INFO = 1;
+  WARN = 2;
+  ERROR = 3;
+  FATAL = 4;
+}
+
+enum EventType {
+  ET_ONE_SHOT = 0;
+  ET_BEGIN = 1;
+  ET_END = 2;
+  ET_ORIGINAL = 3;
+}
+
+enum PlatForm {
+  SOC = 0;
+  MCU = 1;
+}
+
+message VersionHead {
+  optional string log_version = 1;
+  optional string log_sub_version = 2;
+  optional string product_name = 3;
+  optional string product_version = 4;
+  optional string product_cat = 5;
+  optional string s1_code = 6;
+  optional string s2_code = 7; 
+}
+
+message SafetyVhrHead {
+  optional string trip_name = 1; // 关联 trip
+  optional string car_id = 2;
+  optional string driver_version = 3; // driver 版本信息
+  optional string oem_car_id = 4; // 外部厂商的 car_id
+}
+
+message ControlMsg {
+  optional VersionHead version_head = 1;
+}
+
+message SafetyEvent {
+  optional common.Module module = 1;
+  optional common.Event event = 2;
+  optional uint64 timestamp = 3;  // timestamp for nano-second
+  optional int32 sequence_num = 4;
+  oneof info {
+    string json_info = 5;
+    string serialized_proto_info = 6;
+  }
+
+  optional string alert_info = 7;
+  reserved 8 to 9;
+  optional EventType type = 10;
+  optional uint32 count = 11;
+  optional uint32 duration = 12; // ms
+  optional EventLevel level = 13;
+  optional PlatForm platform = 14 [default = SOC];
+  optional dr.operationstatus.Feature task = 15;
+  optional dr.vhr.EventExtraInfo extra_info = 16;
+  optional dr.safety.vehicle_info.DrivingMode mode = 17 [default = MODE_UNKNOWN]; //车辆驾驶模式
+
+  optional ControlMsg ctr_msg = 100 [deprecated = true];
+}
+
+message SafetyLogMetrics {
+  optional uint32 interval = 1; // 时间间隔 sec
+  optional uint32 log_count = 2; // 新增日志条数
+  optional uint64 used_storage = 3; // 存储空间 bytes
+}
+
+message SafetyUploadMetrics {
+  optional uint32 log_count = 1; // 上传日志数量
+  optional uint32 upload_time = 2; //  上传使用时间 ms
+  optional uint64 file_size= 3; // 上传文件大小 bytes
+  optional bool upload_status = 4; // 上传 true=成功,false=失败
+  optional double speed = 5; // 上传速率 b/s
+  optional string msg = 6; // 错误信息
+}

@@ -25,33 +25,19 @@ _sym_db = _symbol_database.Default()
 from common import header_pb2 as common_dot_header__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x13\x65sa/esa_state.proto\x12\rdeeproute.esa\x1a\x13\x63ommon/header.proto\"\x8e\x08\n\tStateInfo\x12*\n\tesa_state\x18\x01 \x01(\x0e\x32\x17.deeproute.esa.ESAState\x12;\n\x12\x65sa_avoidance_side\x18\x02 \x01(\x0e\x32\x1f.deeproute.esa.ESAAvoidanceSide\x12*\n\taes_state\x18\x03 \x01(\x0e\x32\x17.deeproute.esa.AESState\x12;\n\x12\x61\x65s_avoidance_side\x18\x04 \x01(\x0e\x32\x1f.deeproute.esa.ESAAvoidanceSide\x12\'\n\telk_state\x18\x05 \x01(\x0e\x32\x14.deeproute.esa.State\x12;\n\x12\x65lk_avoidance_side\x18\x06 \x01(\x0e\x32\x1f.deeproute.esa.ESAAvoidanceSide\x12?\n\x14\x65lk_request_classify\x18\x07 \x01(\x0e\x32!.deeproute.esa.ElkRequestClassify\x12\x37\n\x10\x65lk_finish_state\x18\x08 \x01(\x0e\x32\x1d.deeproute.esa.ElkFinishState\x12\'\n\tlka_state\x18\t \x01(\x0e\x32\x14.deeproute.esa.State\x12;\n\x12lka_avoidance_side\x18\n \x01(\x0e\x32\x1f.deeproute.esa.ESAAvoidanceSide\x12?\n\x14lka_request_classify\x18\x0b \x01(\x0e\x32!.deeproute.esa.LkaRequestClassify\x12\x37\n\x10lka_finish_state\x18\x0c \x01(\x0e\x32\x1d.deeproute.esa.LkaFinishState\x12\'\n\tldw_state\x18\r \x01(\x0e\x32\x14.deeproute.esa.State\x12;\n\x12ldw_avoidance_side\x18\x0e \x01(\x0e\x32\x1f.deeproute.esa.ESAAvoidanceSide\x12\'\n\tlcp_state\x18\x0f \x01(\x0e\x32\x14.deeproute.esa.State\x12;\n\x12lcp_avoidance_side\x18\x10 \x01(\x0e\x32\x1f.deeproute.esa.ESAAvoidanceSide\x12\'\n\tnas_state\x18\x11 \x01(\x0e\x32\x14.deeproute.esa.State\x12;\n\x12nas_avoidance_side\x18\x12 \x01(\x0e\x32\x1f.deeproute.esa.ESAAvoidanceSide\x12=\n\x14lss_driving_on_lines\x18\x13 \x03(\x0e\x32\x1f.deeproute.esa.LssDrivingOnLine\"\x94\x01\n\x0cStateWrapper\x12(\n\x06header\x18\x01 \x01(\x0b\x32\x18.deeproute.common.Header\x12,\n\nstate_info\x18\x02 \x01(\x0b\x32\x18.deeproute.esa.StateInfo\x12\x12\n\nblc_msg_id\x18\x03 \x01(\x05\x12\x18\n\x10time_measurement\x18\x04 \x01(\x03*Z\n\x08\x45SAState\x12\x0b\n\x07\x45SA_OFF\x10\x00\x12\x0f\n\x0b\x45SA_FAILURE\x10\x01\x12\x0f\n\x0b\x45SA_PASSIVE\x10\x02\x12\x0f\n\x0b\x45SA_STANDBY\x10\x03\x12\x0e\n\nESA_ACTIVE\x10\x04*Z\n\x08\x41\x45SState\x12\x0b\n\x07\x41\x45S_OFF\x10\x00\x12\x0f\n\x0b\x41\x45S_FAILURE\x10\x01\x12\x0f\n\x0b\x41\x45S_PASSIVE\x10\x02\x12\x0f\n\x0b\x41\x45S_STANDBY\x10\x03\x12\x0e\n\nAES_ACTIVE\x10\x04*C\n\x05State\x12\x07\n\x03OFF\x10\x00\x12\x0b\n\x07\x46\x41ILURE\x10\x01\x12\x0b\n\x07PASSIVE\x10\x02\x12\x0b\n\x07STANDBY\x10\x03\x12\n\n\x06\x41\x43TIVE\x10\x04*B\n\x10\x45SAAvoidanceSide\x12\x0f\n\x0bUNKOWN_SIDE\x10\x00\x12\r\n\tLEFT_SIDE\x10\x01\x12\x0e\n\nRIGHT_SIDE\x10\x02*T\n\x12LkaRequestClassify\x12\x17\n\x13LKA_REQUEST_UNKNOWN\x10\x00\x12\x11\n\rLKA_REQUEST_S\x10\x01\x12\x12\n\x0eLKA_REQUEST_RE\x10\x02*\x87\x01\n\x0eLkaFinishState\x12\x16\n\x12LKA_FINISH_UNKNOWN\x10\x00\x12\x18\n\x14LKA_FINISH_SUCCEEDED\x10\x01\x12\x15\n\x11LKA_FINISH_FAILED\x10\x02\x12,\n(LKA_FINISH_BEYOND_LATE_INTERVENTION_LINE\x10\x03*\xa5\x01\n\x12\x45lkRequestClassify\x12\x17\n\x13\x45LK_REQUEST_UNKNOWN\x10\x00\x12\x11\n\rELK_REQUEST_S\x10\x01\x12\x12\n\x0e\x45LK_REQUEST_RE\x10\x02\x12\x11\n\rELK_REQUEST_O\x10\x03\x12\x13\n\x0f\x45LK_REQUEST_ICS\x10\x04\x12\x12\n\x0e\x45LK_REQUEST_GO\x10\x05\x12\x13\n\x0f\x45LK_REQUEST_VRU\x10\x06*Y\n\x0e\x45lkFinishState\x12\x16\n\x12\x45LK_FINISH_UNKNOWN\x10\x00\x12\x18\n\x14\x45LK_FINISH_SUCCEEDED\x10\x01\x12\x15\n\x11\x45LK_FINISH_FAILED\x10\x02*z\n\x10LssDrivingOnLine\x12\x1b\n\x17UNKNOWN_DRIVING_ON_LINE\x10\x00\x12\x17\n\x13LDW_DRIVING_ON_LINE\x10\x01\x12\x17\n\x13LKA_DRIVING_ON_LINE\x10\x02\x12\x17\n\x13\x45LK_DRIVING_ON_LINE\x10\x03')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x13\x65sa/esa_state.proto\x12\rdeeproute.esa\x1a\x13\x63ommon/header.proto\"t\n\tStateInfo\x12*\n\tesa_state\x18\x01 \x01(\x0e\x32\x17.deeproute.esa.ESAState\x12;\n\x12\x65sa_avoidance_side\x18\x02 \x01(\x0e\x32\x1f.deeproute.esa.ESAAvoidanceSide\"z\n\x0cStateWrapper\x12(\n\x06header\x18\x01 \x01(\x0b\x32\x18.deeproute.common.Header\x12,\n\nstate_info\x18\x02 \x01(\x0b\x32\x18.deeproute.esa.StateInfo\x12\x12\n\nblc_msg_id\x18\x03 \x01(\x05*Z\n\x08\x45SAState\x12\x0b\n\x07\x45SA_OFF\x10\x00\x12\x0f\n\x0b\x45SA_FAILURE\x10\x01\x12\x0f\n\x0b\x45SA_PASSIVE\x10\x02\x12\x0f\n\x0b\x45SA_STANDBY\x10\x03\x12\x0e\n\nESA_ACTIVE\x10\x04*B\n\x10\x45SAAvoidanceSide\x12\x0f\n\x0bUNKOWN_SIDE\x10\x00\x12\r\n\tLEFT_SIDE\x10\x01\x12\x0e\n\nRIGHT_SIDE\x10\x02')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'esa.esa_state_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_ESASTATE']._serialized_start=1251
-  _globals['_ESASTATE']._serialized_end=1341
-  _globals['_AESSTATE']._serialized_start=1343
-  _globals['_AESSTATE']._serialized_end=1433
-  _globals['_STATE']._serialized_start=1435
-  _globals['_STATE']._serialized_end=1502
-  _globals['_ESAAVOIDANCESIDE']._serialized_start=1504
-  _globals['_ESAAVOIDANCESIDE']._serialized_end=1570
-  _globals['_LKAREQUESTCLASSIFY']._serialized_start=1572
-  _globals['_LKAREQUESTCLASSIFY']._serialized_end=1656
-  _globals['_LKAFINISHSTATE']._serialized_start=1659
-  _globals['_LKAFINISHSTATE']._serialized_end=1794
-  _globals['_ELKREQUESTCLASSIFY']._serialized_start=1797
-  _globals['_ELKREQUESTCLASSIFY']._serialized_end=1962
-  _globals['_ELKFINISHSTATE']._serialized_start=1964
-  _globals['_ELKFINISHSTATE']._serialized_end=2053
-  _globals['_LSSDRIVINGONLINE']._serialized_start=2055
-  _globals['_LSSDRIVINGONLINE']._serialized_end=2177
-  _globals['_STATEINFO']._serialized_start=60
-  _globals['_STATEINFO']._serialized_end=1098
-  _globals['_STATEWRAPPER']._serialized_start=1101
-  _globals['_STATEWRAPPER']._serialized_end=1249
+  _globals['_ESASTATE']._serialized_start=301
+  _globals['_ESASTATE']._serialized_end=391
+  _globals['_ESAAVOIDANCESIDE']._serialized_start=393
+  _globals['_ESAAVOIDANCESIDE']._serialized_end=459
+  _globals['_STATEINFO']._serialized_start=59
+  _globals['_STATEINFO']._serialized_end=175
+  _globals['_STATEWRAPPER']._serialized_start=177
+  _globals['_STATEWRAPPER']._serialized_end=299
 # @@protoc_insertion_point(module_scope)

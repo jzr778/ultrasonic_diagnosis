@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package deeproute.odd;
+
+//单个NOH不可行驶路段的起始和结束step link index
+message ODDSection {
+  int32 step_begin = 1;
+  int32 step_end = 2;
+  int32 link_begin = 3;
+  int32 link_end = 4;
+  int32 pnt_begin = 5;
+  int32 pnt_end = 6;
+}
+
+//一条路线上的ODD匹配信息
+message ODDPathInfo {
+  int32 path_id = 1;
+  int32 match_status = 2;  //匹配状态，0 成功， 其他 不成功
+  repeated ODDSection odd_sections = 3;
+}
+
+message ODDMatchResult {
+  repeated ODDPathInfo odd_path_infos = 1;  // 一共N条路线的匹配结果
+}

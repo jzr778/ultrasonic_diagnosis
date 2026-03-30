@@ -1,0 +1,53 @@
+syntax = "proto2";
+
+package deeproute.map;
+
+import "common/geometry.proto";
+
+message IVIAmapLink {
+  optional int32 formway = 1;
+  optional int32 len = 2;
+  optional int32 link_type = 3;
+  optional int32 pnt_beg_idx = 4;
+  optional int32 pnt_cnt = 5;
+  optional string road_name = 6;
+  optional int32 road_class = 7;
+}
+
+message IVIAmapSegment {
+  optional int32 link_beg_idx = 1;
+  optional int32 link_cnt = 2;
+  optional int32 main_action = 3;
+  optional string road_board_name = 4;
+}
+
+message IVIAmapRouteData {
+  optional int32 path_id = 1;
+
+  optional int32 link_cnt = 2;
+  repeated IVIAmapLink links = 3;
+
+  optional int32 pnt_cnt = 4;
+  repeated deeproute.common.Point3D pnts = 5;
+
+  optional int32 segment_cnt = 6;
+  repeated IVIAmapSegment segments = 7;
+}
+
+message IVIAmapRequestRoute {
+  optional int32 navi_path_id = 1;
+  optional IVIAmapRouteData route_data = 2;
+  optional string route_name = 3;
+}
+
+message IVIAmapSelectedNaviPath {
+  optional int32 path_id = 1;
+  optional bool valid = 2;
+}
+
+message IVIAmapRequestResult {
+  optional int32 mode = 1;
+  repeated IVIAmapRequestRoute request_route = 2;
+  optional int32 request_seq = 3;
+  optional IVIAmapSelectedNaviPath selected_navi_path = 4;
+}

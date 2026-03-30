@@ -1,0 +1,24 @@
+syntax = "proto2";
+
+package deeproute.perception;
+
+import "common/geometry.proto";
+
+message NnLayer {
+    // one nn layer
+    optional string name = 1;
+    repeated int32 shape = 2;
+    optional bytes nn_data = 5; // on cpu
+}
+
+message NnFrame {
+    // camera timestamp
+    optional int64 timestamp = 1;
+    repeated NnLayer nn = 3;
+
+    // camera pos global
+    // translation: x y z
+    optional common.Point3D position = 4;
+    // Roll Pitch Yaw
+    optional common.Point3D roll_pitch_yaw = 5;
+}

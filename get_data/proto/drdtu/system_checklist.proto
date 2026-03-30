@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package deeproute.dtu;
+
+import "common/module_status.proto";
+import "common/error_code.proto";
+
+enum CheckStatus {
+  CHECK_STATUS_NOT_SET = 0;
+  NORMAL_STATUS = 1;
+  ABNORMAL_STATUS = 2;
+}
+
+message ModuleCheckList {
+  repeated deeproute.proto.MODULE modules = 1;
+}
+
+message ModuleCheckStatus {
+  deeproute.proto.MODULE module = 1; 
+  CheckStatus check_result = 2;
+  int64 init_timestamp = 3;
+  int64 act_timestamp = 4;
+  deeproute.proto.ModuleStatus cur_status = 5;
+}
+
+message ModuleCheckListStatus {
+  CheckStatus check_result = 1;
+  repeated ModuleCheckStatus module_check_status = 2;  
+}
+
+message SystemCheckListCMD {// send SystemCheckListCMD message in '/common/system_checklist_cmd' topic 
+  string id = 1;
+  deeproute.proto.MODULE source = 2;
+  deeproute.proto.MODULE destination = 3; 
+  ModuleCheckList module_checklist = 4;
+}
+
+message SystemCheckListCMDRP { // send SystemCheckListCMDRP message in '/common/system_checklist_cmdrp' topic 
+  string id = 1;
+  deeproute.proto.MODULE source = 2;
+  deeproute.proto.MODULE destination = 3; 
+  deeproute.common.StatusPb error_code = 4;
+  ModuleCheckListStatus module_checklist_status = 5;  
+}
+
+message SystemCheckListStatusReport {// send SystemCheckListStatusReport message in '/common/system_checklist_status_report'
+  string id = 1;
+  deeproute.proto.MODULE source = 2;
+  deeproute.proto.MODULE destination = 3; 
+  ModuleCheckListStatus module_checklist_status = 4;  
+}
+
+message SystemCheckListStatusReportRP {//send SystemCheckListStatusReportRP message in '/common/system_checklist_status_report_rp'
+  string id = 1;
+  deeproute.proto.MODULE source = 2;
+  deeproute.proto.MODULE destination = 3; 
+  deeproute.common.StatusPb error_code = 4;
+}

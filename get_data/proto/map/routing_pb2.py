@@ -25,35 +25,51 @@ _sym_db = _symbol_database.Default()
 from common import geometry_pb2 as common_dot_geometry__pb2
 from map import common_type_pb2 as map_dot_common__type__pb2
 from map import amap_drive_route_planning_pb2 as map_dot_amap__drive__route__planning__pb2
+from graph_match import graph_matching_pb2 as graph__match_dot_graph__matching__pb2
+from odd import odd_pb2 as odd_dot_odd__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x11map/routing.proto\x12\rdeeproute.map\x1a\x15\x63ommon/geometry.proto\x1a\x15map/common_type.proto\x1a#map/amap_drive_route_planning.proto\"\x95\x01\n\x15\x44rRoutePlanningMetric\"5\n\x0bUTurnMetric\x12\x10\n\x0cNO_TURN_BACK\x10\x00\x12\x14\n\x10NORMAL_TURN_BACK\x10\x01\"E\n\rHighwayMetric\x12\x12\n\x0eNORMAL_HIGHWAY\x10\x00\x12\x0e\n\nNO_HIGHWAY\x10\x01\x12\x10\n\x0cMORE_HIGHWAY\x10\x02\"\x9e\x02\n\rRoutingOption\x12\x0c\n\x04\x63ost\x18\x01 \x01(\x05\x12\x17\n\x0f\x61void_road_type\x18\x02 \x01(\x05\x12\x18\n\x10\x61void_congestion\x18\x03 \x01(\x08\x12\x16\n\x0emax_result_num\x18\x04 \x01(\x05\x12M\n\x16\x63oordinate_system_type\x18\x05 \x01(\x0e\x32-.deeproute.map.RoutingOption.CoordinateSystem\x12\x0f\n\x07heading\x18\x06 \x01(\x01\x12\x12\n\ns_elevated\x18\x07 \x01(\x05\x12\x15\n\rs_nav_info_id\x18\x08 \x01(\t\")\n\x10\x43oordinateSystem\x12\n\n\x06UNKNOW\x10\x00\x12\t\n\x05GCJ02\x10\x01\"\xb8\x01\n\x0f\x44rRoutingOption\x12\x0f\n\x07heading\x18\x01 \x01(\x01\x12G\n\ru_turn_metric\x18\x02 \x01(\x0e\x32\x30.deeproute.map.DrRoutePlanningMetric.UTurnMetric\x12K\n\x0fhigh_way_metric\x18\x03 \x01(\x0e\x32\x32.deeproute.map.DrRoutePlanningMetric.HighwayMetric\"i\n\x11\x41mapRoutingOption\x12\x19\n\x11use_temporary_odd\x18\x01 \x01(\x08\x12!\n\x19\x64ynamic_static_odd_switch\x18\x02 \x01(\x08\x12\x16\n\x0eroi_odd_switch\x18\x03 \x01(\x08\"\xc3\x04\n\x0bRequestInfo\x12>\n\x13route_planning_type\x18\xe8\x07 \x01(\x0e\x32 .deeproute.map.RoutePlanningType\x12/\n\x0bstart_point\x18\x01 \x01(\x0b\x32\x1a.deeproute.common.PointLLH\x12.\n\nend_points\x18\x02 \x03(\x0b\x32\x1a.deeproute.common.PointLLH\x12,\n\x06option\x18\x03 \x01(\x0b\x32\x1c.deeproute.map.RoutingOption\x12\x31\n\tdr_option\x18\x06 \x01(\x0b\x32\x1e.deeproute.map.DrRoutingOption\x12\x35\n\x0b\x61map_option\x18\t \x01(\x0b\x32 .deeproute.map.AmapRoutingOption\x12\x44\n\ramap_response\x18\x07 \x01(\x0b\x32-.deeproute.map.AmapDriveRoutePlanningResponse\x12<\n\x0crequest_type\x18\x04 \x01(\x0e\x32&.deeproute.map.RequestInfo.RequestType\x12\x1a\n\x12retry_on_net_error\x18\n \x01(\x08\x12\x10\n\x08route_id\x18\x05 \x01(\x05\x12\x13\n\x0broute_id_64\x18\x08 \x01(\x04\"4\n\x0bRequestType\x12\x13\n\x0f\x44\x45\x46\x41ULT_EXECUTE\x10\x00\x12\x10\n\x0cONLY_PREVIEW\x10\x01\"c\n\x0eRoutingRequest\x12\x12\n\nrequest_id\x18\x01 \x01(\t\x12\x32\n\x0crequest_info\x18\x02 \x01(\x0b\x32\x1a.deeproute.map.RequestInfoH\x00\x42\t\n\x07request*J\n\x11RoutePlanningType\x12\x11\n\rNAVI_PLANNING\x10\x00\x12\x0f\n\x0b\x44R_PLANNING\x10\x01\x12\x11\n\rAMAP_PLANNING\x10\x02')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x11map/routing.proto\x12\rdeeproute.map\x1a\x15\x63ommon/geometry.proto\x1a\x15map/common_type.proto\x1a#map/amap_drive_route_planning.proto\x1a graph_match/graph_matching.proto\x1a\rodd/odd.proto\"\x9d\x01\n\x12RoutingRequestBody\x12J\n\x10route_plan_param\x18\x01 \x01(\x0b\x32\x30.deeproute.map.RoutingRequestBody.RoutePlanParam\x1a;\n\x0eRoutePlanParam\x12\x12\n\ns_elevated\x18\x01 \x01(\x05\x12\x15\n\rs_nav_info_id\x18\x02 \x01(\t\"\x95\x01\n\x15\x44rRoutePlanningMetric\"5\n\x0bUTurnMetric\x12\x10\n\x0cNO_TURN_BACK\x10\x00\x12\x14\n\x10NORMAL_TURN_BACK\x10\x01\"E\n\rHighwayMetric\x12\x12\n\x0eNORMAL_HIGHWAY\x10\x00\x12\x0e\n\nNO_HIGHWAY\x10\x01\x12\x10\n\x0cMORE_HIGHWAY\x10\x02\"\x9e\x02\n\rRoutingOption\x12\x0c\n\x04\x63ost\x18\x01 \x01(\x05\x12\x17\n\x0f\x61void_road_type\x18\x02 \x01(\x05\x12\x18\n\x10\x61void_congestion\x18\x03 \x01(\x08\x12\x16\n\x0emax_result_num\x18\x04 \x01(\x05\x12M\n\x16\x63oordinate_system_type\x18\x05 \x01(\x0e\x32-.deeproute.map.RoutingOption.CoordinateSystem\x12\x0f\n\x07heading\x18\x06 \x01(\x01\x12\x12\n\ns_elevated\x18\x07 \x01(\x05\x12\x15\n\rs_nav_info_id\x18\x08 \x01(\t\")\n\x10\x43oordinateSystem\x12\n\n\x06UNKNOW\x10\x00\x12\t\n\x05GCJ02\x10\x01\"\xb8\x01\n\x0f\x44rRoutingOption\x12\x0f\n\x07heading\x18\x01 \x01(\x01\x12G\n\ru_turn_metric\x18\x02 \x01(\x0e\x32\x30.deeproute.map.DrRoutePlanningMetric.UTurnMetric\x12K\n\x0fhigh_way_metric\x18\x03 \x01(\x0e\x32\x32.deeproute.map.DrRoutePlanningMetric.HighwayMetric\"i\n\x11\x41mapRoutingOption\x12\x19\n\x11use_temporary_odd\x18\x01 \x01(\x08\x12!\n\x19\x64ynamic_static_odd_switch\x18\x02 \x01(\x08\x12\x16\n\x0eroi_odd_switch\x18\x03 \x01(\x08\"\xc3\x04\n\x0bRequestInfo\x12>\n\x13route_planning_type\x18\xe8\x07 \x01(\x0e\x32 .deeproute.map.RoutePlanningType\x12/\n\x0bstart_point\x18\x01 \x01(\x0b\x32\x1a.deeproute.common.PointLLH\x12.\n\nend_points\x18\x02 \x03(\x0b\x32\x1a.deeproute.common.PointLLH\x12,\n\x06option\x18\x03 \x01(\x0b\x32\x1c.deeproute.map.RoutingOption\x12\x31\n\tdr_option\x18\x06 \x01(\x0b\x32\x1e.deeproute.map.DrRoutingOption\x12\x35\n\x0b\x61map_option\x18\t \x01(\x0b\x32 .deeproute.map.AmapRoutingOption\x12\x44\n\ramap_response\x18\x07 \x01(\x0b\x32-.deeproute.map.AmapDriveRoutePlanningResponse\x12<\n\x0crequest_type\x18\x04 \x01(\x0e\x32&.deeproute.map.RequestInfo.RequestType\x12\x1a\n\x12retry_on_net_error\x18\n \x01(\x08\x12\x10\n\x08route_id\x18\x05 \x01(\x05\x12\x13\n\x0broute_id_64\x18\x08 \x01(\x04\"4\n\x0bRequestType\x12\x13\n\x0f\x44\x45\x46\x41ULT_EXECUTE\x10\x00\x12\x10\n\x0cONLY_PREVIEW\x10\x01\"c\n\x0eRoutingRequest\x12\x12\n\nrequest_id\x18\x01 \x01(\t\x12\x32\n\x0crequest_info\x18\x02 \x01(\x0b\x32\x1a.deeproute.map.RequestInfoH\x00\x42\t\n\x07request\"\xc7\x01\n\x0fRoutingResponse\x12\x35\n\x06status\x18\x01 \x01(\x0b\x32%.deeproute.map.RoutingResponse.Status\x12\x12\n\nrequest_id\x18\x02 \x01(\t\x12$\n\x06routes\x18\x03 \x03(\x0b\x32\x14.deeproute.map.Route\x1a\x43\n\x06Status\x12(\n\x04\x63ode\x18\x01 \x01(\x0e\x32\x1a.deeproute.map.RoutingCode\x12\x0f\n\x07\x65rr_msg\x18\x02 \x01(\t\"m\n\x0bSegmentInfo\x12,\n\nroad_class\x18\x01 \x01(\x0e\x32\x18.deeproute.map.RoadClass\x12\x30\n\x0cshape_points\x18\x02 \x03(\x0b\x32\x1a.deeproute.common.PointLLH\"\xd7\x02\n\x05Route\x12\n\n\x02id\x18\x04 \x01(\x05\x12\r\n\x05id_64\x18\n \x01(\x04\x12\x0b\n\x03\x64is\x18\x01 \x01(\x05\x12\x0f\n\x07nca_dis\x18\t \x01(\x05\x12\x0b\n\x03\x64ur\x18\x02 \x01(\x05\x12\x1a\n\x12traffic_lights_num\x18\x05 \x01(\x05\x12\x30\n\x0cshape_points\x18\x03 \x03(\x0b\x32\x1a.deeproute.common.PointLLH\x12\x31\n\rsegment_infos\x18\x06 \x03(\x0b\x32\x1a.deeproute.map.SegmentInfo\x12\x42\n\x10mismatch_indexes\x18\x07 \x03(\x0b\x32(.deeproute.graph_match.MismatchSegmIndex\x12\x43\n\x12odd_preview_result\x18\x08 \x01(\x0b\x32\'.deeproute.odd.PreviewRouteOddLimitInfo*J\n\x11RoutePlanningType\x12\x11\n\rNAVI_PLANNING\x10\x00\x12\x0f\n\x0b\x44R_PLANNING\x10\x01\x12\x11\n\rAMAP_PLANNING\x10\x02*\xc2\x01\n\x0bRoutingCode\x12\x0b\n\x07SUCCESS\x10\x00\x12\x0c\n\x08INTERNAL\x10\x01\x12\r\n\tNOT_FOUND\x10\x02\x12\x14\n\x10INVALID_ARGUMENT\x10\x03\x12\x0f\n\x0bUNAVAILABLE\x10\x04\x12\x10\n\x0cOUT_OF_RANGE\x10\x05\x12$\n NETWORK_ADDRESS_RESOLUTION_ERROR\x10\x06\x12\x15\n\x11\x44\x45\x41\x44LINE_EXCEEDED\x10\x07\x12\x13\n\x0fROUTING_UNKNOWN\x10\x08')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'map.routing_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_ROUTEPLANNINGTYPE']._serialized_start=1537
-  _globals['_ROUTEPLANNINGTYPE']._serialized_end=1611
-  _globals['_DRROUTEPLANNINGMETRIC']._serialized_start=120
-  _globals['_DRROUTEPLANNINGMETRIC']._serialized_end=269
-  _globals['_DRROUTEPLANNINGMETRIC_UTURNMETRIC']._serialized_start=145
-  _globals['_DRROUTEPLANNINGMETRIC_UTURNMETRIC']._serialized_end=198
-  _globals['_DRROUTEPLANNINGMETRIC_HIGHWAYMETRIC']._serialized_start=200
-  _globals['_DRROUTEPLANNINGMETRIC_HIGHWAYMETRIC']._serialized_end=269
-  _globals['_ROUTINGOPTION']._serialized_start=272
-  _globals['_ROUTINGOPTION']._serialized_end=558
-  _globals['_ROUTINGOPTION_COORDINATESYSTEM']._serialized_start=517
-  _globals['_ROUTINGOPTION_COORDINATESYSTEM']._serialized_end=558
-  _globals['_DRROUTINGOPTION']._serialized_start=561
-  _globals['_DRROUTINGOPTION']._serialized_end=745
-  _globals['_AMAPROUTINGOPTION']._serialized_start=747
-  _globals['_AMAPROUTINGOPTION']._serialized_end=852
-  _globals['_REQUESTINFO']._serialized_start=855
-  _globals['_REQUESTINFO']._serialized_end=1434
-  _globals['_REQUESTINFO_REQUESTTYPE']._serialized_start=1382
-  _globals['_REQUESTINFO_REQUESTTYPE']._serialized_end=1434
-  _globals['_ROUTINGREQUEST']._serialized_start=1436
-  _globals['_ROUTINGREQUEST']._serialized_end=1535
+  _globals['_ROUTEPLANNINGTYPE']._serialized_start=2405
+  _globals['_ROUTEPLANNINGTYPE']._serialized_end=2479
+  _globals['_ROUTINGCODE']._serialized_start=2482
+  _globals['_ROUTINGCODE']._serialized_end=2676
+  _globals['_ROUTINGREQUESTBODY']._serialized_start=169
+  _globals['_ROUTINGREQUESTBODY']._serialized_end=326
+  _globals['_ROUTINGREQUESTBODY_ROUTEPLANPARAM']._serialized_start=267
+  _globals['_ROUTINGREQUESTBODY_ROUTEPLANPARAM']._serialized_end=326
+  _globals['_DRROUTEPLANNINGMETRIC']._serialized_start=329
+  _globals['_DRROUTEPLANNINGMETRIC']._serialized_end=478
+  _globals['_DRROUTEPLANNINGMETRIC_UTURNMETRIC']._serialized_start=354
+  _globals['_DRROUTEPLANNINGMETRIC_UTURNMETRIC']._serialized_end=407
+  _globals['_DRROUTEPLANNINGMETRIC_HIGHWAYMETRIC']._serialized_start=409
+  _globals['_DRROUTEPLANNINGMETRIC_HIGHWAYMETRIC']._serialized_end=478
+  _globals['_ROUTINGOPTION']._serialized_start=481
+  _globals['_ROUTINGOPTION']._serialized_end=767
+  _globals['_ROUTINGOPTION_COORDINATESYSTEM']._serialized_start=726
+  _globals['_ROUTINGOPTION_COORDINATESYSTEM']._serialized_end=767
+  _globals['_DRROUTINGOPTION']._serialized_start=770
+  _globals['_DRROUTINGOPTION']._serialized_end=954
+  _globals['_AMAPROUTINGOPTION']._serialized_start=956
+  _globals['_AMAPROUTINGOPTION']._serialized_end=1061
+  _globals['_REQUESTINFO']._serialized_start=1064
+  _globals['_REQUESTINFO']._serialized_end=1643
+  _globals['_REQUESTINFO_REQUESTTYPE']._serialized_start=1591
+  _globals['_REQUESTINFO_REQUESTTYPE']._serialized_end=1643
+  _globals['_ROUTINGREQUEST']._serialized_start=1645
+  _globals['_ROUTINGREQUEST']._serialized_end=1744
+  _globals['_ROUTINGRESPONSE']._serialized_start=1747
+  _globals['_ROUTINGRESPONSE']._serialized_end=1946
+  _globals['_ROUTINGRESPONSE_STATUS']._serialized_start=1879
+  _globals['_ROUTINGRESPONSE_STATUS']._serialized_end=1946
+  _globals['_SEGMENTINFO']._serialized_start=1948
+  _globals['_SEGMENTINFO']._serialized_end=2057
+  _globals['_ROUTE']._serialized_start=2060
+  _globals['_ROUTE']._serialized_end=2403
 # @@protoc_insertion_point(module_scope)

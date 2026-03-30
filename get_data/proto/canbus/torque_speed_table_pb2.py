@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1f\x63\x61nbus/torque_speed_table.proto\x12\x10\x64\x65\x65proute.canbus\"\xe5\x01\n\x16\x43\x61nbusTorqueSpeedTable\x12W\n\x13\x63\x61nbus_torque_speed\x18\x01 \x03(\x0b\x32:.deeproute.canbus.CanbusTorqueSpeedTable.CanbusTorqueSpeed\x1ar\n\x11\x43\x61nbusTorqueSpeed\x12\r\n\x05speed\x18\x01 \x01(\x01\x12\x0e\n\x06torque\x18\x02 \x01(\x01\x12\x11\n\thold_time\x18\x03 \x01(\x01\x12\x13\n\x0bquit_torque\x18\x04 \x01(\x01\x12\x16\n\x0equit_hold_time\x18\x05 \x01(\x01')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1f\x63\x61nbus/torque_speed_table.proto\x12\x10\x64\x65\x65proute.canbus\"\xb8\x01\n\x16\x43\x61nbusTorqueSpeedTable\x12W\n\x13\x63\x61nbus_torque_speed\x18\x01 \x03(\x0b\x32:.deeproute.canbus.CanbusTorqueSpeedTable.CanbusTorqueSpeed\x1a\x45\n\x11\x43\x61nbusTorqueSpeed\x12\r\n\x05speed\x18\x01 \x01(\x01\x12\x0e\n\x06torque\x18\x02 \x01(\x01\x12\x11\n\thold_time\x18\x03 \x01(\x01')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -32,7 +32,7 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'canbus.torque_speed_table_p
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
   _globals['_CANBUSTORQUESPEEDTABLE']._serialized_start=54
-  _globals['_CANBUSTORQUESPEEDTABLE']._serialized_end=283
+  _globals['_CANBUSTORQUESPEEDTABLE']._serialized_end=238
   _globals['_CANBUSTORQUESPEEDTABLE_CANBUSTORQUESPEED']._serialized_start=169
-  _globals['_CANBUSTORQUESPEEDTABLE_CANBUSTORQUESPEED']._serialized_end=283
+  _globals['_CANBUSTORQUESPEEDTABLE_CANBUSTORQUESPEED']._serialized_end=238
 # @@protoc_insertion_point(module_scope)

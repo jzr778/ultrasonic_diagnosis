@@ -84,5 +84,5 @@ CAMERA_NAMES = ["panoramic_1", "panoramic_2", "panoramic_3", "panoramic_4"]
 OBSTACLE_TOPIC = "/perception/objects"
 POSE_TOPIC = "/localization/pose"
 PLANNING_TOPIC = "/planner/trajectory"
-# Heavy / recording 侧 CAN 车身态（CarInfo）；misc.rear_view_mirror：False/0=折叠，True/1=展开
-CAR_STATE_TOPIC = "/canbus/car_state"
+# Light bag 内 CAN 车身 CarInfo（proto 仍为 CarInfo）；misc.rear_view_mirror 为 bool：False=折叠，True=展开
+CAR_STATE_TOPIC = "/canbus/car_info"

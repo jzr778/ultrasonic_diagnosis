@@ -1,0 +1,17 @@
+syntax = "proto3";
+package deeproute.someip_adapter.gwm;
+
+// topic: /gwm/someip/side_bsd_disp_request
+message SideBsdDispRequest {
+  enum Request { REQUESET = 0; }
+  Request request = 1;
+}
+
+// topic: /gwm/someip/side_bsd_disp_sts
+message SideBsdDispSts {
+  enum Status {
+    OFF = 0;
+    ON = 1;
+  }
+  Status status = 1;
+}

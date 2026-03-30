@@ -458,11 +458,11 @@ class PanoramicProjector:
         bev_width: int = 640,
         resize: bool = True,
     ) -> Tuple[np.ndarray, List[List[int]]]:
-        """鱼眼上对齐 draw_obstacles_on_bev：绿=泊车车、黄=PARK_FREESPACE（含 ignore_fs）、红=超声非 FS_CAR。
+        """鱼眼上仅绘制相机侧投影：绿=泊车车、黄=PARK_FREESPACE（含 ignore_fs），**不绘制**红色超声。
 
-        resize 为 True 时将图缩至 1920×1440，并按比例缩放内参 K；相机多边形顶点 z 取自 json；超声顶点 z 由
-        当前 sensing 系下经筛选的 PARK_FREESPACE（CAMERA）顶点拟合 z=a*x+b*y+c；无可用顶点时退化为 json 的 z。
-        chaosheng_pixel_radius / ground_param 为 None 时不做 BEV 距离过滤。
+        与 AVM 一致，超声顶点仍参与 chaosheng_pixel_radius 过滤逻辑以决定哪些相机多边形被绘制，但不在鱼眼上叠红。
+        resize 为 True 时将图缩至 1920×1440，并按比例缩放内参 K；相机多边形顶点 z 取自 json；
+        平面拟合 z 同 draw_obstacles_on_bev。返回的第二个值为 ``[]``（保留签名，供调用方写 index）。
         """
         orig_h, orig_w = int(img.shape[0]), int(img.shape[1])
         K = intrinsics[:3, :3].astype(np.float64)
@@ -546,72 +546,7 @@ class PanoramicProjector:
                     img, points_3d, (0, 255, 255), 2,
                     rvec, tvec, K, D, cam, p_world, width, height)
 
-        pos: List[List[int]] = []
-        for obstacle in chaosheng:
-            if normalize_freespace_label(obstacle.get("freespaceType")) == "FS_CAR":
-                continue
-            color = (0, 0, 255)
-            polygon_area = obstacle.get("polygonArea", {}).get("point", [])
-            if not polygon_area:
-                continue
-            if plane_abc is not None:
-                a, b, c = plane_abc
-                points_3d = [
-                    [
-                        float(p.get("x", 0)),
-                        float(p.get("y", 0)),
-                        a * float(p.get("x", 0)) + b * float(p.get("y", 0)) + c,
-                    ]
-                    for p in polygon_area
-                ]
-            else:
-                points_3d = [
-                    [p.get('x', 0), p.get('y', 0), float(p.get('z', 0))]
-                    for p in polygon_area
-                ]
-            pts_np = np.ascontiguousarray(np.array(points_3d, dtype=np.float32).reshape(-1, 1, 3))
-            if cam == "panoramic_1":
-                mask_xy = pts_np[:, 0, 0] > p_world[0]
-            elif cam == "panoramic_2":
-                mask_xy = pts_np[:, 0, 1] < p_world[1]
-            elif cam == "panoramic_3":
-                mask_xy = pts_np[:, 0, 0] < p_world[0]
-            elif cam == "panoramic_4":
-                mask_xy = pts_np[:, 0, 1] > p_world[1]
-            else:
-                mask_xy = np.ones(len(pts_np), dtype=bool)
-            pts_np = pts_np[mask_xy]
-            if pts_np.shape[0] == 0:
-                continue
-            proj, _ = cv2.fisheye.projectPoints(pts_np, rvec=rvec, tvec=tvec, K=K, D=D)
-            points_2d = proj.reshape(-1, 2)
-            u = points_2d[:, 0]
-            v = points_2d[:, 1]
-            mask = (u >= 0) & (u < width) & (v >= 0) & (v < height)
-            points_2d_int = np.round(points_2d[mask]).astype(np.int32)
-            if len(points_2d_int) == 0:
-                continue
-            x_max, x_min = np.max(points_2d_int[:, 0]), np.min(points_2d_int[:, 0])
-            y_max, y_min = np.max(points_2d_int[:, 1]), np.min(points_2d_int[:, 1])
-            if (x_max - x_min) > width / 2.0 and (y_max - y_min) > height / 2.0:
-                continue
-            valid_points = points_2d_int[:-1] if len(points_2d_int) > 1 and np.array_equal(
-                points_2d_int[0], points_2d_int[-1]) else points_2d_int
-            if len(valid_points) < 2:
-                continue
-            for i in range(len(valid_points) - 1):
-                pt1, pt2p = tuple(valid_points[i]), tuple(valid_points[i + 1])
-                u1, v1 = int(pt1[0]), int(pt1[1])
-                u2, v2 = int(pt2p[0]), int(pt2p[1])
-                if 0 <= u1 < width and 0 <= v1 < height:
-                    cv2.circle(img, (u1, v1), 4, color, -1)
-                if 0 <= u2 < width and 0 <= v2 < height:
-                    cv2.circle(img, (u2, v2), 4, color, -1)
-                cv2.line(img, pt1, pt2p, color=color, thickness=4)
-            center = np.mean(valid_points, axis=0)
-            pos.append([int(center[0]), int(center[1])])
-
-        return img, pos
+        return img, []
 
     @staticmethod
     def _point_to_segment_dist_2d(px, py, x1, y1, x2, y2):

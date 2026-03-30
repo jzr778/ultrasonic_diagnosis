@@ -5,11 +5,11 @@ AVP 全流程 Pipeline
 步骤:
   1. get_id_mapping.py         → get_data/id_mapping.json  ({tag_id: feishu_id})
   2. bag.py                    → offline_avm_generate_release/bag_list.txt
-  3. unpack_bag_for_avm.py     解包 bag 为鱼眼图输入（BagReader.extract_nearest_images，可据 car_state 跳过后视镜折叠帧）
+  3. unpack_bag_for_avm.py     解包 bag 为鱼眼图输入（BagReader.extract_nearest_images，可据车身 CarInfo topic 跳过后视镜折叠帧）
   4. save_bag_data.py          准备 read_data（含各时间戳鱼眼原图 panoramic_*.jpg；同样走 extract_nearest_images）
-  5. run_standalone.sh          拼接鱼眼图
-  6. avp_vlm_pipeline_avm.py   绘制 AVM 标注图像
-  7. avp_vlm_pipeline_avm.py   大模型诊断
+  5. run_standalone.sh          拼接鱼眼图（若车身 CarInfo 在超声事件时刻判后视镜折叠则跳过对应 bag）
+  6. avp_vlm_pipeline_avm.py   绘制 AVM 标注图像（折叠 tag 从映射中剔除）
+  7. avp_vlm_pipeline_avm.py   大模型诊断（同上）
 
 日志自动保存到 logs/pipeline_<时间戳>.log，同时在终端实时输出。
 
@@ -18,6 +18,7 @@ AVP 全流程 Pipeline
   python pipeline.py -p iffcom -v U9zPLpFvR --skip-steps 1 2
   python pipeline.py -p iffcom -v U9zPLpFvR --log-dir my_logs
   python pipeline.py ... --no-yuyan   # 关闭鱼眼抽帧与双图 VLM
+  python pipeline.py ... --chaosheng-pixel-radius 40   # Step6 BEV 超声-相机关联半径（默认 30）
 """
 
 import argparse
@@ -26,6 +27,7 @@ import logging
 import os
 import subprocess
 import sys
+import tempfile
 from datetime import datetime
 
 import config
@@ -150,6 +152,24 @@ def step3_unpack_bags(tag_ids, samples_dir):
 
 
 # ── Step 4 ──────────────────────────────────────────────────
+def _read_data_has_ultrasonic_timestamps(data_path):
+    """是否存在超声波事件对应的时间戳子目录（与 save_bag_data 写入的 chaosheng 一致）。"""
+    if not os.path.isdir(data_path):
+        return False
+    try:
+        for name in os.listdir(data_path):
+            if not str(name).isdigit():
+                continue
+            ts_dir = os.path.join(data_path, name)
+            if os.path.isdir(ts_dir) and os.path.isfile(
+                os.path.join(ts_dir, "chaosheng.json")
+            ):
+                return True
+    except OSError:
+        return False
+    return False
+
+
 def step4_save_bag_data(tag_ids, read_data_dir, extract_fisheye=True):
     banner(4, "准备 read_data (save_bag_data)")
 
@@ -158,12 +178,15 @@ def step4_save_bag_data(tag_ids, read_data_dir, extract_fisheye=True):
     success = 0
     for tag_id in tag_ids:
         data_path = os.path.join(read_data_dir, str(tag_id))
-        if os.path.isdir(data_path) and os.path.isfile(
-            os.path.join(data_path, "vehicle2sensing.json")
-        ):
-            log.info(f"  tag_id={tag_id} 已存在，跳过")
-            success += 1
-            continue
+        v2s = os.path.join(data_path, "vehicle2sensing.json")
+        if os.path.isdir(data_path) and os.path.isfile(v2s):
+            if _read_data_has_ultrasonic_timestamps(data_path):
+                log.info(f"  tag_id={tag_id} 已存在，跳过")
+                success += 1
+                continue
+            log.info(
+                f"  tag_id={tag_id} 仅有配置无时间戳数据（如历史 proto 导致未写入 chaosheng），重新 save_data ..."
+            )
         log.info(f"  保存 tag_id={tag_id} 数据 ...")
         try:
             save_data(tag_id, output_root=read_data_dir, extract_fisheye=extract_fisheye)
@@ -193,8 +216,10 @@ def _find_unpacked_bags(samples_dir):
     return result
 
 
-def step5_generate_avm(samples_dir, generate_dir):
+def step5_generate_avm(samples_dir, generate_dir, skip_bag_prefixes=None):
     banner(5, "拼接鱼眼图 (offline_avm_generate_release)")
+
+    skip_bag_prefixes = skip_bag_prefixes or set()
 
     avm_dir = os.path.join(PROJECT_ROOT, "offline_avm_generate_release")
     run_sh = os.path.join(avm_dir, "run_standalone.sh")
@@ -209,6 +234,12 @@ def step5_generate_avm(samples_dir, generate_dir):
 
     log.info(f"  发现 {len(unpacked)} 个已解包 bag，开始拼接")
     for bag_name, yyyymm in sorted(unpacked.items()):
+        if bag_name in skip_bag_prefixes:
+            log.info(
+                f"  {bag_name} 已在超声波事件时刻判定后视镜折叠（{config.CAR_STATE_TOPIC}），"
+                f"跳过 AVM 拼接"
+            )
+            continue
         out_path = os.path.join(generate_dir, bag_name)
         if os.path.isdir(out_path) and os.listdir(out_path):
             log.info(f"  {bag_name} 已生成，跳过")
@@ -228,7 +259,8 @@ def step5_generate_avm(samples_dir, generate_dir):
 
 
 # ── Step 6 ──────────────────────────────────────────────────
-def step6_draw_images(id_mapping_path, read_data_dir, ignore_fs_types=None, yuyan=True):
+def step6_draw_images(id_mapping_path, read_data_dir, ignore_fs_types=None, yuyan=True,
+                      chaosheng_pixel_radius=30):
     banner(6, "绘制 AVM 标注图像")
 
     cmd = [
@@ -236,6 +268,7 @@ def step6_draw_images(id_mapping_path, read_data_dir, ignore_fs_types=None, yuya
         "--id-mapping", id_mapping_path,
         "--data-path", read_data_dir,
         "--mode", "draw",
+        "--chaosheng-pixel-radius", str(chaosheng_pixel_radius),
     ]
     if ignore_fs_types:
         cmd.extend(["--ignore-fs-types"] + ignore_fs_types)
@@ -306,6 +339,12 @@ def main():
         help="关闭鱼眼解包与 VLM 鱼眼辅助（默认开启）",
     )
     parser.set_defaults(yuyan=True)
+    parser.add_argument(
+        "--chaosheng-pixel-radius",
+        type=int,
+        default=30,
+        help="Step6 BEV 超声与相机障碍关联像素半径（默认 30）",
+    )
     args = parser.parse_args()
 
     if args.list_models:
@@ -326,7 +365,8 @@ def main():
 
     log.info(f"项目根目录: {PROJECT_ROOT}")
     log.info(f"参数: project={args.project_key}, view={args.view_id}, "
-             f"yuyan={args.yuyan}, skip={args.skip_steps or '无'}")
+             f"yuyan={args.yuyan}, chaosheng_pixel_radius={args.chaosheng_pixel_radius}, "
+             f"skip={args.skip_steps or '无'}")
 
     # Step 1
     if 1 not in skip:
@@ -358,27 +398,80 @@ def main():
     else:
         log.info(f"[跳过 Step 4]")
 
+    # 与 bag_reader 一致：Light bag CAR_STATE_TOPIC（CarInfo）在超声事件时刻若判后视镜折叠 → 不跑 Step5–7。
+    # 若 Step 3–5 均已跳过，则不再访问远端 bag（仅跑 6/7 时使用已有 read_data，跳过后视镜预检）。
+    mirror_skip_tags = set()
+    mirror_skip_prefixes = set()
+    mirror_filtered_mapping_path = None
+    prep_skipped = {3, 4, 5}.issubset(skip)
+    need_mirror_check = (
+        not prep_skipped
+        and (5 not in skip or 6 not in skip or 7 not in skip)
+    )
+    if prep_skipped and (6 not in skip or 7 not in skip):
+        log.info(
+            "  [跳过后视镜折叠预检] Step 3–5 已跳过，不再读远端 bag；"
+            "Step 6/7 使用完整 id 映射（不按 CarInfo 折叠剔除 tag）"
+        )
+    if need_mirror_check:
+        from get_data.bag_reader import avm_skip_mirror_fold_info
+
+        mirror_skip_tags, mirror_skip_prefixes = avm_skip_mirror_fold_info(tag_ids)
+        if mirror_skip_tags:
+            log.info(
+                f"  CarInfo（{config.CAR_STATE_TOPIC}）在至少一个超声事件时刻为后视镜折叠，"
+                f"对应 tag 将跳过 Step5–7: {sorted(mirror_skip_tags)}"
+            )
+        if mirror_skip_tags and (6 not in skip or 7 not in skip):
+            with open(id_mapping_path, "r", encoding="utf-8") as f:
+                mapping = json.load(f)
+            filtered = {
+                k: v for k, v in mapping.items() if int(k) not in mirror_skip_tags
+            }
+            fd, mirror_filtered_mapping_path = tempfile.mkstemp(
+                suffix=".json", prefix="id_mapping_mirror_fold_skip_"
+            )
+            os.close(fd)
+            with open(mirror_filtered_mapping_path, "w", encoding="utf-8") as f:
+                json.dump(filtered, f, ensure_ascii=False, indent=2)
+    vlm_id_mapping = mirror_filtered_mapping_path or id_mapping_path
+
     # Step 5
     if 5 not in skip:
-        step5_generate_avm(args.samples_dir, args.generate_dir)
+        step5_generate_avm(
+            args.samples_dir,
+            args.generate_dir,
+            skip_bag_prefixes=mirror_skip_prefixes,
+        )
     else:
         log.info(f"[跳过 Step 5]")
 
     # Step 6
     if 6 not in skip:
-        step6_draw_images(id_mapping_path, args.read_data_dir,
-                          ignore_fs_types=args.ignore_fs_types, yuyan=args.yuyan)
+        step6_draw_images(
+            vlm_id_mapping,
+            args.read_data_dir,
+            ignore_fs_types=args.ignore_fs_types,
+            yuyan=args.yuyan,
+            chaosheng_pixel_radius=args.chaosheng_pixel_radius,
+        )
     else:
         log.info(f"[跳过 Step 6]")
 
     # Step 7
     if 7 not in skip:
-        step7_run_vlm(id_mapping_path, args.read_data_dir, model=args.model,
+        step7_run_vlm(vlm_id_mapping, args.read_data_dir, model=args.model,
                       ignore_fs_types=args.ignore_fs_types,
                       debug_thinking=args.debug_thinking,
                       yuyan=args.yuyan)
     else:
         log.info(f"[跳过 Step 7]")
+
+    if mirror_filtered_mapping_path and os.path.isfile(mirror_filtered_mapping_path):
+        try:
+            os.remove(mirror_filtered_mapping_path)
+        except OSError:
+            pass
 
     log.info("")
     log.info("=" * 60)
@@ -394,6 +487,6 @@ if __name__ == "__main__":
     #     "--id-mapping", "/tmp/test_debug.json",
     #     "--model", "gemini-3-pro-preview",
     #     "--mode", "diagnose",
-    #     "--skip-steps", "1", "2"
+    #     "--skip-steps", "1", "2", "3", "4", "5", "6"
     # ]
     main()

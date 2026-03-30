@@ -1,0 +1,367 @@
+syntax = "proto3";
+
+import "drdtu/dtu_data.proto";
+import "routing/routing.proto";
+
+package deeproute.dtu.command;
+
+// common command for all module
+enum ModuleStatus {
+  NORMAL = 0;
+  FAULT = 1;
+}
+
+message Point {
+  double x = 1;
+  double y = 2;
+  double z = 3;
+  double heading = 4;
+}
+
+message ModuleStatusQueryCMD {
+}
+message ModuleStatusQueryCMDRP {
+  ModuleStatus status = 1;
+}
+
+message ModuleVersionQueryCMD {
+}
+message ModuleVersionQueryCMDRP {
+  string version = 1;
+}
+
+message DataSubscriptionCMD {
+  string proto_type = 1;
+  int32 frequency = 2;  // HZ
+}
+message DataSubscriptionCMDRP {
+  string data_topic = 1;
+  string proto_type = 2;
+  int32 real_frequency = 3;
+}
+
+message DataPushCMD {
+  string proto_type = 1;
+  string data_topic = 2;
+  int32 real_frequency = 3;
+}
+
+message ResetCMD {
+}
+
+// command for planning module
+message AddressPoint {
+  double x = 1;
+  double y = 2;
+  string id = 3;
+  int32 wait_time = 4;
+  double heading = 5;
+}
+
+message FollowPolylineCMD {
+  string semantic_map = 1;
+  repeated AddressPoint points = 2;
+  int32 target_point_index = 3;
+  bool is_adjust_destination = 4;
+  Point direct_point = 5;
+  deeproute.routing.RoutingResponse route_response =
+      6;  // oneof points or route_response
+}
+
+message FollowPolylineCMDRP {
+  deeproute.routing.RoutingRequest route_request = 1;  // deprecated
+  deeproute.routing.RoutingResponse route_response = 2;
+}
+
+message TracingPoints {
+  repeated AddressPoint points = 1;
+}
+
+enum Detour {
+  WAITIG = 0;
+  LEFT = 1;
+  RIGHT = 2;
+}
+
+enum TakeOver {
+  NOT_DEFINED = 0;
+  BEGIN = 1;
+  END = 2;
+}
+
+message RemoteControlCMD {
+  oneof operation {
+    TakeOver status = 1;
+    TracingPoints points = 2;
+    Detour detour = 3;
+  }
+}
+
+message PullOverCMD {
+}
+message PullOverCMDRP {
+  int32 next_target_point_index = 1;
+}
+
+message EmergencyStopCMD {
+}
+message EmergencyStopCMDRP {
+  int32 next_target_point_index = 1;
+}
+
+message QueryRemainderRunNodeCMD {
+}
+message QueryRemainderRunNodeCMDRP {
+  repeated AddressPoint unfinish = 1;
+}
+
+// command for control module
+message StepCMD {
+  double distance = 1;  // m
+  bool forward = 2;
+}
+
+// command for localization
+message Range {
+  double x = 1;
+  double y = 2;
+  double radius = 3;  // m
+}
+
+message Location {
+  double x = 1;
+  double y = 2;
+}
+
+enum CraneScenarioType {
+  PORT = 0;
+  STORAGE_YARD = 1;
+}
+
+message CraneLocalizationCMD {
+  CraneScenarioType type = 1;
+  string target_id = 2;
+  Location fuzzy_target_pos = 3;
+  string target_lane_id = 4;
+  Range work_range = 5;
+}
+
+message CraneLocalizationDoneCMD {
+  string target_id = 1;
+}
+
+message ParkingSpace {
+  int32 id = 1;
+  Point direct_point = 2;
+  repeated Point parking_space_vertex = 3;
+  Point parking_space_center_point = 4;
+}
+
+message ParkingCMD {
+  repeated ParkingSpace parking_space = 1;
+}
+
+message CommonCMD {
+  string cmd_type = 1;
+  bytes cmd_info = 2;
+}
+
+enum DrivingMode {
+  UNKNOWN = 0;
+  CASUAL_MODE = 1;
+  STANDARD_MODE = 2;
+  SPORT_MODE = 3;
+}
+
+enum SpeedLimitType {
+  RELATIVE_TO_MAP_SPEED_LIMIT = 0;
+  ABSOLUTE_SPEED_LIMIT = 1;
+}
+
+message SpeedLimit {
+  double speed = 1;
+  SpeedLimitType limit_type =
+      2;  // indicate speed is relative or absolute to map speed limit
+}
+
+message FollowDistance {
+  double distance = 1;
+}
+
+message NodParameter {
+  SpeedLimit speed_limit = 1;
+  FollowDistance follow_distance = 2;
+}
+
+message SetPlanningParaCMD {
+  oneof paramer {
+    DrivingMode driving_mode = 1;
+    NodParameter nod_parameter = 2;
+  }
+}
+
+message GoDirectPointCMD {
+  Point direct_point = 1;
+}
+
+enum Controller {
+  CONTROLLER_NOT_DEFINED = 0;
+  SECURITY_OFFICER = 1;
+}
+
+message SetDrivingModeCMD {
+  enum Mode {
+    MODE_NOT_DEFINED = 0;
+    MANUAL = 1;
+    AUTO = 2;
+  }
+  Controller controller = 1;
+  Mode mode = 2;
+}
+
+message ILCCMD {
+  enum Behavior {
+    LANE_KEEP = 0;
+    LEFT_LANE_CHANGE = 1;
+    RIGHT_LANE_CHANGE = 2;
+    NONE = 3;
+  }
+  Behavior behavior = 1;
+}
+
+message ILCCMDRP {
+}
+
+message AutoLevelCMD {
+  enum Level {
+    NOD = 0;
+    LCC = 1;
+  }
+  Level level = 1;
+}
+
+message AutoLevelCMDRP {
+}
+
+message SetMapCMD {
+  bool semantic_updated = 1;  // always true
+  string semantic_map_path = 2;
+  string ndt_map_config_path = 3;  // deprecated
+}
+
+message SetMapEngineMode {
+  enum Mode {
+    SDMAP = 0;
+    HDMAP = 1;
+  }
+  Mode mode = 1;
+  string semantic_map_path = 2;  // only needed in HDMap Mode
+}
+
+message RearWarningCommand {
+  bool enable = 1;
+
+  enum DispInfo {
+    NO_DISPLAY = 0;
+    BSDLCA_ON = 1;
+    BSDLCA_OFF = 2;
+    CTA_ON = 3;
+    CTA_OFF = 4;
+    TRAILER_MODE_BSD_LCA_NOT_AVAILABLE = 5;
+    TRAILER_MODE_CTA_NOT_AVAILABLE = 6;
+    BSDLCA_CTA_ERROR = 7;
+    BSDLCA_CTA_BLINDNESS = 8;
+    DOW_ON = 9;
+    DOW_OFF = 10;
+  };
+  DispInfo disp_info = 2;
+
+  enum WarningLevel {
+    NO_WARNING = 0;
+    WARNING_LEVEL1 = 1;
+    WARNING_LEVEL2 = 2;
+  }
+  WarningLevel dow_front_left_door_warn = 3;
+  WarningLevel dow_front_right_door_warn = 4;
+  WarningLevel dow_rear_left_door_warn = 5;
+  WarningLevel dow_rear_right_door_warn = 6;
+  WarningLevel bsd_lca_left_warn = 7;
+  WarningLevel bsd_lca_right_warn = 8;
+}
+
+message AutomaticHeadLightsCMD {
+  enum Enable {
+    UNKNOWN = 0;
+    OFF = 1;
+    ON = 2;
+  }
+  Enable low_beam = 1;
+  Enable high_beam = 2;
+}
+
+message DTUCMD {  // BLC send 'DTUCMD' message in '/blc/to_algorithm_command' topic to
+                  // algorithm modules
+  string cmd_id = 1;
+  deeproute.dtu.data.Module source = 2;
+  repeated deeproute.dtu.data.Module destination = 3;
+  bool preemption = 4;
+  oneof command {
+    // common command
+    ModuleStatusQueryCMD module_status_query = 5;
+    ModuleVersionQueryCMD module_version_query = 6;
+    DataSubscriptionCMD data_subscription = 7;
+    DataPushCMD data_push = 8;
+    ResetCMD reset = 9;
+    // planner module command
+    FollowPolylineCMD follow_polyline = 10;
+    PullOverCMD pull_over = 11;
+    EmergencyStopCMD emergency_stop = 12;
+    QueryRemainderRunNodeCMD query_remainder_run_node = 13;
+
+    // control module command
+    StepCMD step = 14;
+    // localization module command
+    CraneLocalizationCMD crane_localization = 15;
+    CraneLocalizationDoneCMD crane_localization_done = 16;
+
+    RemoteControlCMD take_over = 17;
+    ParkingCMD parking = 18;
+
+    // canbus module command
+    CommonCMD common_cmd = 19;
+    SetPlanningParaCMD set_planning_para = 20;
+    GoDirectPointCMD go_direct_point = 21;
+    SetDrivingModeCMD driving_mode_cmd = 22;
+    RearWarningCommand rear_warning_cmd = 27;
+    AutomaticHeadLightsCMD auto_lights_cmd = 28;
+
+    ILCCMD ilc = 23;
+    AutoLevelCMD autonomous_level_cmd = 24;
+    SetMapCMD set_map = 26;                // to routing
+    SetMapCMD map_engine_switch_map = 29;  // to map_engine
+
+    // map_engine module command
+    SetMapEngineMode set_map_engine_mode = 30;
+  }
+}
+
+message DTUCMDRP {  // BLC receive 'DTUCMDRP' in '/blc/algorithm_command_response' topic
+                    // from algorithm modules
+  string cmd_id = 1;
+  deeproute.dtu.data.Module source = 2;
+  deeproute.dtu.data.Module destination = 3;
+  deeproute.dtu.data.ErrorCode err = 4;
+  oneof command_response {
+    // common command response
+    ModuleStatusQueryCMDRP module_status = 5;
+    ModuleVersionQueryCMDRP module_version = 6;
+    // planner module command response
+    PullOverCMDRP pull_over = 7;
+    EmergencyStopCMDRP emergency_stop = 8;
+    QueryRemainderRunNodeCMDRP query_remainder_run_node = 9;
+    DataSubscriptionCMDRP data_subscription = 10;
+    FollowPolylineCMDRP follow_polyline = 11;
+    ILCCMDRP ilc = 12;
+    AutoLevelCMDRP auto_level = 13;
+  }
+}

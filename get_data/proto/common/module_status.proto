@@ -1,0 +1,246 @@
+syntax = "proto3";
+
+package deeproute.proto;
+
+// topic: /visualizer/modulestatus
+// module is corresponding to node
+enum MODULE {
+  UNKNOWN = 0;
+  PLANNING = 1;
+  PERCEPTION = 2;
+  CONTROL = 3;
+  CANBUS = 4;
+  VISUALIZER = 5;
+  SENSOR_GNSS = 6;
+  SENSOR_LIDAR = 7;
+  LOCALIZATION = 8;
+  SENSOR_CAMERA = 9;
+  PREDICTION = 10;
+  SIMULATION = 11;
+  ORDER = 12;
+  DTU = 13;
+  STARTER = 14;
+  SENSOR_RADAR = 15;
+  SENSOR_ULTRASONIC = 16;
+  MAP_ENGINE = 17;
+  ROUTING = 18;
+  LOCAL_ROUTING = 19;
+  AEB = 20;
+  PERCEP_AEB = 21;
+}
+
+enum MODULESTATUS {
+  UNKW = 0;
+  INIT = 1;
+  ACT = 2;
+  ABNORMAL = 3;
+  OOS = 4;
+}
+
+enum SEVERITY {
+  INFO = 0;
+  WARNING = 1;
+  ERROR = 2;
+  FATAL = 3;
+}
+
+enum ModuleErrorCode {
+  NORMAL = 0;
+  MODULE_START = 666;
+  MODULE_STOP = 667;
+
+  // Sensors (20000~29999)
+  INFO_CODE = 20000;
+  CALIBRATION_MODE_START = 20001;
+  DEBUG_MODE_START = 20002;
+  WARN_CODE = 20300;
+  ERROR_CODE = 20600;
+  FATAL_CODE = 20800;
+
+  LIDAR_INIT = 21000;
+  LIDAR_TIME_DIFF_WARN = 21300;
+  LIDAR_INVALID_PKT_LENGTH = 21301;
+  LIDAR_COMBINER_PREVIOUS_CLOUD = 21302;
+  LIDAR_COMBINER_TIMEOUT = 21303;
+  LIDAR_PROCESS_TIME_TOO_LONG = 21304;
+  LIDAR_PROCESS_LATENCY = 21305;
+  LIDAR_PKT_LOST = 21306;
+  LIDAR_TIME_DIFF_ERROR = 21600;
+  LIDAR_TIMEOUT = 21601;
+  LIDAR_READ_ERROR = 21602;
+  LIDAR_TIME_JUMP = 21603;
+  LIDAR_ADS_CFG_FAIL = 21604;
+  LIDAR_COMBINER_OVERFLOW = 21605;
+
+  GNSS_INIT = 22000;
+  GNSS_UPDATE_REGION = 22001;
+  GNSS_TIME_DIFF_WARN = 22300;
+  GNSS_PKT_LOST = 22301;
+  GNSS_TIME_DIFF_ERROR = 22600;
+  GNSS_TIMEOUT = 22601;
+  GNSS_READ_ERROR = 22602;
+  GNSS_TIME_JUMP = 22603;
+  GNSS_REGION_UPDATE_ERROR = 22604;
+
+  CAM_INIT = 23000;
+  CAM_TIME_DIFF_WARN = 23300;
+  CAM_PKT_LOST = 23301;
+  CAM_TIME_DIFF_ERROR = 23600;
+  CAM_TIMEOUT = 23601;
+  CAM_TIME_JUMP = 23602;
+  CAM_DISCONNECT = 23603;
+
+  RADAR_INIT = 24000;
+  RADAR_TIMEOUT = 24600;
+
+  LOCALIZATION_LOST_HEARTBEAT = 30000;
+  LOCALIZATION_INIT_MATCHING_DIVERGENT = 30006;
+  LOCALIZATION_TOO_FEW_MAP_MATCHES = 30007;
+  LOCALIZATION_SHUTDOWN = 30099;
+  LOCALIZATION_RTK_TOO_BAD = 30302;
+  LOCALIZATION_POINT_CLOUD_DELAYED = 30401;
+  LOCALIZATION_LARGE_INNOVATION = 30402;
+  LOCALIZATION_LOADED_MAP_NO_DATA = 30404;
+  LOCALIZATION_TOO_FEW_MATCHES_TO_MAP = 30405;
+
+  PERCEPTION_LOST_HEARTBEAT = 40000;
+  // Perception does not generate output to /perception/objects for more than
+  // 300ms
+  PERCEPTION_OBJECT_RESULT_FREQUENCY_ABNORMAL = 40001;
+  // Perception finds its own object processing time is longer than expected for
+  // consecutive few frames
+  PERCEPTION_OBJECT_PROCESS_TOO_SLOW = 40002;
+  // Perception does not generate output to /perception/camera_obstacle for more
+  // than 300ms
+  PERCEPTION_TRAFFIC_RESULT_FREQUENCY_ABNORMAL = 40003;
+  // Perception finds its own traffic processing time is longer than expected
+  // for consecutive few frames
+  PERCEPTION_TRAFFIC_PROCESS_TOO_SLOW = 40004;
+
+  // Perception does not have lidar input for more than 300ms
+  PERCEPTION_LIDAR_INPUT_FREQUENCY_ABNORMAL = 41101;
+  // Percetpion sees large timestamp gaps for lidar input (>200ms)
+  PERCEPTION_LIDAR_INPUT_DATA_FRAME_LOST = 41102;
+  // Perception finds lidar input not valid to be used
+  PERCEPTION_LIDAR_INPUT_DATA_FRAME_INVALID = 41103;
+
+  // Perception does not have pose input for more than 100ms
+  PERCEPTION_POSE_INPUT_FREQUENCY_ABNORMAL = 41201;
+  // Perception cannot find necessary pose data for any of the perception
+  // submodule
+  PERCEPTION_POSE_INPUT_DATA_FRAME_LOST = 41202;
+  // Perception finds pose input not valid to be used
+  PERCEPTION_POSE_INPUT_DATA_FRAME_INVALID = 41203;
+
+  // Perception does not have camera input for more than 300ms (for any of the
+  // cameras)
+  PERCEPTION_CAMERA_INPUT_FREQUENCY_ABNORMAL = 41301;
+  // Percetpion sees large timestamp gaps for cameras input (>200ms) (for any of
+  // the cameras)
+  PERCEPTION_CAMERA_INPUT_DATA_FRAME_LOST = 41302;
+  // Perception finds lidar input not valid to be used (for any of the cameras)
+  PERCEPTION_CAMERA_INPUT_DATA_FRAME_INVALID = 41303;
+
+  // Perception does not have radar input for a certain period of time (TBD)
+  PERCEPTION_RADAR_INPUT_FREQUENCY_ABNORMAL = 41401;
+  // Percetpion sees large timestamp gaps for radar input (TBD)
+  PERCEPTION_RADAR_INPUT_DATA_FRAME_LOST = 41402;
+  // Perception finds radar input not valid to be used
+  PERCEPTION_RADAR_INPUT_DATA_FRAME_INVALID = 41403;
+
+  PLANNING_FRAME_INIT_FAILED = 51000;
+  PLANNING_PLAN_FAILED = 51002;
+  PLANNING_DATA_FREQUENCY_ABNORMAL = 51005;
+  PLANNING_NO_TRAJECTORY = 51006;
+  PLANNING_LOST_HEARTBEAT = 51007;
+  PLANNING_TRAJECTORY_NO_UPDATED = 51008;
+
+  CANBUS_LOST_HEARTBEAT = 60000;
+  CANBUS_SEND_CAN_MSG_FAILED = 60008;
+  CANBUS_SEND_MSG_FAILED = 60009;
+  CANBUS_NO_CAR_STATE = 60100;
+  CANBUS_CAR_STATE_FREQUENCY_ABNORMAL = 60101;
+  CANBUS_CAR_HAS_ERROR = 60102;
+  CANBUS_CHASSIS_ABNORMAL = 60103;
+  CANBUS_ADS_CAN0_BUS_ERROR = 61100;
+  CANBUS_ADS_CAN0_BUS_OFF = 61101;
+  CANBUS_ADS_CAN0_NO_ACK = 61102;
+  CANBUS_ADS_CAN0_TX_ERR = 61103;
+  CANBUS_ADS_CAN0_RX_ERR = 61104;
+  CANBUS_ADS_CAN1_BUS_ERROR = 61105;
+  CANBUS_ADS_CAN1_BUS_OFF = 61106;
+  CANBUS_ADS_CAN1_NO_ACK = 61107;
+  CANBUS_ADS_CAN1_TX_ERR = 61108;
+  CANBUS_ADS_CAN1_RX_ERR = 61109;
+  CANBUS_ADS_CAN0_HAL_SEND_ERROR = 61200;
+  CANBUS_ADS_CAN0_HAL_RECV_ERROR = 61201;
+  CANBUS_ADS_CAN1_HAL_SEND_ERROR = 61202;
+  CANBUS_ADS_CAN1_HAL_RECV_ERROR = 61203;
+  CANBUS_ADS_REALTIME_TIMER_ERROR = 61300;
+  CANBUS_ADS_REALTIME_APP_ERROR = 61301;
+  CANBUS_ADS_FRAME_CHECKER_STARTUP_ERROR = 61400;
+  CANBUS_ADS_FRAME_CHECKER_RUNNING_ERROR = 61401;
+  CANBUS_ADS_DM_CHECKER_CHASSIS_ERROR = 61500;
+  CANBUS_ADS_DM_CHECKER_EPS_CONTROL_ERROR = 61501;
+  CANBUS_ADS_DM_CHECKER_EPS_ANGLE_ERROR = 61502;
+  CANBUS_ADS_DM_CHECKER_EPS_TORQUE_ERROR = 61503;
+  CANBUS_ADS_DM_CHECKER_XBR_CONTROL_ERROR = 61504;
+  CANBUS_ADS_DM_CHECKER_XBR_PRESSURE_ERROR = 61505;
+  CANBUS_ADS_DM_CHECKER_EPB_ERROR = 61506;
+  CANBUS_ADS_DM_CHECKER_EEC_VCU_ERROR = 61507;
+  CANBUS_ADS_DM_CHECKER_TC_GEAR_ERROR = 61508;
+  CANBUS_ADS_CONTROL_CHECKER_VAL_EPS_ANGLE_ERROR = 61600;
+  CANBUS_ADS_CONTROL_CHECKER_VAL_EPS_TORQUE_ERROR = 61601;
+  CANBUS_ADS_CONTROL_CHECKER_VAL_THROTTLE_ERROR = 61602;
+  CANBUS_ADS_CONTROL_CHECKER_VAL_BRAKE_ERROR = 61603;
+  CANBUS_ADS_CONTROL_CHECKER_RATE_EPS_ANGLE_ERROR = 61610;
+  CANBUS_ADS_CONTROL_CHECKER_RATE_EPS_TORQUE_ERROR = 61611;
+  CANBUS_ADS_CONTROL_CHECKER_RATE_THROTTLE_ERROR = 61612;
+  CANBUS_ADS_CONTROL_CHECKER_RATE_BRAKE_ERROR = 61613;
+  CANBUS_ADS_RC_ERROR = 61700;
+  CANBUS_ADS_RC_LOST = 61701;
+  CANBUS_ADS_RPC_VERSION_NOT_MATCHED = 61800;
+
+  CONTROL_LOST_HEARTBEAT = 65000;
+  CONTROL_UPSTREAM_DATA_FREQUENCY_ABNORMAL = 65001;
+  CONTROL_UPSTREAM_DATA_TEMP_ABNORMAL = 65002;
+  CONTROL_UPSTREAM_DATA_ABNORMAL = 65003;
+  CONTROL_NO_DATA = 65004;
+
+  VISUALIZER_LOST_HEARTBEAT = 70000;
+
+  DTU_LOST_HEARTBEAT = 90000;
+
+  ORDER_LOST_HEARTBEAT = 96000;
+}
+
+message SubModuleLatency {
+  string name = 1;
+  int64 timestamp_start = 2;
+  int64 timestamp_end = 3;
+}
+
+message ModuleLatency {
+  int64 data_source_id =
+      1;  // which frame you processed, eg. timestamp of pointcloud
+  int64 timestamp_start =
+      2;  // when your module start to process this frame, unit: microsecond
+  int64 timestamp_end =
+      3;  // when your module finish processing this frame, unit: microsecond
+
+  repeated SubModuleLatency submodule_latency =
+      4;  // add what you want to record and analyze
+}
+
+message ModuleStatus {
+  int64 timestamp = 1;      // required, unit: microsecond
+  MODULE module = 2;        // required, module name
+  string submodule = 3;     // required, submodule filled by module itself
+  MODULESTATUS status = 4;  // required, module status
+  SEVERITY severity = 5;    // required
+  string note = 6;          // optional
+
+  ModuleLatency module_latency = 7;
+  ModuleErrorCode error_code = 8;
+  repeated MODULE error_modules = 9;
+}

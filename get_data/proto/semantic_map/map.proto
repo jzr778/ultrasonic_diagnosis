@@ -1,0 +1,94 @@
+syntax = "proto2";
+
+package deeproute.hdmap;
+
+import "semantic_map/map_clear_area.proto";
+import "semantic_map/map_crosswalk.proto";
+import "semantic_map/map_diversion_area.proto";
+import "semantic_map/map_junction.proto";
+import "semantic_map/map_lane.proto";
+import "semantic_map/map_overlap.proto";
+import "semantic_map/map_signal.proto";
+import "semantic_map/map_speed_bump.proto";
+import "semantic_map/map_stop_sign.proto";
+import "semantic_map/map_yield_sign.proto";
+import "semantic_map/map_road.proto";
+import "semantic_map/map_parking_space.proto";
+import "semantic_map/map_pnc_junction.proto";
+import "semantic_map/map_trafficlight.proto";
+import "semantic_map/map_bus_station.proto";
+import "semantic_map/map_toll_station.proto";
+import "semantic_map/map_standby_area.proto";
+import "semantic_map/map_object_model.proto";
+import "semantic_map/map_invalid_area.proto";
+import "semantic_map/map_road_mask.proto";
+import "semantic_map/map_road_mask_plus.proto";
+import "semantic_map/map_line_sign.proto";
+
+// This message defines how we project the ellipsoidal Earth surface to a plane.
+message MapProjection {
+  // PROJ.4 setting:
+  // "+proj=tmerc +lat_0={origin.lat} +lon_0={origin.lon} +k={scale_factor}
+  // +ellps=WGS84 +no_defs"
+  optional string proj = 1;
+  optional double longitude_deg = 2;
+  optional double latitude_deg = 3;
+  optional double scale_factor = 4 [default = 1.0];
+}
+
+message Header {
+  optional bytes version = 1;
+  optional bytes date = 2;
+  optional MapProjection projection = 3;
+  optional bytes district = 4;
+  optional bytes generation = 5;
+  optional bytes rev_major = 6;
+  optional bytes rev_minor = 7;
+  optional double left = 8;
+  optional double top = 9;
+  optional double right = 10;
+  optional double bottom = 11;
+  optional bytes vendor = 12;
+  optional string ndt_map_version = 13;
+  optional int32 tile_level = 14;
+}
+
+message Map {
+  optional Header header = 1;
+
+  repeated Crosswalk crosswalk = 2;
+  repeated Junction junction = 3;
+  repeated Lane lane = 4;
+  repeated StopSign stop_sign = 5;
+  repeated Signal signal = 6; // Currently unused.
+  repeated YieldSign yield = 7;
+  repeated Overlap overlap = 8; // Currently unused.
+  repeated ClearArea clear_area = 9;
+  repeated SpeedBump speed_bump = 10;
+  repeated Road road = 11;
+  repeated ParkingSpace parking_space = 12;
+  repeated PNCJunction pnc_junction = 13; // Currently unused.
+  repeated LaneBoundary lane_boundaries = 14;
+  repeated StopLine stop_lines = 15;
+  repeated TrafficLight traffic_lights = 16;
+  repeated Entrance entrances = 17; // Currently unused.
+  repeated BusStation bus_stations = 18;
+  repeated TollStation toll_stations = 19;
+  repeated StandbyArea standby_areas = 20;
+   // In order for PNC to judge whether car can pass this intersection when the light is yellow.
+  repeated JunctionEndLine junction_end_lines = 21;
+  repeated TrafficSign traffic_signs = 22;
+  repeated GroundSymbol ground_symbols = 23;
+  repeated Pole poles = 24;
+  repeated RoadSection road_sections = 25;
+  repeated GroundObstacle ground_obstacles = 26;
+  repeated InvalidArea invalid_areas = 27;
+  repeated RoadMask road_masks = 28;
+  repeated DiversionArea diversion_areas = 29;
+  repeated RoadMaskPlus road_mask_pluses = 30;
+  repeated DecelerationAndYieldLine deceleration_and_yield_lines = 31;
+  repeated TransverseDecelerationMarking transverse_deceleration_markings = 32;
+  repeated VehicleGapConfirmationLine vehicle_gap_confirmation_lines = 33;
+  repeated LaneMarker lane_markers = 34;
+  repeated BicycleLaneMarker bicycle_lane_markers = 35;
+}

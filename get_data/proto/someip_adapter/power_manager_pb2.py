@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\"someip_adapter/power_manager.proto\x12\x1c\x64\x65\x65proute.someip_adapter.gwm\"1\n\x10McuToSocPowerMsg\x12\x1d\n\x15\x44svPowerMgmtMsg_Array\x18\x01 \x01(\x0c\"\xb3\x01\n\x10SocToMcuPowerMsg\x12N\n\x08response\x18\x01 \x01(\x0e\x32<.deeproute.someip_adapter.gwm.SocToMcuPowerMsg.PowerResponse\"O\n\rPowerResponse\x12\x11\n\rRESPONSE_WAIT\x10\x00\x12\x16\n\x12RESPONSE_COMPLETED\x10\x01\x12\x13\n\x0fRESPONSE_FAILED\x10\x02\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\"someip_adapter/power_manager.proto\x12\x1c\x64\x65\x65proute.someip_adapter.gwm\"1\n\x10McuToSocPowerMsg\x12\x1d\n\x15\x44svPowerMgmtMsg_Array\x18\x01 \x01(\x0c\"\xb3\x01\n\x10SocToMcuPowerMsg\x12N\n\x08response\x18\x01 \x01(\x0e\x32<.deeproute.someip_adapter.gwm.SocToMcuPowerMsg.PowerResponse\"O\n\rPowerResponse\x12\x11\n\rRESPONSE_WAIT\x10\x00\x12\x16\n\x12RESPONSE_COMPLETED\x10\x01\x12\x13\n\x0fRESPONSE_FAILED\x10\x02\"\xab\x01\n\x14PowerMgtToAppRequest\x12\x10\n\x08\x61pp_name\x18\x01 \x01(\x0c\x12L\n\x05reset\x18\x02 \x01(\x0e\x32=.deeproute.someip_adapter.gwm.PowerMgtToAppRequest.PowerReset\"3\n\nPowerReset\x12\x15\n\x11INVALID_OPERATION\x10\x00\x12\x0e\n\nHARD_RESET\x10\x01\"\xa7\x01\n\x15PowerMgtToAppResponse\x12T\n\x06result\x18\x01 \x01(\x0e\x32\x44.deeproute.someip_adapter.gwm.PowerMgtToAppResponse.PowerResetResult\"8\n\x10PowerResetResult\x12\x11\n\rRESET_UNKNOWN\x10\x00\x12\x11\n\rRESET_HANDLED\x10\x01\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -37,4 +37,12 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_SOCTOMCUPOWERMSG']._serialized_end=299
   _globals['_SOCTOMCUPOWERMSG_POWERRESPONSE']._serialized_start=220
   _globals['_SOCTOMCUPOWERMSG_POWERRESPONSE']._serialized_end=299
+  _globals['_POWERMGTTOAPPREQUEST']._serialized_start=302
+  _globals['_POWERMGTTOAPPREQUEST']._serialized_end=473
+  _globals['_POWERMGTTOAPPREQUEST_POWERRESET']._serialized_start=422
+  _globals['_POWERMGTTOAPPREQUEST_POWERRESET']._serialized_end=473
+  _globals['_POWERMGTTOAPPRESPONSE']._serialized_start=476
+  _globals['_POWERMGTTOAPPRESPONSE']._serialized_end=643
+  _globals['_POWERMGTTOAPPRESPONSE_POWERRESETRESULT']._serialized_start=587
+  _globals['_POWERMGTTOAPPRESPONSE_POWERRESETRESULT']._serialized_end=643
 # @@protoc_insertion_point(module_scope)

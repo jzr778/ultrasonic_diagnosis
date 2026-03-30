@@ -1,0 +1,29 @@
+syntax = "proto2";
+
+package deeproute.hdmap;
+
+import "common/geometry.proto";
+
+message ParkingSpace {
+  optional int32 id = 1;
+  enum Type {
+    UNKNOWN = 0;
+    ON_LANE_PARKING_SPACE = 1; // Parking spaces above lane.
+    OPEN_PARKING_LOT_PARKING_SPACE = 2;  // Parking space on the ground.
+    UNDERGROUND_PARKING_LOT_PARKING_SPACE = 3;
+  };
+  optional Type type = 2;
+  optional common.Polygon polygon = 3;
+  optional bool virtual = 4;
+  optional double heading = 5 [deprecated = true];
+  optional deeproute.common.PointENU center_point = 6 [deprecated = true];
+  optional deeproute.common.PointENU switch_point = 7 [deprecated = true];
+  optional deeproute.common.PointENU switch_point_out = 8 [deprecated = true];
+  enum Shape {
+    VERTICAL_PARKING_LOT = 1;
+    SIDE_PARKING_LOT = 2;
+    INCLINED_PARKING_LOT = 3;
+  };
+  optional Shape shape = 9;
+  repeated int32 ground_obstacle_ids = 10;
+}

@@ -24,15 +24,13 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1b\x63hurch/onboard_header.proto\x12\x10\x64\x65\x65proute.church\";\n\nSimulation\x12\x1a\n\nfrom_cache\x18\xf5\x03 \x01(\x08:\x05\x66\x61lse\x12\x11\n\x08msg_type\x18\xf6\x03 \x01(\t\"\xdc\x01\n\rOnboardHeader\x12\x14\n\ttimestamp\x18\x01 \x01(\x04:\x01\x30\x12\x13\n\x0bsender_name\x18\x02 \x01(\t\x12\r\n\x05topic\x18\x03 \x01(\t\x12\x14\n\x0csequence_num\x18\x04 \x01(\r\x12\x18\n\x10source_timestamp\x18\x05 \x01(\x04\x12\x12\n\x07version\x18\x06 \x01(\r:\x01\x31\x12\x1b\n\x13\x64\x61taplane_timestamp\x18\x07 \x01(\x04\x12\x30\n\nsimulation\x18\x08 \x01(\x0b\x32\x1c.deeproute.church.Simulation')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1b\x63hurch/onboard_header.proto\x12\x10\x64\x65\x65proute.church\"\xaa\x01\n\rOnboardHeader\x12\x14\n\ttimestamp\x18\x01 \x01(\x04:\x01\x30\x12\x13\n\x0bsender_name\x18\x02 \x01(\t\x12\r\n\x05topic\x18\x03 \x01(\t\x12\x14\n\x0csequence_num\x18\x04 \x01(\r\x12\x18\n\x10source_timestamp\x18\x05 \x01(\x04\x12\x12\n\x07version\x18\x06 \x01(\r:\x01\x31\x12\x1b\n\x13\x64\x61taplane_timestamp\x18\x07 \x01(\x04')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'church.onboard_header_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_SIMULATION']._serialized_start=49
-  _globals['_SIMULATION']._serialized_end=108
-  _globals['_ONBOARDHEADER']._serialized_start=111
-  _globals['_ONBOARDHEADER']._serialized_end=331
+  _globals['_ONBOARDHEADER']._serialized_start=50
+  _globals['_ONBOARDHEADER']._serialized_end=220
 # @@protoc_insertion_point(module_scope)

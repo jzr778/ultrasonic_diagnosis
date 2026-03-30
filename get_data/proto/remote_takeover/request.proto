@@ -1,0 +1,12 @@
+syntax = "proto2";
+
+package deeproute.remote_takeover;
+
+message Request {
+  enum RequestType{
+    REQUESTTYPE_INVALID = 0;
+    REQUESTTYPE_CANCEL = 1;
+    REQUESTTYPE_REQUEST = 2;
+  }
+  optional RequestType request_type = 1;
+}

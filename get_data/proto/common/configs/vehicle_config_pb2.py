@@ -22,19 +22,64 @@ _runtime_version.ValidateProtobufRuntimeVersion(
 _sym_db = _symbol_database.Default()
 
 
+from common import pair_pb2 as common_dot_pair__pb2
 from common import header_pb2 as common_dot_header__pb2
 from common import geometry_pb2 as common_dot_geometry__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n#common/configs/vehicle_config.proto\x12\x10\x64\x65\x65proute.common\x1a\x13\x63ommon/header.proto\x1a\x15\x63ommon/geometry.proto\"@\n\tVehicleID\x12\x0b\n\x03vin\x18\x01 \x01(\t\x12\r\n\x05plate\x18\x02 \x01(\t\x12\x17\n\x0fother_unique_id\x18\x03 \x01(\t*\x1b\n\x0cVehicleBrand\x12\x0b\n\x07GL_P177\x10#')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n#common/configs/vehicle_config.proto\x12\x10\x64\x65\x65proute.common\x1a\x11\x63ommon/pair.proto\x1a\x13\x63ommon/header.proto\x1a\x15\x63ommon/geometry.proto\"\x97\x01\n\tTransform\x12\x14\n\x0csource_frame\x18\x01 \x01(\x0c\x12\x14\n\x0ctarget_frame\x18\x02 \x01(\x0c\x12.\n\x0btranslation\x18\x03 \x01(\x0b\x32\x19.deeproute.common.Point3D\x12.\n\x08rotation\x18\x04 \x01(\x0b\x32\x1c.deeproute.common.Quaternion\"<\n\nExtrinsics\x12.\n\ttansforms\x18\x01 \x03(\x0b\x32\x1b.deeproute.common.Transform\"@\n\tVehicleID\x12\x0b\n\x03vin\x18\x01 \x01(\t\x12\r\n\x05plate\x18\x02 \x01(\t\x12\x17\n\x0fother_unique_id\x18\x03 \x01(\t\"\x99\x01\n\x0fSteerRatioTable\x12J\n\x10steer_ratio_pair\x18\x01 \x03(\x0b\x32\x30.deeproute.common.SteerRatioTable.SteerRatioPair\x1a:\n\x0eSteerRatioPair\x12\x13\n\x0bsteer_angle\x18\x01 \x01(\x01\x12\x13\n\x0bsteer_ratio\x18\x02 \x01(\x01\"\xdd\n\n\x0cVehicleParam\x12-\n\x05\x62rand\x18\x01 \x01(\x0e\x32\x1e.deeproute.common.VehicleBrand\x12/\n\nvehicle_id\x18\x02 \x01(\x0b\x32\x1b.deeproute.common.VehicleID\x12!\n\x14\x66ront_edge_to_center\x18\x03 \x01(\x01:\x03nan\x12 \n\x13\x62\x61\x63k_edge_to_center\x18\x04 \x01(\x01:\x03nan\x12 \n\x13left_edge_to_center\x18\x05 \x01(\x01:\x03nan\x12!\n\x14right_edge_to_center\x18\x06 \x01(\x01:\x03nan\x12\x13\n\x06length\x18\x07 \x01(\x01:\x03nan\x12\x12\n\x05width\x18\x08 \x01(\x01:\x03nan\x12\x13\n\x06height\x18\t \x01(\x01:\x03nan\x12\x1d\n\x10max_acceleration\x18\x0b \x01(\x01:\x03nan\x12\x1d\n\x10max_deceleration\x18\x0c \x01(\x01:\x03nan\x12\x1c\n\x0fmax_steer_angle\x18\r \x01(\x01:\x03nan\x12\x18\n\x0bsteer_ratio\x18\x10 \x01(\x01:\x03nan\x12\x17\n\nwheel_base\x18\x11 \x01(\x01:\x03nan\x12!\n\x14wheel_rolling_radius\x18\x12 \x01(\x01:\x03nan\x12\x1d\n\x10rear_axis_length\x18\x16 \x01(\x02:\x03nan\x12\x1d\n\x10rear_left_radius\x18\x17 \x01(\x02:\x03nan\x12\x1e\n\x11rear_right_radius\x18\x18 \x01(\x02:\x03nan\x12 \n\x13rear_axis_to_center\x18\x19 \x01(\x02:\x03nan\x12 \n\x14max_steer_angle_rate\x18\x1a \x01(\x01\x42\x02\x18\x01\x12 \n\x14min_steer_angle_rate\x18\x1b \x01(\x01\x42\x02\x18\x01\x12\x1a\n\x0e\x62rake_deadzone\x18\x1c \x01(\x01\x42\x02\x18\x01\x12\x1d\n\x11throttle_deadzone\x18\x1d \x01(\x01\x42\x02\x18\x01\x12\x18\n\x0cpitch_offset\x18\x1e \x01(\x01\x42\x02\x18\x01\x12\x1b\n\x0fmin_turn_radius\x18\x1f \x01(\x01\x42\x02\x18\x01\x12&\n\x1amax_abs_speed_when_stopped\x18  \x01(\x01\x42\x02\x18\x01\x12\x1c\n\x10rear_axle_length\x18! \x01(\x01\x42\x02\x18\x01\x12@\n\x0cvehicle_type\x18\" \x01(\x0e\x32*.deeproute.common.VehicleParam.VehicleType\x12\x0c\n\x04mass\x18# \x01(\x01\x12\x18\n\x10\x66ront_wheel_mass\x18$ \x01(\x01\x12\x17\n\x0frear_wheel_mass\x18% \x01(\x01\x12%\n\x1d\x66ront_axis_dis_to_mass_center\x18& \x01(\x01\x12$\n\x1crear_axis_dis_to_mass_center\x18\' \x01(\x01\x12\x1d\n\x12steer_angle_offset\x18( \x01(\x01:\x01\x30\x12<\n\x11steer_ratio_table\x18) \x01(\x0b\x32!.deeproute.common.SteerRatioTable\x12\x44\n\x19reverse_steer_ratio_table\x18* \x01(\x0b\x32!.deeproute.common.SteerRatioTable\x12\x17\n\x0cmirror_width\x18+ \x01(\x01:\x01\x30\"k\n\x0bVehicleType\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x11\n\rPASSENGER_CAR\x10\x01\x12\x0f\n\x0bLIGHT_TRUCK\x10\x02\x12\x0f\n\x0bHEAVY_TRUCK\x10\x03\x12\x11\n\rFREIGHT_TRUCK\x10\x04\x12\x07\n\x03\x42US\x10\x05\"\x95\x01\n\x11SensorsParameters\x12=\n\x1avehicle_to_imu_translation\x18\x01 \x01(\x0b\x32\x19.deeproute.common.Vector3\x12\x41\n\x1evehicle_to_sensing_translation\x18\x02 \x01(\x0b\x32\x19.deeproute.common.Vector3\"\xe3\x01\n\rVehicleConfig\x12(\n\x06header\x18\x01 \x01(\x0b\x32\x18.deeproute.common.Header\x12\x35\n\rvehicle_param\x18\x02 \x01(\x0b\x32\x1e.deeproute.common.VehicleParam\x12\x30\n\nextrinsics\x18\x03 \x01(\x0b\x32\x1c.deeproute.common.Extrinsics\x12?\n\x12sensors_parameters\x18\x04 \x01(\x0b\x32#.deeproute.common.SensorsParameters\"\xa4\x0f\n\x0fPncVehicleParam\x12\x1a\n\x12stitch_time_offset\x18\x01 \x01(\x01\x12 \n\x18max_lateral_acceleration\x18\x02 \x01(\x01\x12\x18\n\x10max_lateral_jerk\x18\x03 \x01(\x01\x12 \n\x14max_steer_angle_rate\x18\x04 \x01(\x01\x42\x02\x18\x01\x12*\n\x1emax_steer_angle_rate_low_speed\x18\x05 \x01(\x01\x42\x02\x18\x01\x12\x1e\n\x16max_steer_acceleration\x18\x06 \x01(\x01\x12\x14\n\x0cmax_yaw_rate\x18\x07 \x01(\x01\x12 \n\x18reinit_lateral_threshold\x18\x08 \x01(\x01\x12%\n\x1dreinit_longitudinal_threshold\x18\t \x01(\x01\x12*\n\"reinit_lateral_threshold_low_speed\x18\n \x01(\x01\x12\x18\n\x10reinit_low_speed\x18\x0b \x01(\x01\x12\x19\n\x0elat_iter_delay\x18\x0c \x01(\x05:\x01\x33\x12\"\n\x0flat_cutoff_freq\x18\r \x01(\x01:\t0.8435212\x12&\n\x1binit_steer_thres_finish_deg\x18\x0e \x01(\x01:\x01\x32\x12.\n!init_max_steer_acceleration_ratio\x18\x0f \x01(\x01:\x03\x30.4\x12*\n\x1finit_steer_thres_finish_deg_hpi\x18\x10 \x01(\x01:\x01\x35\x12\x11\n\tmax_speed\x18\x11 \x01(\x01\x12\x19\n\x0elon_iter_delay\x18\x12 \x01(\r:\x01\x35\x12\x1a\n\x0flon_cutoff_freq\x18\x13 \x01(\x01:\x01\x31\x12\x41\n\x0bmodel_param\x18\x14 \x01(\x0b\x32,.deeproute.common.PncVehicleParam.ModelParam\x12\x19\n\x0emax_rear_angle\x18\x15 \x01(\x01:\x01\x30\x12\x1e\n\x13max_rear_angle_rate\x18\x16 \x01(\x01:\x01\x30\x12\x1e\n\x13lat_rear_iter_delay\x18\x17 \x01(\x05:\x01\x33\x12\'\n\x14lat_rear_cutoff_freq\x18\x18 \x01(\x01:\t0.8435212\x12\x1b\n\x0e\x65go_stop_thres\x18\x19 \x01(\x01:\x03\x30.1\x12$\n\x19reinit_heading_thres_stop\x18\x1a \x01(\x01:\x01\x35\x12&\n\x19reinit_lateral_thres_stop\x18\x1b \x01(\x01:\x03\x30.1\x12 \n\x15reinit_lon_thres_stop\x18\x1c \x01(\x01:\x01\x31\x12\x34\n\x14vx_stwl_rate_deg_pts\x18\x1d \x03(\x0b\x32\x16.deeproute.common.Pair\x12%\n\x18max_steer_angle_rate_osp\x18\x1e \x01(\x01:\x03\x33\x36\x30\x12\x1e\n\x12\x65ss_lat_iter_delay\x18\x64 \x01(\x01:\x02\x31\x34\x1a\xc7\x06\n\nModelParam\x12%\n\x1d\x64istance_center_to_front_alxe\x18\x01 \x01(\x01\x12$\n\x1c\x64istance_center_to_rear_alxe\x18\x02 \x01(\x01\x12!\n\x19\x66ront_cornering_stiffness\x18\x03 \x01(\x01\x12 \n\x18rear_cornering_stiffness\x18\x04 \x01(\x01\x12\x14\n\x0cvehicle_mass\x18\x05 \x01(\x01\x12!\n\x19vehicle_moment_of_inertia\x18\x06 \x01(\x01\x12S\n\x0f\x61\x65\x62_model_param\x18\x07 \x01(\x0b\x32:.deeproute.common.PncVehicleParam.ModelParam.AEBModelParam\x12\x16\n\x0bstability_k\x18\x08 \x01(\x01:\x01\x30\x1a\x80\x04\n\rAEBModelParam\x12\x11\n\tawb_delay\x18\x01 \x01(\x01\x12\x61\n\x0f\x61wb_level_param\x18\x02 \x03(\x0b\x32H.deeproute.common.PncVehicleParam.ModelParam.AEBModelParam.AWBLevelParam\x12!\n\x19tau_1st_order_pres_to_acc\x18\x03 \x01(\x01\x12\"\n\x1again_1st_order_pres_to_acc\x18\x04 \x01(\x01\x12\x11\n\taeb_delay\x18\x05 \x01(\x01\x12#\n\x1b\x61\x65\x62_2nd_order_damping_ratio\x18\x06 \x01(\x01\x12\"\n\x1a\x61\x65\x62_2nd_order_natural_freq\x18\x07 \x01(\x01\x12%\n\x1d\x61\x65\x62_effective_speed_reduction\x18\x08 \x01(\x01\x12#\n\x1b\x61\x65\x62_tau_1st_order_wind_down\x18\t \x01(\x01\x1a\x89\x01\n\rAWBLevelParam\x12!\n\x19\x61wb_pressure_upslope_rate\x18\x01 \x01(\x01\x12\x19\n\x11\x61wb_pressure_peak\x18\x02 \x01(\x01\x12#\n\x1b\x61wb_pressure_downslope_rate\x18\x03 \x01(\x01\x12\x15\n\racc_threshold\x18\x04 \x01(\x01*\xe5\x02\n\x0cVehicleBrand\x12\x0f\n\x0bLINCOLN_MKZ\x10\x00\x12\x07\n\x03GEM\x10\x01\x12\t\n\x05LEXUS\x10\x02\x12\x0b\n\x07TRANSIT\x10\x03\x12\x07\n\x03GE3\x10\x04\x12\x07\n\x03WEY\x10\x05\x12\x0c\n\x08ZHONGYUN\x10\x06\x12\x06\n\x02\x43H\x10\x07\x12\x07\n\x03\x45\x37\x30\x10\x08\x12\x07\n\x03\x46MS\x10\t\x12\x07\n\x03MKZ\x10\n\x12\x08\n\x04GE11\x10\x0b\x12\x0b\n\x07\x44\x46_X69B\x10\x0c\x12\x07\n\x03\x43\x41U\x10\r\x12\x07\n\x03KLQ\x10\x0e\x12\x07\n\x03H97\x10\x0f\x12\x08\n\x04\x41ION\x10\x10\x12\n\n\x06LAVIDA\x10\x11\x12\r\n\tISUZU_CHA\x10\x12\x12\x07\n\x03MAR\x10\x13\x12\r\n\tISUZU_USA\x10\x14\x12\x06\n\x02M5\x10\x15\x12\x07\n\x03ID4\x10\x16\x12\x06\n\x02M7\x10\x17\x12\x0b\n\x07\x42YD_HAN\x10\x18\x12\x0f\n\x0b\x42YD_HAN_ICV\x10\x19\x12\x13\n\x0f\x42YD_HAN_ICV_ONE\x10\x1a\x12\t\n\x05SMART\x10\x1b\x12\x07\n\x03GWM\x10\x1c\x12\x11\n\rM7_SOFT_FILM2\x10\x1d')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'common.configs.vehicle_config_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_VEHICLEBRAND']._serialized_start=167
-  _globals['_VEHICLEBRAND']._serialized_end=194
-  _globals['_VEHICLEID']._serialized_start=101
-  _globals['_VEHICLEID']._serialized_end=165
+  _globals['_VEHICLEPARAM'].fields_by_name['max_steer_angle_rate']._loaded_options = None
+  _globals['_VEHICLEPARAM'].fields_by_name['max_steer_angle_rate']._serialized_options = b'\030\001'
+  _globals['_VEHICLEPARAM'].fields_by_name['min_steer_angle_rate']._loaded_options = None
+  _globals['_VEHICLEPARAM'].fields_by_name['min_steer_angle_rate']._serialized_options = b'\030\001'
+  _globals['_VEHICLEPARAM'].fields_by_name['brake_deadzone']._loaded_options = None
+  _globals['_VEHICLEPARAM'].fields_by_name['brake_deadzone']._serialized_options = b'\030\001'
+  _globals['_VEHICLEPARAM'].fields_by_name['throttle_deadzone']._loaded_options = None
+  _globals['_VEHICLEPARAM'].fields_by_name['throttle_deadzone']._serialized_options = b'\030\001'
+  _globals['_VEHICLEPARAM'].fields_by_name['pitch_offset']._loaded_options = None
+  _globals['_VEHICLEPARAM'].fields_by_name['pitch_offset']._serialized_options = b'\030\001'
+  _globals['_VEHICLEPARAM'].fields_by_name['min_turn_radius']._loaded_options = None
+  _globals['_VEHICLEPARAM'].fields_by_name['min_turn_radius']._serialized_options = b'\030\001'
+  _globals['_VEHICLEPARAM'].fields_by_name['max_abs_speed_when_stopped']._loaded_options = None
+  _globals['_VEHICLEPARAM'].fields_by_name['max_abs_speed_when_stopped']._serialized_options = b'\030\001'
+  _globals['_VEHICLEPARAM'].fields_by_name['rear_axle_length']._loaded_options = None
+  _globals['_VEHICLEPARAM'].fields_by_name['rear_axle_length']._serialized_options = b'\030\001'
+  _globals['_PNCVEHICLEPARAM'].fields_by_name['max_steer_angle_rate']._loaded_options = None
+  _globals['_PNCVEHICLEPARAM'].fields_by_name['max_steer_angle_rate']._serialized_options = b'\030\001'
+  _globals['_PNCVEHICLEPARAM'].fields_by_name['max_steer_angle_rate_low_speed']._loaded_options = None
+  _globals['_PNCVEHICLEPARAM'].fields_by_name['max_steer_angle_rate_low_speed']._serialized_options = b'\030\001'
+  _globals['_VEHICLEBRAND']._serialized_start=4276
+  _globals['_VEHICLEBRAND']._serialized_end=4633
+  _globals['_TRANSFORM']._serialized_start=121
+  _globals['_TRANSFORM']._serialized_end=272
+  _globals['_EXTRINSICS']._serialized_start=274
+  _globals['_EXTRINSICS']._serialized_end=334
+  _globals['_VEHICLEID']._serialized_start=336
+  _globals['_VEHICLEID']._serialized_end=400
+  _globals['_STEERRATIOTABLE']._serialized_start=403
+  _globals['_STEERRATIOTABLE']._serialized_end=556
+  _globals['_STEERRATIOTABLE_STEERRATIOPAIR']._serialized_start=498
+  _globals['_STEERRATIOTABLE_STEERRATIOPAIR']._serialized_end=556
+  _globals['_VEHICLEPARAM']._serialized_start=559
+  _globals['_VEHICLEPARAM']._serialized_end=1932
+  _globals['_VEHICLEPARAM_VEHICLETYPE']._serialized_start=1825
+  _globals['_VEHICLEPARAM_VEHICLETYPE']._serialized_end=1932
+  _globals['_SENSORSPARAMETERS']._serialized_start=1935
+  _globals['_SENSORSPARAMETERS']._serialized_end=2084
+  _globals['_VEHICLECONFIG']._serialized_start=2087
+  _globals['_VEHICLECONFIG']._serialized_end=2314
+  _globals['_PNCVEHICLEPARAM']._serialized_start=2317
+  _globals['_PNCVEHICLEPARAM']._serialized_end=4273
+  _globals['_PNCVEHICLEPARAM_MODELPARAM']._serialized_start=3434
+  _globals['_PNCVEHICLEPARAM_MODELPARAM']._serialized_end=4273
+  _globals['_PNCVEHICLEPARAM_MODELPARAM_AEBMODELPARAM']._serialized_start=3761
+  _globals['_PNCVEHICLEPARAM_MODELPARAM_AEBMODELPARAM']._serialized_end=4273
+  _globals['_PNCVEHICLEPARAM_MODELPARAM_AEBMODELPARAM_AWBLEVELPARAM']._serialized_start=4136
+  _globals['_PNCVEHICLEPARAM_MODELPARAM_AEBMODELPARAM_AWBLEVELPARAM']._serialized_end=4273
 # @@protoc_insertion_point(module_scope)

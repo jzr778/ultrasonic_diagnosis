@@ -1,0 +1,21 @@
+syntax = "proto2";
+
+package deeproute.esa;
+import "canbus/chassis.proto";
+import "common/header.proto";
+import "common/pnc_point.proto";
+import "common/vehicle_signal.proto";
+
+// topic: esa/trajectory
+message ESATrajectory {
+  optional deeproute.common.Header header = 1;
+  optional bool enable = 2;
+  optional int64 perception_header_timestamp = 3;
+  // path data + speed data
+  repeated deeproute.common.TrajectoryPoint trajectory_point = 4;
+  optional deeproute.common.VehicleSignal vehicle_signal = 5;
+  // 6 is for simulation
+  optional deeproute.canbus.Chassis.GearPosition gear = 6;
+  // publish time (us)
+  optional int64 timestamp = 7;
+}

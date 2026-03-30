@@ -1,0 +1,353 @@
+syntax = "proto2";
+
+package deeproute.navinfo;
+
+import "common/geometry.proto";
+import "map/routing.proto";
+import "map/sd_map.proto";
+import "graph_match/graph_matching.proto";
+import "routing/cloud_task.proto";
+
+message SDRoutingResponse {
+  optional deeproute.map.RoutePlanningType route_planning_type = 1000;
+
+  optional deeproute.map.RoutingCode code = 1;
+  repeated Result result = 2;
+  optional string request_id = 3;
+
+  // One request may correspond to multiple responses
+  optional int32 response_id = 8;
+  optional deeproute.map.RoutingRequest request = 4;
+  optional int32 segmented_route_num = 5;
+
+  optional string sd_map_version = 6;
+  optional uint64 route_id = 7;
+}
+
+message NaviHead {
+  // status code. 100=ok
+  optional int32 code = 1;
+  // version
+  optional string ver = 2;
+}
+
+message LaneInfo {
+  // direction of lane line
+  // Value range: [1,12], 1 means going straight, each increment of 1 means
+  // turning right by 30 degrees more, such as: 4 means turning right, 7 means
+  // turning around, and 10 means turning left. Only four values of 1, 4, 7, and
+  // 10 appear in the actual data.
+  optional int32 arr = 1;
+  // Number of left additional lanes.
+  optional int32 la = 2;
+  // Number of right additional lanes.
+  optional int32 ra = 3;
+  // Passable lanes represented by each bit.The lower 16 bits are valid, and the
+  // valid data is stored from high bits to low bits.
+  optional int32 bm = 4;
+  // Bus-only lanes denoted by bit. The lower 16 bits are valid, and the valid
+  // data is stored from high bits to low bits.
+  optional int32 bus_bm = 5;
+  // Total number of lanes, including left and right additional lanes
+  optional int32 ln = 6;
+  // Out link of this lane
+  repeated uint64 out_link_ids = 7;
+  // lane conditions
+  repeated deeproute.sd_map.LaneCond lane_conds = 8;
+}
+
+message LinkAttr {
+  // dr link id
+  // Its meaning is consistent with sd_map.dr_link_id
+  // added at 2024/07/01, If your data time is earlier than this, has_dr_link_id
+  // = false,
+  optional uint64 dr_link_id = 19;
+
+  // deprecated
+  // ni_id = std::to_string(static_cast<int64_t>(sd_map.dr_link). The reason
+  // this is done is because lor or map uses stoll, if use ni_id =
+  // std::to_string(sd_map.dr_link_id), when dr link id in [2^63, 2^64-1], This
+  // will cause the code to crash, so we need to convert it to int64_t.
+  // But if you want to use ni_id and sd_map.dr_link_id to determine equality
+  // right way:
+  //   static_cast<int64_t> dr_link_id = std::stoll(ni_id);
+  optional string ni_id = 6;
+  // Required.
+  // The length of this segment. unit: meters
+  optional int32 dis = 7;
+  // Not required.
+  // 0 means there is no traffic light at the end of the road(default), 1 means
+  // there is a traffic light
+  optional int32 traffic_light = 8;
+  // Not required.
+  // speed limit. unit: km/h.
+  // 0 means unlimited speed, if it is the same as the speed limit value of the
+  // previous section, it will be omitted.
+  optional int32 spl = 9;
+  // Not required
+  // is tunnel.
+  // 0 non-tunnel (default). 1 tunnel
+  optional int32 tunnel = 10;
+  // lane info number.
+  optional int32 lane_num = 11;
+  // lane info
+  repeated LaneInfo lanes = 12;
+  // is elevated
+  // 0 non-elevated (default). 1 elevated
+  optional bool elevated = 13;
+  // Required.
+  // shape points.
+  // latitude and longitude encoded with gcj02
+  optional string sh_pos = 1;
+  // Required
+  // Lane number.
+  // Actual number of lanes on link
+  optional int32 f_lane_num = 2;
+
+  // priority
+  // road class
+  // The grade of this road section can be omitted if it is the same as the
+  // grade of the previous road section.
+  //  0: Highway
+  //  1: Urban Expressway
+  //  2: National Road
+  //  3: Provincial roads, urban arterial roads
+  //  4: County Road
+  //  5: Township roads with better road conditions
+  //  6: Township Road
+  //  7: POI connecting line, similar to residential road, but can pass through
+  //  8: Community road, can not pass through
+  //  9: Level 9 Auxiliary Road: Auxiliary roads for non-motor vehicles are
+  //  defined as Level 9 Auxiliary Roads
+  //  10: Ferry
+  //  11: Walking Path
+  optional int32 pr = 3;
+
+  optional int32 usage = 4;
+
+  // Required.
+  // shape points.
+  // latitude and longitude encoded with gcj02
+  repeated deeproute.common.PointLLH shape_points = 5;
+  // Required.
+  // shape points.
+  // point2d of vehicle
+  repeated deeproute.common.Point2D shape_points_2d = 14;
+
+  // Multi usage from tencent map
+  repeated deeproute.sd_map.LinkData.FormWay formways = 15;
+
+  // Lane attrs from tencent map
+  repeated deeproute.sd_map.LaneAttr lane_attrs = 16;
+
+  // Lane info data
+  repeated deeproute.sd_map.LaneInfoData lane_info_data = 18;
+
+  optional uint32 experience_speed_limit = 17;
+}
+
+message Link {
+  optional LinkAttr link_attr = 1;
+  optional int32 psn = 2;
+  repeated LinkAttr ps_infos = 3;
+}
+
+message DataCollectSingleTask {
+  optional int64 task_id = 1;
+
+  oneof CollectEvent {
+    deeproute.cloud_task.ImageCollectEvent image_collect_event = 10;
+  }
+}
+
+message DataCollectTask {
+  repeated DataCollectSingleTask tasks = 1;
+}
+
+message Segment {
+
+  // Information of data collect tasks issued on this link segment.
+  optional DataCollectTask data_collect_task = 101;
+
+  // Use for graph match.
+  // If it's true, means it's a virtual link.
+  // Virtual link:
+  //   If there is no successful match between segm1 and segm2,
+  //   add a virtual link between segm1 and segm2.
+  //   Virtual link has no info in it.
+  optional bool virtual_link = 100;
+
+  optional bool is_odd_limit = 33;
+
+  // dr link id
+  // Its meaning is consistent with sd_map.dr_link_id
+  // added at 2024/07/01, If your data time is earlier than this, has_dr_link_id
+  // = false,
+  optional uint64 dr_link_id = 37;
+
+  // Required.
+  // The length of this segment. unit: meters
+  optional int32 dis = 1;
+  // Not required
+  // Absolute segment length Only available for the first and last segment
+  // (unit: meters).
+  optional int32 abs_dis = 2;
+
+  // deprecated
+  // ni_id = std::to_string(static_cast<int64_t>(sd_map.dr_link). The reason
+  // this is done is because lor or map uses stoll, if use ni_id =
+  // std::to_string(sd_map.dr_link_id), when dr link id in [2^63, 2^64-1], This
+  // will cause the code to crash, so we need to convert it to int64_t.
+  // But if you want to use ni_id and sd_map.dr_link_id to determine equality
+  // right way:
+  //   static_cast<int64_t> dr_link_id = std::stoll(ni_id);
+  optional string ni_id = 3;
+  // Required.
+  // shape points.
+  // latitude and longitude encoded with gcj02
+  optional string sh_pos = 4;
+  // Not required.
+  // 0 means there is no traffic light at the end of the road(default), 1 means
+  // there is a traffic light
+  optional int32 traffic_light = 5;
+  // Not required.
+  // speed limit. unit: km/h.
+  // 0 means unlimited speed, if it is the same as the speed limit value of the
+  // previous section, it will be omitted.
+  optional int32 spl = 6;
+  // Required
+  // Lane number.
+  // Actual number of lanes on link
+  optional int32 f_lane_num = 7;
+  // Not required.
+  // Whether the end of the road segment is a junction.
+  // 0 non-junction 1 junction.
+  optional int32 crossing = 8;
+  // Not required.
+  // Use each bit to represent the passable Lane from the current section to the
+  // next section (corresponding to arr).
+  // The lower 16 bits are valid, and the bits from high to low indicate whether
+  // the lanes from left to right are available. (This field is only valid when
+  // the end of the road segment is a junction) 0: Not available 1:
+  // Available
+  optional int32 bm = 9;
+  // Required.
+  // Steering information from the current section to the next section.
+  // Value range: [1,12], 1 means going straight, each increment of 1 means
+  // turning right by 30 degrees more, such as: 4 means turning right, 7 means
+  // turning around, and 10 means turning left. Only four values of 1, 4, 7, and
+  // 10 appear in the actual data.
+  optional int32 arr = 10;
+  // Required.
+  // shape points.
+  // latitude and longitude encoded with gcj02
+  repeated deeproute.common.PointLLH shape_points = 11;
+  // Required.
+  // shape points.
+  // point2d of vehicle
+  repeated deeproute.common.Point2D shape_points_2d = 27;
+  // priority
+  // road class
+  // The grade of this road section can be omitted if it is the same as the
+  // grade of the previous road section.
+  //  0: Highway
+  //  1: Urban Expressway
+  //  2: National Road
+  //  3: Provincial roads, urban arterial roads
+  //  4: County Road
+  //  5: Township roads with better road conditions
+  //  6: Township Road
+  //  7: POI connecting line, similar to residential road, but can pass through
+  //  8: Community road, can not pass through
+  //  9: Level 9 Auxiliary Road: Auxiliary roads for non-motor vehicles are
+  //  defined as Level 9 Auxiliary Roads
+  //  10: Ferry
+  //  11: Walking Path
+  optional int32 pr = 12;
+  // Not required
+  // is tunnel.
+  // 0 non-tunnel (default). 1 tunnel
+  optional int32 tunnel = 13;
+  // lane info number.
+  optional int32 lane_num = 14;
+  // lane info
+  repeated LaneInfo lanes = 15;
+
+  optional int32 usage = 16;
+
+  // Multi usage from tencent map
+  repeated deeproute.sd_map.LinkData.FormWay formways = 29;
+
+  // Lane attrs from tencent map
+  repeated deeproute.sd_map.LaneAttr lane_attrs = 30;
+
+  optional int32 tmc_lv = 20;
+
+  // reversible lane bitmap
+  optional int32 r_bm = 21;
+  // variable turn lane bitmap
+  optional int32 v_bm = 22;
+  // conditional bus lane bitmap
+  optional int32 c_b_bm = 23;
+  // From left to right, the effective time period information of
+  // time-sharing bus lanes; the number of array is the number of time-sharing
+  // bus lanes.
+  // Corresponds to the cBBm field.
+  // repeated string c_b_l_t_ss = 24;
+  // Time period information of tidal lanes effective (i.e. disabled) from
+  // left to right; the number of array is the number of tidal lanes.
+  // Corresponds to the rBm field.
+  // repeated string r_l_t_ss = 25;
+
+  repeated Link in_link_infos = 17;
+
+  repeated Link out_link_infos = 18;
+
+  optional bool elevated = 19;
+
+  optional int32 toll_station = 26;
+
+  repeated graph_match.AmapLinkMatchInfo amap_link_range = 28
+      [deprecated = true];
+
+  optional graph_match.AmapLinkMatchInfo amap_range = 31;
+
+  optional uint32 experience_speed_limit = 32;
+
+  // Lane info data
+  repeated deeproute.sd_map.LaneInfoData lane_info_data = 35;
+
+  optional int32 admin_code = 34;
+
+  optional uint32 exact_speed_limit = 36;
+
+  repeated deeproute.sd_map.Camera cameras = 38;
+}
+
+message Route {
+  optional int32 amap_path_id = 100;
+  optional uint64 amap_path_id_64 = 101;
+
+  // Route header info.
+  optional NaviHead navi_head = 1;
+  // Route distance, unit: meters.
+  optional int32 dis = 2;
+  // Total route time. unit: seconds.
+  optional int32 dur = 3;
+
+  repeated Segment segm = 4;
+
+  map<string, Segment> nid_to_segm = 5;
+
+  optional deeproute.sd_map.SdLinks sd_links = 6;
+
+  // for vis
+  repeated deeproute.graph_match.MismatchSegmIndex mismatch_indexes = 7;
+
+  // for gwm odd
+  repeated graph_match.AmapLinkMatchInfo mismatch_amap_link_range = 28;
+}
+
+message Result {
+  optional Route route = 1;
+}

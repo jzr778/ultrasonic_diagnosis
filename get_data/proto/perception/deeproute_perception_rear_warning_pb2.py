@@ -23,22 +23,19 @@ _sym_db = _symbol_database.Default()
 
 
 from common import geometry_pb2 as common_dot_geometry__pb2
-from perception import deeproute_perception_obstacle_pb2 as perception_dot_deeproute__perception__obstacle__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n2perception/deeproute_perception_rear_warning.proto\x12\x14\x64\x65\x65proute.perception\x1a\x15\x63ommon/geometry.proto\x1a.perception/deeproute_perception_obstacle.proto\"\xa9\x07\n\rRWTriggerInfo\x12\x41\n\x04type\x18\x01 \x01(\x0e\x32\x33.deeproute.perception.RWTriggerInfo.RearWarningType\x12\x18\n\x10\x63urvature_radius\x18\x02 \x01(\x02\x12/\n\x0cobj_velocity\x18\x03 \x01(\x0b\x32\x19.deeproute.common.Point3D\x12\x35\n\x12obj_local_velocity\x18\x07 \x01(\x0b\x32\x19.deeproute.common.Point3D\x12/\n\x0cobj_position\x18\x04 \x01(\x0b\x32\x19.deeproute.common.Point3D\x12\x35\n\x12obj_local_position\x18\x08 \x01(\x0b\x32\x19.deeproute.common.Point3D\x12\x12\n\nobj_length\x18\t \x01(\x01\x12\x11\n\tobj_width\x18\n \x01(\x01\x12\x12\n\nobj_height\x18\x0b \x01(\x01\x12\x0e\n\x06obj_id\x18\x05 \x01(\x05\x12\x0b\n\x03ttc\x18\x06 \x01(\x02\x12N\n\rwarning_level\x18\x0c \x01(\x0e\x32\x37.deeproute.perception.RWTriggerInfo.TriggerWarningLevel\x12\x1c\n\x14obj_confidence_score\x18\r \x01(\x01\x12L\n\x0fobj_sensor_type\x18\x0e \x01(\x0e\x32\x33.deeproute.perception.PerceptionObstacle.SensorType\x12?\n\x08obj_type\x18\x0f \x01(\x0e\x32-.deeproute.perception.PerceptionObstacle.Type\x12\x46\n\x0cobj_sub_type\x18\x10 \x01(\x0e\x32\x30.deeproute.perception.PerceptionObstacle.SubType\"\x8c\x01\n\x0fRearWarningType\x12\t\n\x05L_BSD\x10\x00\x12\t\n\x05R_BSD\x10\x01\x12\t\n\x05L_LCA\x10\x02\x12\t\n\x05R_LCA\x10\x03\x12\t\n\x05L_DOW\x10\x04\x12\t\n\x05R_DOW\x10\x05\x12\n\n\x06L_RCTA\x10\x06\x12\n\n\x06R_RCTA\x10\x07\x12\x07\n\x03RCW\x10\x08\x12\n\n\x06L_RCTB\x10\t\x12\n\n\x06R_RCTB\x10\n\"?\n\x13TriggerWarningLevel\x12\x13\n\x0fWARNING_LEVEL_1\x10\x00\x12\x13\n\x0fWARNING_LEVEL_2\x10\x01\"\xf0\x02\n\x11RearWarningStatus\x12\x18\n\x10left_bsd_trigger\x18\x01 \x01(\x08\x12\x19\n\x11right_bsd_trigger\x18\x02 \x01(\x08\x12\x18\n\x10left_lca_trigger\x18\x03 \x01(\x08\x12\x19\n\x11right_lca_trigger\x18\x04 \x01(\x08\x12\x18\n\x10left_dow_trigger\x18\x05 \x01(\x08\x12\x19\n\x11right_dow_trigger\x18\x06 \x01(\x08\x12\x19\n\x11left_rcta_trigger\x18\x07 \x01(\x08\x12\x1a\n\x12right_rcta_trigger\x18\x08 \x01(\x08\x12\x19\n\x11left_rctb_trigger\x18\x0b \x01(\x08\x12\x1a\n\x12right_rctb_trigger\x18\x0c \x01(\x08\x12\x13\n\x0brcw_trigger\x18\t \x01(\x08\x12\x39\n\x0ctrigger_info\x18\n \x03(\x0b\x32#.deeproute.perception.RWTriggerInfo')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n2perception/deeproute_perception_rear_warning.proto\x12\x14\x64\x65\x65proute.perception\x1a\x15\x63ommon/geometry.proto\"\xe8\x03\n\rRWTriggerInfo\x12\x41\n\x04type\x18\x01 \x01(\x0e\x32\x33.deeproute.perception.RWTriggerInfo.RearWarningType\x12\x18\n\x10\x63urvature_radius\x18\x02 \x01(\x02\x12/\n\x0cobj_velocity\x18\x03 \x01(\x0b\x32\x19.deeproute.common.Point3D\x12\x35\n\x12obj_local_velocity\x18\x07 \x01(\x0b\x32\x19.deeproute.common.Point3D\x12/\n\x0cobj_position\x18\x04 \x01(\x0b\x32\x19.deeproute.common.Point3D\x12\x35\n\x12obj_local_position\x18\x08 \x01(\x0b\x32\x19.deeproute.common.Point3D\x12\x0e\n\x06obj_id\x18\x05 \x01(\x05\x12\x0b\n\x03ttc\x18\x06 \x01(\x02\"\x8c\x01\n\x0fRearWarningType\x12\t\n\x05L_BSD\x10\x00\x12\t\n\x05R_BSD\x10\x01\x12\t\n\x05L_LCA\x10\x02\x12\t\n\x05R_LCA\x10\x03\x12\t\n\x05L_DOW\x10\x04\x12\t\n\x05R_DOW\x10\x05\x12\n\n\x06L_RCTA\x10\x06\x12\n\n\x06R_RCTA\x10\x07\x12\x07\n\x03RCW\x10\x08\x12\n\n\x06L_RCTB\x10\t\x12\n\n\x06R_RCTB\x10\n\"\xf0\x02\n\x11RearWarningStatus\x12\x18\n\x10left_bsd_trigger\x18\x01 \x01(\x08\x12\x19\n\x11right_bsd_trigger\x18\x02 \x01(\x08\x12\x18\n\x10left_lca_trigger\x18\x03 \x01(\x08\x12\x19\n\x11right_lca_trigger\x18\x04 \x01(\x08\x12\x18\n\x10left_dow_trigger\x18\x05 \x01(\x08\x12\x19\n\x11right_dow_trigger\x18\x06 \x01(\x08\x12\x19\n\x11left_rcta_trigger\x18\x07 \x01(\x08\x12\x1a\n\x12right_rcta_trigger\x18\x08 \x01(\x08\x12\x19\n\x11left_rctb_trigger\x18\x0b \x01(\x08\x12\x1a\n\x12right_rctb_trigger\x18\x0c \x01(\x08\x12\x13\n\x0brcw_trigger\x18\t \x01(\x08\x12\x39\n\x0ctrigger_info\x18\n \x03(\x0b\x32#.deeproute.perception.RWTriggerInfo')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'perception.deeproute_perception_rear_warning_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_RWTRIGGERINFO']._serialized_start=148
-  _globals['_RWTRIGGERINFO']._serialized_end=1085
-  _globals['_RWTRIGGERINFO_REARWARNINGTYPE']._serialized_start=880
-  _globals['_RWTRIGGERINFO_REARWARNINGTYPE']._serialized_end=1020
-  _globals['_RWTRIGGERINFO_TRIGGERWARNINGLEVEL']._serialized_start=1022
-  _globals['_RWTRIGGERINFO_TRIGGERWARNINGLEVEL']._serialized_end=1085
-  _globals['_REARWARNINGSTATUS']._serialized_start=1088
-  _globals['_REARWARNINGSTATUS']._serialized_end=1456
+  _globals['_RWTRIGGERINFO']._serialized_start=100
+  _globals['_RWTRIGGERINFO']._serialized_end=588
+  _globals['_RWTRIGGERINFO_REARWARNINGTYPE']._serialized_start=448
+  _globals['_RWTRIGGERINFO_REARWARNINGTYPE']._serialized_end=588
+  _globals['_REARWARNINGSTATUS']._serialized_start=591
+  _globals['_REARWARNINGSTATUS']._serialized_end=959
 # @@protoc_insertion_point(module_scope)

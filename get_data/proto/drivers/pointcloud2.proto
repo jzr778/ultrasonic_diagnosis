@@ -1,0 +1,44 @@
+syntax = "proto2";
+package deeproute.drivers;
+
+import "common/header.proto";
+
+enum DataType {
+  INT8 = 1;
+  UINT8 = 2;
+  INT16 = 3;
+  UINT16 = 4;
+  INT32 = 5;
+  UINT32 = 6;
+  FLOAT32 = 7;
+  FLOAT64 = 8;
+}
+
+message PointField {
+  // Name of field
+  optional string name = 1;
+  // Offset from start of point struct
+  optional uint32 offset = 2;
+  // Datatype enumeration, see above
+  optional DataType datatype = 3;
+  // How many elements in the field
+  optional uint32 count = 4;
+}
+
+message PointCloud2 {
+  optional deeproute.common.Header header = 1;
+  
+  // 2D structure of the point cloud. If the cloud is unordered, height
+  // is 1 and width is the length of the point cloud.
+  optional uint32 width = 2;
+  optional uint32 height = 3;
+  repeated PointField fields = 4;
+  optional bool is_bigendian = 5;
+  // Length of a point in bytes
+  optional uint32 point_step = 6;
+  // Length of a row in bytes
+  optional uint32 row_step = 7;
+  // Actual point data, size is (row_step*height)
+  optional bytes data = 8;
+  optional bool is_dense = 9;
+}

@@ -27,49 +27,35 @@ from safety import safety_event_pb2 as safety_dot_safety__event__pb2
 from safety import safety_analysis_pb2 as safety_dot_safety__analysis__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1bsafety/state_exchange.proto\x12\x0f\x64r.safety.state\x1a\x19\x63ommon/module_event.proto\x1a\x19safety/safety_event.proto\x1a\x1csafety/safety_analysis.proto\"\x85\x01\n\x0eTriggeredEvent\x12\x1f\n\x05\x65vent\x18\x01 \x01(\x0e\x32\x10.dr.common.Event\x12\"\n\x04type\x18\x02 \x01(\x0e\x32\x14.dr.safety.EventType\x12\x1b\n\x13task_failure_policy\x18\x03 \x03(\r\x12\x11\n\tdtc_index\x18\x04 \x01(\x05\"B\n\x08SysTrace\x12\x10\n\x08\x63pu_temp\x18\x01 \x01(\r\x12\x10\n\x08gpu_temp\x18\x02 \x01(\r\x12\x12\n\nboard_temp\x18\x03 \x01(\r\"\xc2\x01\n\x0bSafetyState\x12\x11\n\ttimestamp\x18\x01 \x01(\x04\x12\x39\n\x10triggered_events\x18\x02 \x03(\x0b\x32\x1f.dr.safety.state.TriggeredEvent\x12,\n\tsys_trace\x18\x03 \x01(\x0b\x32\x19.dr.safety.state.SysTrace\x12\x1c\n\x14soc_timeout_intervel\x18\x04 \x01(\x04\x12\x19\n\x11\x65nable_mcu_policy\x18\x05 \x01(\x08\"\xb5\x01\n\x08SSMEvent\x12!\n\x06module\x18\x01 \x01(\x0e\x32\x11.dr.common.Module\x12\x1f\n\x05\x65vent\x18\x02 \x01(\x0e\x32\x10.dr.common.Event\x12\x11\n\ttimestamp\x18\x03 \x01(\x04\x12\x14\n\x0csequence_num\x18\x04 \x01(\x05\x12$\n\x05level\x18\x07 \x01(\x0e\x32\x15.dr.safety.EventLevel\x12\x10\n\x08\x65rror_id\x18\x08 \x03(\x04J\x04\x08\x05\x10\x07\"\x8c\x01\n\x0eSSMPolicyEvent\x12&\n\ttask_type\x18\x01 \x01(\x0e\x32\x13.dr.safety.TaskType\x12\x30\n\x0e\x66\x61ilure_policy\x18\x02 \x01(\x0e\x32\x18.dr.safety.FailurePolicy\x12 \n\x06\x65vents\x18\x03 \x03(\x0e\x32\x10.dr.common.Event\"\xd7\x01\n\x08SSMState\x12\x11\n\ttimestamp\x18\x01 \x01(\x04\x12*\n\x0b\x66\x61ult_level\x18\x02 \x01(\x0e\x32\x15.dr.safety.FaultLevel\x12-\n\nssm_events\x18\x03 \x03(\x0b\x32\x19.dr.safety.state.SSMEvent\x12!\n\x19\x65vent_config_sequence_num\x18\x04 \x01(\x05\x12:\n\x11ssm_policy_events\x18\x05 \x03(\x0b\x32\x1f.dr.safety.state.SSMPolicyEvent\"m\n\x11TaskFailurePolicy\x12&\n\ttask_type\x18\x01 \x01(\x0e\x32\x13.dr.safety.TaskType\x12\x30\n\x0e\x66\x61ilure_policy\x18\x02 \x01(\x0e\x32\x18.dr.safety.FailurePolicy\"Q\n\x11\x45ventPolicyConfig\x12\x1f\n\x05\x65vent\x18\x01 \x01(\x0e\x32\x10.dr.common.Event\x12\x1b\n\x13task_failure_policy\x18\x02 \x03(\r\"/\n\x08\x42lcState\x12\x10\n\x08\x62lc_type\x18\x01 \x01(\x05\x12\x11\n\tblc_state\x18\x02 \x01(\x05\"\x97\x01\n\x13PolicyMonitorConfig\x12\x30\n\x0e\x66\x61ilure_policy\x18\x01 \x01(\x0e\x32\x18.dr.safety.FailurePolicy\x12\x16\n\x0e\x63heck_interval\x18\x02 \x01(\x04\x12\x36\n\x13status_check_config\x18\x03 \x03(\x0b\x32\x19.dr.safety.state.BlcState\"\xb3\x01\n\x0fSafetyMcuConfig\x12\x38\n\x0c\x65vent_config\x18\x01 \x03(\x0b\x32\".dr.safety.state.EventPolicyConfig\x12\x43\n\x15policy_monitor_config\x18\x02 \x03(\x0b\x32$.dr.safety.state.PolicyMonitorConfig\x12!\n\x19\x65vent_config_sequence_num\x18\x03 \x01(\x05\":\n\tBlcStatus\x12-\n\nblc_status\x18\x01 \x03(\x0b\x32\x19.dr.safety.state.BlcState\"!\n\x07SocDtcs\x12\x16\n\x0esoc_dtc_indics\x18\x01 \x03(\r\"\xb1\x01\n\x0eSocSafetyState\x12\x14\n\x0ctimestamp_ms\x18\x01 \x01(\x04\x12\x16\n\x0esoc_timeout_ms\x18\x02 \x01(\r\x12\x39\n\x10soc_failure_info\x18\x03 \x01(\x0e\x32\x1f.dr.safety.state.SocFailureInfo\x12\x1b\n\x13\x66ull_detect_enabled\x18\x04 \x01(\x08\x12\x19\n\x11\x65nable_mcu_policy\x18\x05 \x01(\x08\"R\n\x0eMcuSafetyState\x12\x14\n\x0ctimestamp_ms\x18\x01 \x01(\x04\x12*\n\x08mcu_mode\x18\x02 \x01(\x0e\x32\x18.dr.safety.state.McuMode\"d\n\x0cMcuEventInfo\x12\x1f\n\x05\x65vent\x18\x01 \x01(\x0e\x32\x10.dr.common.Event\x12!\n\x06module\x18\x02 \x01(\x0e\x32\x11.dr.common.Module\x12\x10\n\x08\x65rror_id\x18\x03 \x03(\x04\"F\n\rMcuEventsInfo\x12\x35\n\x0emcu_event_info\x18\x01 \x03(\x0b\x32\x1d.dr.safety.state.McuEventInfo*h\n\x0eSocFailureInfo\x12\x0e\n\nNO_FAILURE\x10\x00\x12\x19\n\x15\x44\x45M_HEARTBEAT_TIMEOUT\x10\x01\x12\x18\n\x14\x43\x41NBUS_LOST_HEARBEAT\x10\x02\x12\x11\n\rSOC_BLC_CRASH\x10\x03*6\n\x07McuMode\x12\x13\n\x0fMCU_MODE_NORMAL\x10\x00\x12\x16\n\x12MCU_MODE_LOW_POWER\x10\x01')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1bsafety/state_exchange.proto\x12\x0f\x64r.safety.state\x1a\x19\x63ommon/module_event.proto\x1a\x19safety/safety_event.proto\x1a\x1csafety/safety_analysis.proto\"\x85\x01\n\x0eTriggeredEvent\x12\x1f\n\x05\x65vent\x18\x01 \x01(\x0e\x32\x10.dr.common.Event\x12\"\n\x04type\x18\x02 \x01(\x0e\x32\x14.dr.safety.EventType\x12\x1b\n\x13task_failure_policy\x18\x03 \x03(\r\x12\x11\n\tdtc_index\x18\x04 \x01(\x05\"B\n\x08SysTrace\x12\x10\n\x08\x63pu_temp\x18\x01 \x01(\r\x12\x10\n\x08gpu_temp\x18\x02 \x01(\r\x12\x12\n\nboard_temp\x18\x03 \x01(\r\"\x89\x01\n\x0bSafetyState\x12\x11\n\ttimestamp\x18\x01 \x01(\x04\x12\x39\n\x10triggered_events\x18\x02 \x03(\x0b\x32\x1f.dr.safety.state.TriggeredEvent\x12,\n\tsys_trace\x18\x03 \x01(\x0b\x32\x19.dr.safety.state.SysTrace\"\xa3\x01\n\x08SSMEvent\x12!\n\x06module\x18\x01 \x01(\x0e\x32\x11.dr.common.Module\x12\x1f\n\x05\x65vent\x18\x02 \x01(\x0e\x32\x10.dr.common.Event\x12\x11\n\ttimestamp\x18\x03 \x01(\x04\x12\x14\n\x0csequence_num\x18\x04 \x01(\x05\x12$\n\x05level\x18\x07 \x01(\x0e\x32\x15.dr.safety.EventLevelJ\x04\x08\x05\x10\x07\"\x8c\x01\n\x0eSSMPolicyEvent\x12&\n\ttask_type\x18\x01 \x01(\x0e\x32\x13.dr.safety.TaskType\x12\x30\n\x0e\x66\x61ilure_policy\x18\x02 \x01(\x0e\x32\x18.dr.safety.FailurePolicy\x12 \n\x06\x65vents\x18\x03 \x03(\x0e\x32\x10.dr.common.Event\"\xd7\x01\n\x08SSMState\x12\x11\n\ttimestamp\x18\x01 \x01(\x04\x12*\n\x0b\x66\x61ult_level\x18\x02 \x01(\x0e\x32\x15.dr.safety.FaultLevel\x12-\n\nssm_events\x18\x03 \x03(\x0b\x32\x19.dr.safety.state.SSMEvent\x12!\n\x19\x65vent_config_sequence_num\x18\x04 \x01(\x05\x12:\n\x11ssm_policy_events\x18\x05 \x03(\x0b\x32\x1f.dr.safety.state.SSMPolicyEvent\"m\n\x11TaskFailurePolicy\x12&\n\ttask_type\x18\x01 \x01(\x0e\x32\x13.dr.safety.TaskType\x12\x30\n\x0e\x66\x61ilure_policy\x18\x02 \x01(\x0e\x32\x18.dr.safety.FailurePolicy\"Q\n\x11\x45ventPolicyConfig\x12\x1f\n\x05\x65vent\x18\x01 \x01(\x0e\x32\x10.dr.common.Event\x12\x1b\n\x13task_failure_policy\x18\x02 \x03(\r\"/\n\x08\x42lcState\x12\x10\n\x08\x62lc_type\x18\x01 \x01(\x05\x12\x11\n\tblc_state\x18\x02 \x01(\x05\"\x97\x01\n\x13PolicyMonitorConfig\x12\x30\n\x0e\x66\x61ilure_policy\x18\x01 \x01(\x0e\x32\x18.dr.safety.FailurePolicy\x12\x16\n\x0e\x63heck_interval\x18\x02 \x01(\x04\x12\x36\n\x13status_check_config\x18\x03 \x03(\x0b\x32\x19.dr.safety.state.BlcState\"\xb3\x01\n\x0fSafetyMcuConfig\x12\x38\n\x0c\x65vent_config\x18\x01 \x03(\x0b\x32\".dr.safety.state.EventPolicyConfig\x12\x43\n\x15policy_monitor_config\x18\x02 \x03(\x0b\x32$.dr.safety.state.PolicyMonitorConfig\x12!\n\x19\x65vent_config_sequence_num\x18\x03 \x01(\x05\":\n\tBlcStatus\x12-\n\nblc_status\x18\x01 \x03(\x0b\x32\x19.dr.safety.state.BlcState')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'safety.state_exchange_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_SOCFAILUREINFO']._serialized_start=2190
-  _globals['_SOCFAILUREINFO']._serialized_end=2294
-  _globals['_MCUMODE']._serialized_start=2296
-  _globals['_MCUMODE']._serialized_end=2350
   _globals['_TRIGGEREDEVENT']._serialized_start=133
   _globals['_TRIGGEREDEVENT']._serialized_end=266
   _globals['_SYSTRACE']._serialized_start=268
   _globals['_SYSTRACE']._serialized_end=334
   _globals['_SAFETYSTATE']._serialized_start=337
-  _globals['_SAFETYSTATE']._serialized_end=531
-  _globals['_SSMEVENT']._serialized_start=534
-  _globals['_SSMEVENT']._serialized_end=715
-  _globals['_SSMPOLICYEVENT']._serialized_start=718
-  _globals['_SSMPOLICYEVENT']._serialized_end=858
-  _globals['_SSMSTATE']._serialized_start=861
-  _globals['_SSMSTATE']._serialized_end=1076
-  _globals['_TASKFAILUREPOLICY']._serialized_start=1078
-  _globals['_TASKFAILUREPOLICY']._serialized_end=1187
-  _globals['_EVENTPOLICYCONFIG']._serialized_start=1189
-  _globals['_EVENTPOLICYCONFIG']._serialized_end=1270
-  _globals['_BLCSTATE']._serialized_start=1272
-  _globals['_BLCSTATE']._serialized_end=1319
-  _globals['_POLICYMONITORCONFIG']._serialized_start=1322
-  _globals['_POLICYMONITORCONFIG']._serialized_end=1473
-  _globals['_SAFETYMCUCONFIG']._serialized_start=1476
-  _globals['_SAFETYMCUCONFIG']._serialized_end=1655
-  _globals['_BLCSTATUS']._serialized_start=1657
-  _globals['_BLCSTATUS']._serialized_end=1715
-  _globals['_SOCDTCS']._serialized_start=1717
-  _globals['_SOCDTCS']._serialized_end=1750
-  _globals['_SOCSAFETYSTATE']._serialized_start=1753
-  _globals['_SOCSAFETYSTATE']._serialized_end=1930
-  _globals['_MCUSAFETYSTATE']._serialized_start=1932
-  _globals['_MCUSAFETYSTATE']._serialized_end=2014
-  _globals['_MCUEVENTINFO']._serialized_start=2016
-  _globals['_MCUEVENTINFO']._serialized_end=2116
-  _globals['_MCUEVENTSINFO']._serialized_start=2118
-  _globals['_MCUEVENTSINFO']._serialized_end=2188
+  _globals['_SAFETYSTATE']._serialized_end=474
+  _globals['_SSMEVENT']._serialized_start=477
+  _globals['_SSMEVENT']._serialized_end=640
+  _globals['_SSMPOLICYEVENT']._serialized_start=643
+  _globals['_SSMPOLICYEVENT']._serialized_end=783
+  _globals['_SSMSTATE']._serialized_start=786
+  _globals['_SSMSTATE']._serialized_end=1001
+  _globals['_TASKFAILUREPOLICY']._serialized_start=1003
+  _globals['_TASKFAILUREPOLICY']._serialized_end=1112
+  _globals['_EVENTPOLICYCONFIG']._serialized_start=1114
+  _globals['_EVENTPOLICYCONFIG']._serialized_end=1195
+  _globals['_BLCSTATE']._serialized_start=1197
+  _globals['_BLCSTATE']._serialized_end=1244
+  _globals['_POLICYMONITORCONFIG']._serialized_start=1247
+  _globals['_POLICYMONITORCONFIG']._serialized_end=1398
+  _globals['_SAFETYMCUCONFIG']._serialized_start=1401
+  _globals['_SAFETYMCUCONFIG']._serialized_end=1580
+  _globals['_BLCSTATUS']._serialized_start=1582
+  _globals['_BLCSTATUS']._serialized_end=1640
 # @@protoc_insertion_point(module_scope)

@@ -25,31 +25,29 @@ _sym_db = _symbol_database.Default()
 from common import geometry_pb2 as common_dot_geometry__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n(perception/traffic_light_detection.proto\x12\x14\x64\x65\x65proute.perception\x1a\x15\x63ommon/geometry.proto\"F\n\x0fTrafficLightBox\x12\t\n\x01x\x18\x01 \x01(\x05\x12\t\n\x01y\x18\x02 \x01(\x05\x12\r\n\x05width\x18\x03 \x01(\x05\x12\x0e\n\x06height\x18\x04 \x01(\x05\"\xc7\x07\n\x0cTrafficLight\x12\x37\n\x05\x63olor\x18\x01 \x01(\x0e\x32(.deeproute.perception.TrafficLight.Color\x12\x37\n\x05shape\x18\x0c \x01(\x0e\x32(.deeproute.perception.TrafficLight.Shape\x12\x1b\n\x13traffic_light_token\x18\x02 \x01(\x05\x12\x15\n\nconfidence\x18\x03 \x01(\x01:\x01\x31\x12\x15\n\rtracking_time\x18\x04 \x01(\x01\x12\r\n\x05\x62link\x18\x05 \x01(\x08\x12\x17\n\x0flong_term_blink\x18\x0e \x01(\x08\x12\x12\n\ncountdowns\x18\r \x01(\x05\x12\x16\n\x0eremaining_time\x18\x06 \x01(\x01\x12\x0f\n\x07task_id\x18\x07 \x01(\x05\x12\x12\n\ntime_stamp\x18\x08 \x01(\x01\x12<\n\x0ctraffic_type\x18\t \x01(\x0e\x32&.deeproute.perception.TrafficLightType\x12<\n\rprojected_roi\x18\n \x01(\x0b\x32%.deeproute.perception.TrafficLightBox\x12;\n\x0c\x64\x65tected_box\x18\x0b \x01(\x0b\x32%.deeproute.perception.TrafficLightBox\x12\x1e\n\x16\x61map_has_traffic_light\x18\x0f \x01(\x08\x12\x1e\n\x16\x61map_has_realtime_info\x18\x10 \x01(\x08\x12 \n\x18\x61map_perception_conflict\x18\x11 \x01(\x08\x12>\n\x1b\x61map_traffic_light_position\x18\x12 \x01(\x0b\x32\x19.deeproute.common.Point3D\x12\x0b\n\x03odd\x18\x13 \x01(\x08\x12\x18\n\x10\x61map_count_downs\x18\x14 \x01(\x08\x12\x16\n\x0ehas_arrow_vote\x18\x15 \x01(\x08\x12\x0f\n\x07use_e2e\x18\x16 \x01(\x08\x12;\n\te2e_color\x18\x17 \x01(\x0e\x32(.deeproute.perception.TrafficLight.Color\"?\n\x05\x43olor\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x07\n\x03RED\x10\x01\x12\n\n\x06YELLOW\x10\x02\x12\t\n\x05GREEN\x10\x03\x12\t\n\x05\x42LACK\x10\x04\"X\n\x05Shape\x12\n\n\x06\x43IRCLE\x10\x00\x12\x11\n\rFORWARD_ARROW\x10\x01\x12\x0e\n\nLEFT_ARROW\x10\x02\x12\x0f\n\x0bRIGHT_ARROW\x10\x03\x12\x0f\n\x0bUTURN_ARROW\x10\x04\"u\n\x11TrafficLightStopS\x12,\n\x08polyline\x18\x01 \x01(\x0b\x32\x1a.deeproute.common.Polyline\x12\x32\n\x0epolyline_local\x18\x02 \x01(\x0b\x32\x1a.deeproute.common.Polyline\"\x87\x01\n\x19TrafficLightDetectionTask\x12\x0f\n\x07task_id\x18\x01 \x01(\x05\x12\x1b\n\x13traffic_light_token\x18\x02 \x03(\x05\x12<\n\x0ctraffic_type\x18\x03 \x01(\x0e\x32&.deeproute.perception.TrafficLightType\"\xcd\x02\n\x0eTrafficLight3D\x12\n\n\x02id\x18\x01 \x01(\x05\x12<\n\x0ctraffic_type\x18\x02 \x01(\x0e\x32&.deeproute.perception.TrafficLightType\x12+\n\x08position\x18\x03 \x01(\x0b\x32\x19.deeproute.common.Point3D\x12\x39\n\x05\x63olor\x18\x04 \x01(\x0e\x32*.deeproute.perception.TrafficLight3D.Color\x12\r\n\x05width\x18\x05 \x01(\x02\x12\x0e\n\x06height\x18\x06 \x01(\x02\x12\x0e\n\x06length\x18\x07 \x01(\x02\x12\x19\n\x11\x63ount_down_number\x18\x08 \x01(\x05\"?\n\x05\x43olor\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x07\n\x03RED\x10\x01\x12\n\n\x06YELLOW\x10\x02\x12\t\n\x05GREEN\x10\x03\x12\t\n\x05\x42LACK\x10\x04\"\x8f\x02\n\x14TrafficLightResponse\x12:\n\x0etraffic_lights\x18\x01 \x03(\x0b\x32\".deeproute.perception.TrafficLight\x12\x12\n\ntime_stamp\x18\x02 \x01(\x03\x12>\n\x10traffic_light_3d\x18\x03 \x03(\x0b\x32$.deeproute.perception.TrafficLight3D\x12!\n\x19virtual_traffic_lights_id\x18\x04 \x01(\x03\x12\x44\n\x13traffic_light_stops\x18\x05 \x01(\x0b\x32\'.deeproute.perception.TrafficLightStopS*L\n\x10TrafficLightType\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x0b\n\x07\x46ORWARD\x10\x01\x12\x08\n\x04LEFT\x10\x02\x12\t\n\x05RIGHT\x10\x03\x12\t\n\x05UTURN\x10\x04')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n(perception/traffic_light_detection.proto\x12\x14\x64\x65\x65proute.perception\x1a\x15\x63ommon/geometry.proto\"F\n\x0fTrafficLightBox\x12\t\n\x01x\x18\x01 \x01(\x05\x12\t\n\x01y\x18\x02 \x01(\x05\x12\r\n\x05width\x18\x03 \x01(\x05\x12\x0e\n\x06height\x18\x04 \x01(\x05\"\xe1\x06\n\x0cTrafficLight\x12\x37\n\x05\x63olor\x18\x01 \x01(\x0e\x32(.deeproute.perception.TrafficLight.Color\x12\x37\n\x05shape\x18\x0c \x01(\x0e\x32(.deeproute.perception.TrafficLight.Shape\x12\x1b\n\x13traffic_light_token\x18\x02 \x01(\x05\x12\x15\n\nconfidence\x18\x03 \x01(\x01:\x01\x31\x12\x15\n\rtracking_time\x18\x04 \x01(\x01\x12\r\n\x05\x62link\x18\x05 \x01(\x08\x12\x17\n\x0flong_term_blink\x18\x0e \x01(\x08\x12\x12\n\ncountdowns\x18\r \x01(\x05\x12\x16\n\x0eremaining_time\x18\x06 \x01(\x01\x12\x0f\n\x07task_id\x18\x07 \x01(\x05\x12\x12\n\ntime_stamp\x18\x08 \x01(\x01\x12<\n\x0ctraffic_type\x18\t \x01(\x0e\x32&.deeproute.perception.TrafficLightType\x12<\n\rprojected_roi\x18\n \x01(\x0b\x32%.deeproute.perception.TrafficLightBox\x12;\n\x0c\x64\x65tected_box\x18\x0b \x01(\x0b\x32%.deeproute.perception.TrafficLightBox\x12\x1e\n\x16\x61map_has_traffic_light\x18\x0f \x01(\x08\x12\x1e\n\x16\x61map_has_realtime_info\x18\x10 \x01(\x08\x12 \n\x18\x61map_perception_conflict\x18\x11 \x01(\x08\x12>\n\x1b\x61map_traffic_light_position\x18\x12 \x01(\x0b\x32\x19.deeproute.common.Point3D\x12\x0b\n\x03odd\x18\x13 \x01(\x08\x12\x18\n\x10\x61map_count_downs\x18\x14 \x01(\x08\"?\n\x05\x43olor\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x07\n\x03RED\x10\x01\x12\n\n\x06YELLOW\x10\x02\x12\t\n\x05GREEN\x10\x03\x12\t\n\x05\x42LACK\x10\x04\"X\n\x05Shape\x12\n\n\x06\x43IRCLE\x10\x00\x12\x11\n\rFORWARD_ARROW\x10\x01\x12\x0e\n\nLEFT_ARROW\x10\x02\x12\x0f\n\x0bRIGHT_ARROW\x10\x03\x12\x0f\n\x0bUTURN_ARROW\x10\x04\"\x87\x01\n\x19TrafficLightDetectionTask\x12\x0f\n\x07task_id\x18\x01 \x01(\x05\x12\x1b\n\x13traffic_light_token\x18\x02 \x03(\x05\x12<\n\x0ctraffic_type\x18\x03 \x01(\x0e\x32&.deeproute.perception.TrafficLightType\"\xcd\x02\n\x0eTrafficLight3D\x12\n\n\x02id\x18\x01 \x01(\x05\x12<\n\x0ctraffic_type\x18\x02 \x01(\x0e\x32&.deeproute.perception.TrafficLightType\x12+\n\x08position\x18\x03 \x01(\x0b\x32\x19.deeproute.common.Point3D\x12\x39\n\x05\x63olor\x18\x04 \x01(\x0e\x32*.deeproute.perception.TrafficLight3D.Color\x12\r\n\x05width\x18\x05 \x01(\x02\x12\x0e\n\x06height\x18\x06 \x01(\x02\x12\x0e\n\x06length\x18\x07 \x01(\x02\x12\x19\n\x11\x63ount_down_number\x18\x08 \x01(\x05\"?\n\x05\x43olor\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x07\n\x03RED\x10\x01\x12\n\n\x06YELLOW\x10\x02\x12\t\n\x05GREEN\x10\x03\x12\t\n\x05\x42LACK\x10\x04\"\xa6\x01\n\x14TrafficLightResponse\x12:\n\x0etraffic_lights\x18\x01 \x03(\x0b\x32\".deeproute.perception.TrafficLight\x12\x12\n\ntime_stamp\x18\x02 \x01(\x03\x12>\n\x10traffic_light_3d\x18\x03 \x03(\x0b\x32$.deeproute.perception.TrafficLight3D*L\n\x10TrafficLightType\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x0b\n\x07\x46ORWARD\x10\x01\x12\x08\n\x04LEFT\x10\x02\x12\t\n\x05RIGHT\x10\x03\x12\t\n\x05UTURN\x10\x04')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'perception.traffic_light_detection_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_TRAFFICLIGHTTYPE']._serialized_start=1998
-  _globals['_TRAFFICLIGHTTYPE']._serialized_end=2074
+  _globals['_TRAFFICLIGHTTYPE']._serialized_start=1672
+  _globals['_TRAFFICLIGHTTYPE']._serialized_end=1748
   _globals['_TRAFFICLIGHTBOX']._serialized_start=89
   _globals['_TRAFFICLIGHTBOX']._serialized_end=159
   _globals['_TRAFFICLIGHT']._serialized_start=162
-  _globals['_TRAFFICLIGHT']._serialized_end=1129
-  _globals['_TRAFFICLIGHT_COLOR']._serialized_start=976
-  _globals['_TRAFFICLIGHT_COLOR']._serialized_end=1039
-  _globals['_TRAFFICLIGHT_SHAPE']._serialized_start=1041
-  _globals['_TRAFFICLIGHT_SHAPE']._serialized_end=1129
-  _globals['_TRAFFICLIGHTSTOPS']._serialized_start=1131
-  _globals['_TRAFFICLIGHTSTOPS']._serialized_end=1248
-  _globals['_TRAFFICLIGHTDETECTIONTASK']._serialized_start=1251
-  _globals['_TRAFFICLIGHTDETECTIONTASK']._serialized_end=1386
-  _globals['_TRAFFICLIGHT3D']._serialized_start=1389
-  _globals['_TRAFFICLIGHT3D']._serialized_end=1722
-  _globals['_TRAFFICLIGHT3D_COLOR']._serialized_start=976
-  _globals['_TRAFFICLIGHT3D_COLOR']._serialized_end=1039
-  _globals['_TRAFFICLIGHTRESPONSE']._serialized_start=1725
-  _globals['_TRAFFICLIGHTRESPONSE']._serialized_end=1996
+  _globals['_TRAFFICLIGHT']._serialized_end=1027
+  _globals['_TRAFFICLIGHT_COLOR']._serialized_start=874
+  _globals['_TRAFFICLIGHT_COLOR']._serialized_end=937
+  _globals['_TRAFFICLIGHT_SHAPE']._serialized_start=939
+  _globals['_TRAFFICLIGHT_SHAPE']._serialized_end=1027
+  _globals['_TRAFFICLIGHTDETECTIONTASK']._serialized_start=1030
+  _globals['_TRAFFICLIGHTDETECTIONTASK']._serialized_end=1165
+  _globals['_TRAFFICLIGHT3D']._serialized_start=1168
+  _globals['_TRAFFICLIGHT3D']._serialized_end=1501
+  _globals['_TRAFFICLIGHT3D_COLOR']._serialized_start=874
+  _globals['_TRAFFICLIGHT3D_COLOR']._serialized_end=937
+  _globals['_TRAFFICLIGHTRESPONSE']._serialized_start=1504
+  _globals['_TRAFFICLIGHTRESPONSE']._serialized_end=1670
 # @@protoc_insertion_point(module_scope)

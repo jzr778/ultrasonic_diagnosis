@@ -174,7 +174,7 @@ def save_data(tag_id, output_root=None, extract_fisheye=True):
 
 if __name__ == "__main__":
     tag_id_list = [
-        97020543,
+        121196925,
     ]
     for tag_id in tag_id_list:
         try:

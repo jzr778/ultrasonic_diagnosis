@@ -1,0 +1,16 @@
+syntax = "proto2";
+
+package deeproute.hdmap;
+
+import "common/geometry.proto";
+import "semantic_map/map_overlap.proto";
+// A clear area means in which stopping car is prohibited
+
+message ClearArea {
+  optional int32 id = 1;
+  repeated int32 overlap_id = 2;
+  optional common.Polygon polygon = 3;
+  optional double cost = 4;
+  repeated int32 layers = 5;
+  repeated Overlap overlaps = 6;
+}

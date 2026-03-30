@@ -1,0 +1,102 @@
+syntax = "proto2";
+
+package deeproute.hdmap;
+
+import "common/geometry.proto";
+import "semantic_map/map_overlap.proto";
+
+message TrafficSign {
+  optional int32 id = 1;
+  optional common.Polygon polygon = 2;
+  enum Type {
+    UNKNOWN = 0;
+    SPEED_LIMIT = 1;
+    OTHER = 2;
+    US_STOP_SIGN = 3;
+    US_YIELD_SIGN = 4;
+  };
+  optional Type type = 3;
+  optional double heading = 4;
+}
+
+message Pole {
+  optional int32 id = 1;
+  optional common.Polygon polygon = 2;
+  enum Type {
+    UNKNOWN = 0;
+    SIGNAL_POLE = 1;
+    SIGN_POLE = 2;
+  };
+  optional Type type = 3;
+}
+
+// Ground symbol that not-affecting driving.
+message GroundSymbol {
+  optional int32 id = 1;
+  optional common.Polygon polygon = 2;
+  enum Type {
+    UNKNOWN = 0;
+    SPEED_LIMIT = 1;
+    TEXT = 2;
+    STRAIGHT_ARROW = 3;
+    TURN_LEFT_ARROW = 4;
+    TURN_RIGHT_ARROW = 5;
+    STRAIGHT_LEFT_ARROW = 6;
+    STRAIGHT_RIGHT_ARROW = 7;
+    UTURN_ARROW = 8;
+    LEFT_UTURN_ARROW = 9;
+    STRAIGHT_UTURN_ARROW = 10;
+    LEFT_RIGHT_ARROW = 11;
+  };
+  optional Type type = 3;
+}
+
+// Ground obstacles that affecting driving.
+message GroundObstacle {
+  optional int32 id = 1;
+  oneof geometry{
+    common.Polyline polyline = 2;
+    common.Polygon polygon = 3;
+  }
+  enum Type {
+    UNKNOWN = 0;
+    WHEEL_STOPPER = 1;
+    CURB = 2;
+    PEDESTRIAN_POLE = 3; // "PEDESTRIAN_POLE" represents a pole-shaped-passage
+                          // that is restricted to pedestrians at the intersection.
+    PHYSICAL_NOT_OBSTACLE = 4; // Represents other physical obstacles that all traffic agents cannot pass.
+                                  // such as railings and sound-insulation walls, etc.
+  };
+  optional Type type = 4;
+}
+
+message LaneMarker {
+  optional int32 id = 1;
+  optional common.Polygon polygon = 2;
+  enum Type {
+    STRAIGHT = 0;
+    TURN_LEFT = 1;
+    TURN_RIGHT = 2;
+    STRAIGHT_LEFT = 3;
+    STRAIGHT_RIGHT = 4;
+    LEFT_RIGHT = 5;
+    UTURN = 6;
+    LEFT_UTURN = 7;
+    STRAIGHT_UTURN = 8;
+    STRAIGHT_LEFT_RIGHT = 9;
+    STRAIGHT_LEFT_UTURN = 10;
+    RIGHT_UTURN = 11;
+    LEFT_RIGHT_UTURN = 12;
+    STRAIGHT_RIGHT_UTURN = 13;
+  };
+  optional Type type = 3;
+  optional int32 layer = 4;
+  repeated Overlap overlaps = 5;
+}
+
+message BicycleLaneMarker {
+  optional int32 id = 1;
+  optional common.Polygon polygon = 2;
+  optional int32 layer = 3;
+  repeated Overlap overlaps = 4;  
+}

@@ -1,0 +1,97 @@
+
+syntax = "proto2";
+
+package deeproute.sd_map;
+
+enum VehicleType {
+  // 未知
+  VEHICLE_TYPE_NONE = 0;
+  // 小客车
+  VEHICLE_TYPE_CAR = 1;
+  // 本地货车
+  VEHICLE_TYPE_LOCAL_TRUCK = 2;
+  // 外地货车
+  VEHICLE_TYPE_NONLOCAL_TRUCK = 3;
+  // 急救车
+  VEHICLE_TYPE_AMBULANCE = 4;
+  // 出租车
+  VEHICLE_TYPE_TAXI = 5;
+  // 公交车
+  VEHICLE_TYPE_BUS = 6;
+  // 步行者
+  VEHICLE_TYPE_WALKER = 7;
+  // 自行车
+  VEHICLE_TYPE_BICYCLE = 8;
+  // 电动自行车
+  VEHICLE_TYPE_ELECTRIC_BICYCLE = 9;
+  // 摩托车
+  VEHICLE_TYPE_MOTORCYCLE = 10;
+  // 多人乘坐车辆
+  VEHICLE_TYPE_MULTI_PASSENGER = 11;
+  // 拖挂车
+  VEHICLE_TYPE_WITH_TRAILER = 12;
+  // 危险品车辆
+  VEHICLE_TYPE_DANGEROUS = 13;
+  // 过境车辆
+  VEHICLE_TYPE_TRANSIT = 14;
+  // 小型货车（电动三轮车，拖拉机，三轮汽车）
+  VEHICLE_TYPE_MINIVAN = 15;
+  // 全部车辆
+  VEHICLE_TYPE_ALL = 16;
+  // 大型客车
+  VEHICLE_TYPE_LARGE_BUS = 17;
+  // 大型货车
+  VEHICLE_TYPE_LARGE_TRUCK = 18;
+  // 其它机动车辆
+  VEHICLE_TYPE_OTHER = 19;
+  // 电动小汽车
+  VEHICLE_TYPE_ELECTRIC_CAR = 20;
+  // 轻型货车
+  VEHICLE_TYPE_LIGHT_TRUCK = 21;
+  // 微型货车
+  VEHICLE_TYPE_MINI_TRUCK = 22;
+  // 中型货车
+  VEHICLE_TYPE_MEDIUM_TRUCK = 23;
+  // 重型货车
+  VEHICLE_TYPE_HEAVY_TRUCK = 24;
+  // 外部车辆
+  VEHICLE_TYPE_EXTERNAL = 25;
+}
+
+enum SpecialTimeType {
+  SPECIAL_TIME_TYPE_NONE = 0;                  // 无
+  SPECIAL_TIME_TYPE_WORKDAY = 1;               // 工作日
+  SPECIAL_TIME_TYPE_NOT_WORKDAY = 2;           // 工作日除外
+  SPECIAL_TIME_TYPE_NOT_HOLIDAY = 3;           // 节假日除外
+  SPECIAL_TIME_TYPE_HOLIDAY = 4;               // 节假日
+  SPECIAL_TIME_TYPE_ICE = 5;                   // 冰、冰雹
+  SPECIAL_TIME_TYPE_SUNNY = 6;                 // 晴天
+  SPECIAL_TIME_TYPE_WIND = 7;                  // 风
+  SPECIAL_TIME_TYPE_FOG = 8;                   // 雾，雾霾
+  SPECIAL_TIME_TYPE_SNOW = 9;                  // 雪
+  SPECIAL_TIME_TYPE_RAIN = 10;                 // 雨
+  SPECIAL_TIME_TYPE_NOT_WORKING = 11;          // 施工期间除外
+  SPECIAL_TIME_TYPE_WORKING = 12;              // 施工期间
+  SPECIAL_TIME_TYPE_NOT_SCHOOL_OVER = 13;      // 放学期间除外
+  SPECIAL_TIME_TYPE_SCHOOL_OVER = 14;          // 放学期间
+  SPECIAL_TIME_TYPE_NOT_EVENING_PEAK = 15;     // 晚高峰除外
+  SPECIAL_TIME_TYPE_EVENING_PEAK = 16;         // 晚高峰
+  SPECIAL_TIME_TYPE_NOT_MORNING_PEAK = 17;     // 早高峰除外
+  SPECIAL_TIME_TYPE_MORNING_PEAK = 18;         // 早高峰
+  SPECIAL_TIME_TYPE_NOT_PEAK_SEASON = 19;      // 旺季除外
+  SPECIAL_TIME_TYPE_PEAK_SEASON = 20;          // 旺季
+  SPECIAL_TIME_TYPE_NOT_LOW_SEASON = 21;       // 淡季除外
+  SPECIAL_TIME_TYPE_LOW_SEASON = 22;           // 淡季
+  SPECIAL_TIME_TYPE_NOT_SUMMER_VACATION = 23;  // 暑假除外
+  SPECIAL_TIME_TYPE_SUMMER_VACATION = 24;      // 暑假
+  SPECIAL_TIME_TYPE_NOT_WINTER_VACATION = 25;  // 寒假除外
+  SPECIAL_TIME_TYPE_WINTER_VACATION = 26;      // 寒假
+  SPECIAL_TIME_TYPE_NOT_DRY_SEASON = 27;       // 干季除外
+  SPECIAL_TIME_TYPE_DRY_SEASON = 28;           // 干季
+  SPECIAL_TIME_TYPE_NOT_RAINY_SEASON = 29;     // 雨季除外
+  SPECIAL_TIME_TYPE_RAINY_SEASON = 30;         // 雨季
+  SPECIAL_TIME_TYPE_WINTER = 31;               // 冬季
+  SPECIAL_TIME_TYPE_AUTUMN = 32;               // 秋季
+  SPECIAL_TIME_TYPE_SUMMER = 33;               // 夏季
+  SPECIAL_TIME_TYPE_SPRING = 34;               // 春季
+}

@@ -1,0 +1,24 @@
+syntax = "proto2";
+
+package deeproute.hdmap;
+
+import "semantic_map/map_geometry.proto";
+import "common/geometry.proto";
+
+// A yield indicates that each driver must prepare to stop if necessary to let a
+// driver on another approach proceed.
+// A driver who stops or slows down to let another vehicle through has yielded
+// the right of way to that vehicle.
+message YieldSign {
+  optional int32 id = 1;
+
+  repeated Curve stop_line = 2;
+
+  repeated int32 overlap_id = 3;
+
+  optional deeproute.common.Point3D location = 4;
+
+  optional double cost = 5;
+
+  repeated int32 layers = 6;
+}

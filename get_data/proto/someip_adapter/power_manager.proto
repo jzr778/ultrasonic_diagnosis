@@ -1,0 +1,40 @@
+syntax = "proto3";
+package deeproute.someip_adapter.gwm;
+
+// power off signal from AA_Downstream
+// topic name: /someip/adapter/poweroff/request
+message McuToSocPowerMsg {
+    bytes DsvPowerMgmtMsg_Array = 1;
+}
+
+// response of operation state to AA_Downstream
+// topic name: /someip/adapter/poweroff/response
+message SocToMcuPowerMsg {
+    enum PowerResponse {
+        RESPONSE_WAIT = 0;
+        RESPONSE_COMPLETED = 1;
+        RESPONSE_FAILED = 2;
+    }
+    PowerResponse response = 1;
+}
+
+// hard reset request to mcu side
+// topic name: /someip/adapter/hard_reset/request
+message PowerMgtToAppRequest {
+    bytes app_name = 1;
+    enum PowerReset {
+        INVALID_OPERATION = 0;
+        HARD_RESET = 1;
+    }
+    PowerReset reset = 2;
+}
+
+// hard reset response from AA_Downstream
+// topic name: /someip/adapter/hard_reset/response
+message PowerMgtToAppResponse {
+    enum PowerResetResult {
+        RESET_UNKNOWN = 0;
+        RESET_HANDLED = 1;
+    }
+    PowerResetResult result = 1;
+}

@@ -203,8 +203,11 @@ def unpack_tag(tag_id, output_root=None):
                 except Exception as e:
                     print(f"    [WARN] 下载 {bag_prefix}/{cfg_name} 失败: {e}")
 
-    # 第三步：提取最近邻图像帧并保存
-    print(f"\n  跨 {len(valid_heavy_bags)} 个 Heavy bag 全局匹配图像帧 ...")
+    # 第三步：从 Heavy bag 提取最近邻鱼眼帧并保存；后视镜折叠过滤在 extract_nearest_images 内从 Light bag 读 CAR_STATE_TOPIC（CarInfo）
+    print(
+        f"\n  [鱼眼/图像] 跨 {len(valid_heavy_bags)} 个 Heavy bag 全局匹配 4 路帧 "
+        f"（车身 CarInfo 仅从 Light bag 读 {config.CAR_STATE_TOPIC}，见下方日志） ..."
+    )
     image_results = reader.extract_nearest_images()
     per_bag_frames = save_images_to_disk(image_results, output_root)
 

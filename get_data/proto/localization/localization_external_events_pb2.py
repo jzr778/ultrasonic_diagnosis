@@ -24,46 +24,29 @@ _sym_db = _symbol_database.Default()
 
 from semantic_map import map_standby_area_pb2 as semantic__map_dot_map__standby__area__pb2
 from common import geometry_pb2 as common_dot_geometry__pb2
-from localization import havp_map_pb2 as localization_dot_havp__map__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n/localization/localization_external_events.proto\x12\x1c\x64\x65\x65proute.localization.event\x1a#semantic_map/map_standby_area.proto\x1a\x15\x63ommon/geometry.proto\x1a\x1blocalization/havp_map.proto\"\xf9\x03\n\x16MapMatchingStatusEvent\x12\x0e\n\x06map_id\x18\x01 \x01(\t\x12<\n\x06status\x18\x02 \x01(\x0e\x32,.deeproute.localization.event.MatchingStatus\x12\x33\n\rparking_space\x18\x03 \x01(\x0b\x32\x1c.deeproute.hdmap.StandbyArea\x12I\n\x1eodometry_to_map_transformation\x18\x04 \x01(\x0b\x32!.deeproute.common.Transformation3\x12\x18\n\x10\x63urrent_floor_id\x18\x05 \x01(\x05\x12\x15\n\rnearby_map_id\x18\x06 \x03(\t\x12!\n\x19has_default_parking_space\x18\x07 \x01(\x08\x12\x1f\n\x17is_expand_map_available\x18\x08 \x01(\x08\x12\x16\n\x0emap_name_debug\x18\t \x01(\t\x12\"\n\x1ahas_e2e_out_map_trajectory\x18\n \x01(\x08\x12%\n\x1dis_near_default_parking_space\x18\x0b \x01(\x08\x12\x39\n\todd_range\x18\x0c \x01(\x0e\x32&.deeproute.localization.event.OddRange\"\xc2\x07\n\x15NavigationStatusEvent\x12_\n\x11navigation_status\x18\x01 \x01(\x0e\x32\x44.deeproute.localization.event.NavigationStatusEvent.NavigationStatus\x12Y\n\x0erouting_status\x18\x02 \x01(\x0e\x32\x41.deeproute.localization.event.NavigationStatusEvent.RoutingStatus\x12\x1f\n\x17target_parking_space_id\x18\x03 \x01(\x05\x12\x44\n\x0bglobal_path\x18\x04 \x03(\x0b\x32/.deeproute.localization.havp_map.HAVPTrajectory\x12\x14\n\x0croute_length\x18\x05 \x01(\x02\x12\x1e\n\x16route_remaining_length\x18\x06 \x01(\x02\x12\x1b\n\x13\x63urrent_speed_limit\x18\x07 \x01(\x02\x12\x18\n\x10next_speed_limit\x18\x08 \x01(\x02\x12/\n\'lost_distance_with_target_parking_space\x18\t \x01(\x01\x12\x18\n\x10navigation_ready\x18\n \x01(\x08\x12$\n\x1cnext_speed_limit_remaining_s\x18\x0b \x01(\x02\x12\x1b\n\x13min_distance_to_map\x18\x0c \x01(\x01\x12\x19\n\x11left_routing_time\x18\r \x01(\x01\"\xce\x01\n\x10NavigationStatus\x12\x14\n\x10NAVIGATION_READY\x10\x00\x12\x16\n\x12NAVIGATION_ONGOING\x10\x01\x12\x17\n\x13NAVIGATION_FINISHED\x10\x02\x12\x16\n\x12NAVIGATION_PASSIVE\x10\x03\x12\x1b\n\x17NAVIGATION_YAWED_U_TURN\x10\x04\x12#\n\x1fNAVIGATION_YAWED_AWAY_FROM_ROAD\x10\x05\x12\x19\n\x15NAVIGATION_UNEXPECTED\x10\x06\"\x9e\x01\n\rRoutingStatus\x12\x11\n\rROUTING_READY\x10\x00\x12\x13\n\x0fROUTING_ONGOING\x10\x01\x12%\n!ROUTING_PASSIVE_OUT_OF_NAVIGATION\x10\x02\x12\x1a\n\x16ROUTING_PASSIVE_U_TURN\x10\x03\x12\"\n\x1eROUTING_PASSIVE_AWAY_FROM_ROAD\x10\x04\"\xd5\x02\n\x12MappingStatusEvent\x12;\n\x06status\x18\x01 \x01(\x0e\x32+.deeproute.localization.event.MappingStatus\x12\x18\n\x10mapping_distance\x18\x02 \x01(\x01\x12\x42\n\nerror_code\x18\x03 \x01(\x0e\x32..deeproute.localization.event.MappingErrorCode\x12\x1e\n\x16passed_speedbump_count\x18\x04 \x01(\x05\x12\x35\n\x12vehicle_trajectory\x18\x05 \x03(\x0b\x32\x19.deeproute.common.Point3D\x12\x18\n\x10reverse_distance\x18\x06 \x01(\x01\x12\x17\n\x0fmatched_map_ids\x18\x07 \x03(\x05\x12\x1a\n\x12passed_slope_count\x18\x08 \x01(\x05\"\xc3\x03\n\x16\x45nvironmentStatusEvent\x12^\n\x10\x65nvironment_info\x18\x01 \x03(\x0e\x32\x44.deeproute.localization.event.EnvironmentStatusEvent.EnvironmentInfo\"\xc8\x02\n\x0f\x45nvironmentInfo\x12\x13\n\x0fVEHILCE_IN_FLAT\x10\x00\x12\x15\n\x11VEHICLE_IN_UPHILL\x10\x01\x12\x17\n\x13VEHILCE_IN_DOWNHILL\x10\x02\x12\x1d\n\x19VEHICLE_PASSING_SPEEDBUMP\x10\x03\x12\x15\n\x11VEHICLE_REVERSING\x10\x04\x12\x1c\n\x18VEHICLE_IN_PARKING_SPACE\x10\x05\x12\x12\n\x0eVEHICLE_INDOOR\x10\n\x12\x13\n\x0fVEHICLE_OUTDOOR\x10\x0b\x12\x0e\n\nFLAT_AHEAD\x10\x32\x12\x10\n\x0cUPHILL_AHEAD\x10\x33\x12\x12\n\x0e\x44OWNHILL_AHEAD\x10\x34\x12\x13\n\x0fLEFT_TURN_AHEAD\x10\x35\x12\x14\n\x10RIGHT_TURN_AHEAD\x10\x36\x12\x12\n\x0eSTRAIGHT_AHEAD\x10\x37\"`\n\x10InTrajectoryInfo\x12\x0e\n\x06map_id\x18\x01 \x01(\r\x12<\n\x18public_to_odd_trajectory\x18\x02 \x03(\x0b\x32\x1a.deeproute.common.PointLLH\"\x9c\x01\n\x14\x45ndToEndParkingEvent\x12\x37\n\x10outdoor_position\x18\x01 \x03(\x0b\x32\x19.deeproute.common.Point2DB\x02\x18\x01\x12K\n\x13in_trajectory_infos\x18\x02 \x03(\x0b\x32..deeproute.localization.event.InTrajectoryInfo\"\xe8\x03\n\x11LocalizationEvent\x12\x10\n\x08\x65vent_id\x18\x01 \x01(\t\x12\x14\n\x0ctimestamp_ms\x18\x02 \x01(\x01\x12W\n\x19map_matching_status_event\x18\x03 \x01(\x0b\x32\x34.deeproute.localization.event.MapMatchingStatusEvent\x12N\n\x14mapping_status_event\x18\x04 \x01(\x0b\x32\x30.deeproute.localization.event.MappingStatusEvent\x12V\n\x18\x65nvironment_status_event\x18\x05 \x01(\x0b\x32\x34.deeproute.localization.event.EnvironmentStatusEvent\x12T\n\x17navigation_status_event\x18\x06 \x01(\x0b\x32\x33.deeproute.localization.event.NavigationStatusEvent\x12T\n\x18\x65nd_to_end_parking_event\x18\x07 \x01(\x0b\x32\x32.deeproute.localization.event.EndToEndParkingEvent*s\n\x0eMatchingStatus\x12\r\n\tSEARCHING\x10\x00\x12\x0c\n\x08MATCHING\x10\x01\x12\x0b\n\x07MATCHED\x10\x02\x12\n\n\x06NO_MAP\x10\x03\x12\x15\n\x11ROUTING_NOT_READY\x10\x04\x12\x14\n\x10NEAR_DESTINATION\x10\x05*P\n\x08OddRange\x12\x1c\n\x18PUBLIC_ROAD_TO_ODD_START\x10\x00\x12\n\n\x06IN_ODD\x10\x01\x12\x1a\n\x16ODD_END_TO_PUBLIC_ROAD\x10\x02*\xf5\x01\n\rMappingStatus\x12\x0b\n\x07ONGOING\x10\x00\x12\x08\n\x04\x46\x41IL\x10\x01\x12\t\n\x05READY\x10\n\x12\x0f\n\x0bPRE_MAPPING\x10\x0b\x12\x0e\n\nIN_ROUTING\x10\x14\x12\x12\n\x0eGNSS_NOT_READY\x10\x15\x12\x19\n\x15ROAD_LEVEL_OUT_OF_ODD\x10\x16\x12\x14\n\x10GNSS_SIGNAL_LOST\x10\x17\x12\x18\n\x14MAP_NUMBER_REACH_MAX\x10\x18\x12$\n\x1cREACH_MAX_EXPANSION_DISTANCE\x10\x19\x1a\x02\x08\x01\x12\x1c\n\x18NEED_REENTER_PARKING_ODD\x10\x1a*p\n\x10MappingErrorCode\x12\x11\n\rLOOP_DETECTED\x10\x00\x12\x1c\n\x18REVERSING_BEFORE_PARKING\x10\x01\x12\x0f\n\x0bMULTI_LEVEL\x10\x02\x12\x1a\n\x16\x42\x41\x44_QUALITY_TRAJECTORY\x10\x03\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n/localization/localization_external_events.proto\x12\x1c\x64\x65\x65proute.localization.event\x1a#semantic_map/map_standby_area.proto\x1a\x15\x63ommon/geometry.proto\"\xe6\x01\n\x16MapMatchingStatusEvent\x12\x0e\n\x06map_id\x18\x01 \x01(\t\x12<\n\x06status\x18\x02 \x01(\x0e\x32,.deeproute.localization.event.MatchingStatus\x12\x33\n\rparking_space\x18\x03 \x01(\x0b\x32\x1c.deeproute.hdmap.StandbyArea\x12I\n\x1eodometry_to_map_transformation\x18\x04 \x01(\x0b\x32!.deeproute.common.Transformation3\"\xa0\x02\n\x12MappingStatusEvent\x12;\n\x06status\x18\x01 \x01(\x0e\x32+.deeproute.localization.event.MappingStatus\x12\x18\n\x10mapping_distance\x18\x02 \x01(\x01\x12\x42\n\nerror_code\x18\x03 \x01(\x0e\x32..deeproute.localization.event.MappingErrorCode\x12\x1e\n\x16passed_speedbump_count\x18\x04 \x01(\x05\x12\x35\n\x12vehicle_trajectory\x18\x05 \x03(\x0b\x32\x19.deeproute.common.Point3D\x12\x18\n\x10reverse_distance\x18\x06 \x01(\x01\"\xe6\x02\n\x16\x45nvironmentStatusEvent\x12^\n\x10\x65nvironment_info\x18\x01 \x03(\x0e\x32\x44.deeproute.localization.event.EnvironmentStatusEvent.EnvironmentInfo\"\xeb\x01\n\x0f\x45nvironmentInfo\x12\x13\n\x0fVEHILCE_IN_FLAT\x10\x00\x12\x15\n\x11VEHICLE_IN_UPHILL\x10\x01\x12\x17\n\x13VEHILCE_IN_DOWNHILL\x10\x02\x12\x1d\n\x19VEHICLE_PASSING_SPEEDBUMP\x10\x03\x12\x15\n\x11VEHICLE_REVERSING\x10\x04\x12\x12\n\x0eVEHICLE_INDOOR\x10\n\x12\x13\n\x0fVEHICLE_OUTDOOR\x10\x0b\x12\x0e\n\nFLAT_AHEAD\x10\x32\x12\x10\n\x0cUPHILL_AHEAD\x10\x33\x12\x12\n\x0e\x44OWNHILL_AHEAD\x10\x34\"\xbc\x02\n\x11LocalizationEvent\x12\x10\n\x08\x65vent_id\x18\x01 \x01(\t\x12\x14\n\x0ctimestamp_ms\x18\x02 \x01(\x01\x12W\n\x19map_matching_status_event\x18\x03 \x01(\x0b\x32\x34.deeproute.localization.event.MapMatchingStatusEvent\x12N\n\x14mapping_status_event\x18\x04 \x01(\x0b\x32\x30.deeproute.localization.event.MappingStatusEvent\x12V\n\x18\x65nvironment_status_event\x18\x05 \x01(\x0b\x32\x34.deeproute.localization.event.EnvironmentStatusEvent*s\n\x0eMatchingStatus\x12\r\n\tSEARCHING\x10\x00\x12\x0c\n\x08MATCHING\x10\x01\x12\x0b\n\x07MATCHED\x10\x02\x12\n\n\x06NO_MAP\x10\x03\x12\x15\n\x11ROUTING_NOT_READY\x10\x04\x12\x14\n\x10NEAR_DESTINATION\x10\x05*\x97\x01\n\rMappingStatus\x12\x0b\n\x07ONGOING\x10\x00\x12\x08\n\x04\x46\x41IL\x10\x01\x12\t\n\x05READY\x10\n\x12\x0f\n\x0bPRE_MAPPING\x10\x0b\x12\x0e\n\nIN_ROUTING\x10\x14\x12\x12\n\x0eGNSS_NOT_READY\x10\x15\x12\x19\n\x15ROAD_LEVEL_OUT_OF_ODD\x10\x16\x12\x14\n\x10GNSS_SIGNAL_LOST\x10\x17*p\n\x10MappingErrorCode\x12\x11\n\rLOOP_DETECTED\x10\x00\x12\x1c\n\x18REVERSING_BEFORE_PARKING\x10\x01\x12\x0f\n\x0bMULTI_LEVEL\x10\x02\x12\x1a\n\x16\x42\x41\x44_QUALITY_TRAJECTORY\x10\x03\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'localization.localization_external_events_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_MAPPINGSTATUS'].values_by_name["REACH_MAX_EXPANSION_DISTANCE"]._loaded_options = None
-  _globals['_MAPPINGSTATUS'].values_by_name["REACH_MAX_EXPANSION_DISTANCE"]._serialized_options = b'\010\001'
-  _globals['_ENDTOENDPARKINGEVENT'].fields_by_name['outdoor_position']._loaded_options = None
-  _globals['_ENDTOENDPARKINGEVENT'].fields_by_name['outdoor_position']._serialized_options = b'\030\001'
-  _globals['_MATCHINGSTATUS']._serialized_start=3189
-  _globals['_MATCHINGSTATUS']._serialized_end=3304
-  _globals['_ODDRANGE']._serialized_start=3306
-  _globals['_ODDRANGE']._serialized_end=3386
-  _globals['_MAPPINGSTATUS']._serialized_start=3389
-  _globals['_MAPPINGSTATUS']._serialized_end=3634
-  _globals['_MAPPINGERRORCODE']._serialized_start=3636
-  _globals['_MAPPINGERRORCODE']._serialized_end=3748
-  _globals['_MAPMATCHINGSTATUSEVENT']._serialized_start=171
-  _globals['_MAPMATCHINGSTATUSEVENT']._serialized_end=676
-  _globals['_NAVIGATIONSTATUSEVENT']._serialized_start=679
-  _globals['_NAVIGATIONSTATUSEVENT']._serialized_end=1641
-  _globals['_NAVIGATIONSTATUSEVENT_NAVIGATIONSTATUS']._serialized_start=1274
-  _globals['_NAVIGATIONSTATUSEVENT_NAVIGATIONSTATUS']._serialized_end=1480
-  _globals['_NAVIGATIONSTATUSEVENT_ROUTINGSTATUS']._serialized_start=1483
-  _globals['_NAVIGATIONSTATUSEVENT_ROUTINGSTATUS']._serialized_end=1641
-  _globals['_MAPPINGSTATUSEVENT']._serialized_start=1644
-  _globals['_MAPPINGSTATUSEVENT']._serialized_end=1985
-  _globals['_ENVIRONMENTSTATUSEVENT']._serialized_start=1988
-  _globals['_ENVIRONMENTSTATUSEVENT']._serialized_end=2439
-  _globals['_ENVIRONMENTSTATUSEVENT_ENVIRONMENTINFO']._serialized_start=2111
-  _globals['_ENVIRONMENTSTATUSEVENT_ENVIRONMENTINFO']._serialized_end=2439
-  _globals['_INTRAJECTORYINFO']._serialized_start=2441
-  _globals['_INTRAJECTORYINFO']._serialized_end=2537
-  _globals['_ENDTOENDPARKINGEVENT']._serialized_start=2540
-  _globals['_ENDTOENDPARKINGEVENT']._serialized_end=2696
-  _globals['_LOCALIZATIONEVENT']._serialized_start=2699
-  _globals['_LOCALIZATIONEVENT']._serialized_end=3187
+  _globals['_MATCHINGSTATUS']._serialized_start=1345
+  _globals['_MATCHINGSTATUS']._serialized_end=1460
+  _globals['_MAPPINGSTATUS']._serialized_start=1463
+  _globals['_MAPPINGSTATUS']._serialized_end=1614
+  _globals['_MAPPINGERRORCODE']._serialized_start=1616
+  _globals['_MAPPINGERRORCODE']._serialized_end=1728
+  _globals['_MAPMATCHINGSTATUSEVENT']._serialized_start=142
+  _globals['_MAPMATCHINGSTATUSEVENT']._serialized_end=372
+  _globals['_MAPPINGSTATUSEVENT']._serialized_start=375
+  _globals['_MAPPINGSTATUSEVENT']._serialized_end=663
+  _globals['_ENVIRONMENTSTATUSEVENT']._serialized_start=666
+  _globals['_ENVIRONMENTSTATUSEVENT']._serialized_end=1024
+  _globals['_ENVIRONMENTSTATUSEVENT_ENVIRONMENTINFO']._serialized_start=789
+  _globals['_ENVIRONMENTSTATUSEVENT_ENVIRONMENTINFO']._serialized_end=1024
+  _globals['_LOCALIZATIONEVENT']._serialized_start=1027
+  _globals['_LOCALIZATIONEVENT']._serialized_end=1343
 # @@protoc_insertion_point(module_scope)

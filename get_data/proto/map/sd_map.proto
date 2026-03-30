@@ -1,0 +1,272 @@
+syntax = "proto2";
+
+package deeproute.sd_map;
+
+import "common/geometry.proto";
+import "map/common_type.proto";
+import "map/sd_map_type.proto";
+
+// This file is extracted from the horizon map proto, and the namespace
+// is changed from map to sd_map
+
+message LaneCond {
+  //生效车道，16bit从左到右表示每个车道是否生效
+  optional uint32 laneinfo_cond = 1;
+  //时间段，可空
+  optional string date = 3;
+  //限制车辆类型，可空
+  repeated VehicleType vehicles = 4;
+  //特殊时间类型，可空
+  repeated SpecialTimeType special_times = 5;
+}
+
+message LaneData {
+  optional uint32 arrow = 1;       // 车道线方向
+  optional uint32 bitmap = 2;      // 以位来表示的可通行车道
+  optional uint32 bus_bitmap = 3;  // 以位来表示的仅公交可通行车道
+  optional int64 left_add =
+      4;  // 左附加车道数, for link topo， 同一个link只有一个值
+  optional int64 right_add =
+      5;  // 右附加车道数, for link topo， 同一个link只有一个值
+  optional uint64 lane_number = 6;  // 车道总数, 包括左右附加车道
+  repeated uint64 out_dr_link_ids = 7;  // 车道出边的有向路段ID
+  repeated LaneCond lane_conds = 8;     // 车道条件
+}
+
+message LaneTimeSpan {
+  optional uint32 index = 1;     // 从左到右的车道下标
+  optional string timespan = 2;  // 分时车道生效时段信息
+}
+
+message ConnectivityData {
+  optional bool forbidden = 1;              // 是否是禁转路段
+  optional uint64 directed_dr_link_id = 2;  // 路段的有向ID
+  repeated uint64 pass_directed_dr_link_ids =
+      3;  // 从入边到出边需要经过的路段ID
+}
+
+enum Arrow {
+  ARROW_NONE = 0;      // 无 仅占位
+  ARROW_STRAIGHT = 1;  // 直行
+  ARROW_RIGHT = 4;     // 右转
+  ARROW_U_TURN = 7;    // 掉头
+  ARROW_LEFT = 10;     // 左转
+  ARROW_EMPTY = 13;    // 空白
+}
+
+message LaneAttr {
+  enum LaneExtensionType {
+    LANE_EXTENSION_NORMAL = 0;         // 常规车道
+    LANE_EXTENSION_BUS = 1;            // 公交车道
+    LANE_EXTENSION_TIDE = 2;           // 潮汐车道
+    LANE_EXTENSION_TURNALTERABLE = 3;  // 可变车道
+  }
+  repeated LaneExtensionType lane_extension_types = 1;  // 车道类型
+  repeated Arrow arrows = 2;                            // 车道箭头
+}
+
+message SpecLaneAttribute {
+  enum SpecLaneExtensionType {
+    SPEC_LANE_EXTENSION_NORMAL = 0;               // 常规车道
+    SPEC_LANE_EXTENSION_BICYCLE_LANE_ROAD = 1;    // 自行车道
+    SPEC_LANE_EXTENSION_EMERGENCY_LANE_ROAD = 2;  // 应急车道
+  }
+  optional int32 index = 1;  // 自行车道、应急车道算为车道，从左到右0起始
+  optional SpecLaneExtensionType lane_extension_type = 2;  // 车道类型
+}
+
+message LaneInfoData {
+  // 左侧车道变化数
+  optional int32 lane_left_change_num = 2;
+  // 右侧车道变化数
+  optional int32 lane_right_change_num = 3;
+  // 特殊车道类型
+  repeated SpecLaneAttribute lane_attributes = 4;
+}
+
+// 电子眼
+message Camera {
+  optional deeproute.map.CameraType type = 1;  //电子眼类型
+  optional common.PointLLH coordinate = 2;     //坐标
+  optional int32 speed_limit = 3;              //限速值
+}
+
+// 单向link
+message LinkData {
+  enum FormWay {
+    ROAD_KIND_NONE = 0;            // 无属性
+    ROAD_KIND_ROUNDABOUT = 1;      // 环岛
+    ROAD_KIND_DIRECTION_SPIT = 2;  // 上下线分离
+    ROAD_KIND_JCT = 3;             // JCT,连接高速道路
+    ROAD_KIND_CROSS_INNER = 4;     // 交叉点内Link
+    ROAD_KIND_IC = 5;              // IC,连接高速和其它不同等级道路
+    ROAD_KIND_PA = 6;              // 停车区
+    ROAD_KIND_SA = 7;              // 服务区
+    ROAD_KIND_WALK_STREET = 8;     // 步行街
+    ROAD_KIND_SECONDARY = 9;       // 辅路
+    ROAD_KIND_RAMP = 10;           // 匝道
+    ROAD_KIND_POI_CONNECT = 11;    // POI连接路
+    ROAD_KIND_TUNNEL = 12;         // 隧道
+    ROAD_KIND_RIGHT_TURN = 13;     // 提前右转
+    ROAD_KIND_INNER_REGION = 14;   // 区域内道路
+    ROAD_KIND_LEFT_TURN = 15;      // 提前左转
+    ROAD_KIND_U_TURN = 16;         // 调头口
+    ROAD_KIND_MAIN_SECONDARY_ENTRANCE = 17;    // 主辅路出入口
+    ROAD_KIND_REVERSAL_LEFT = 18;              // 借道左转
+    ROAD_KIND_MAIN_ROAD = 19;                  // 主路
+    ROAD_KIND_ELEVATED = 20;                   // 高架路
+    ROAD_KIND_TOLL = 21;                       // 收费站
+    ROAD_KIND_HIGHWAY_PORT = 22;               // 高速出入口
+    ROAD_KIND_AHEAD_TURN_RIGHT = 23;           // 提前右转
+    ROAD_KIND_WIDE_LANE = 24;                  // 宽车道道路
+    ROAD_KIND_BIKE_LANE = 25;                  // 自行车道路
+    ROAD_KIND_SHOULDER = 26;                   // 应急车道道路
+    ROAD_KIND_CROSS_LINE_OVERPASS = 29;        // 跨线天桥
+    ROAD_KIND_SUNKEN_ROAD = 30;                // 下沉道路
+    ROAD_KIND_BRIDGE = 31;                     // 固定桥
+    ROAD_KIND_ENCLOSURE = 32;                  // 全封闭道路
+    ROAD_KIND_UNDEFINED = 33;                  // 未定义交通区域
+    ROAD_KIND_BUS = 34;                        // 公交专用道
+    ROAD_KIND_VIEW = 35;                       // 风景路线
+    ROAD_KIND_PARK_ENTRANCE = 36;              // 停车场出入口连接路
+    ROAD_KIND_MOVABLE_BRIDGE = 37;             // 移动式桥
+    ROAD_KIND_FRONT_DOOR = 38;                 // 门前路
+    ROAD_KIND_TRUCK_LANE = 39;                 // 货车专用道
+    ROAD_KIND_NORMAL = 40;                     // 普通道路
+    ROAD_KIND_CONSTRUCTION = 41;               // 建设中道路
+    ROAD_KIND_INTERSECTION = 42;               // 十字路口
+    ROAD_KIND_HIGHWAY_CONNECTION = 43;         // 高速连接路
+    ROAD_KIND_NONSTANDARD_ROUNDABOUT = 44;     // 非标准环岛
+    ROAD_KIND_SPECIAL_CONNECTION = 45;         // 特殊连接路
+    ROAD_KIND_PARKING_OCCUPY_ROAD = 46;        // 包含占道停车场
+    ROAD_KIND_OWNERSHIP = 47;                  // 私道
+    ROAD_KIND_INNER_VIRTUAL_CONNECT = 48;      // 区域内虚拟连接
+    ROAD_KIND_TAXI = 49;                       // 出租车专用道
+    ROAD_KIND_TIDE = 50;                       // 潮汐车道
+    ROAD_KIND_STEP_ROAD = 51;                  // 阶梯道路
+    ROAD_KIND_INNER_CROSS_ROAD = 52;           // 路口面道路
+    ROAD_KIND_ENTRANCE_AND_EXIT_CONNECT = 53;  // 出入口连接路
+    ROAD_KIND_RAMP_BOTH_PASS = 54;             // 匝道双通
+    ROAD_KIND_MOUNTAIN_ROAD = 55;              // 山路
+    ROAD_KIND_SUNKEN_ROAD_PORT = 56;           // 下沉道路出入口
+    ROAD_KIND_OTHER = 57;                      // 其他
+    ROAD_KIND_VIRTUAL_SOLID_CONNECTION = 58;   // 虚实连接
+    ROAD_KIND_PARKING_INTERNAL_ROAD = 59;      // 停车场内部道路
+
+    ROAD_KIND_ENTER_SINGLE_CROSS = 27;  // 进入复合路口道路
+    ROAD_KIND_ENTER_MULTI_CROSS = 28;   // 进入单一路口道路
+  }
+
+  optional string shape_points = 3;
+
+  optional uint64 dr_link_id = 1;   // 元戎有向路段id
+  optional uint64 navinfo_id = 19;  // 路段id
+  optional uint64 raw_id = 29;      // 母库路段id
+
+  optional bool forward = 20;            // 是否为正向
+  optional uint32 length = 2;            // 路段长度
+  optional bool traffic_light = 4;       // 路段末尾是否有红绿灯
+  optional uint32 speed_limit = 5;       // 道路限速km/h
+  optional uint32 forward_lane_num = 6;  // 正向可用车道数
+  optional string name = 7;              // 路段名称
+  optional uint32 priority = 8;          // 路段等级
+  repeated LaneData lanes = 9;           // 车信信息对象数组
+  optional uint32 reversible_lane_bitmap =
+      10;  // 以位来表示各车道是否是潮汐车道
+  optional uint32 variable_turn_lane_bitmap =
+      11;  // 以位来表示各车道是否是转向可变车道
+  optional uint32 conditional_bus_lane_bitmap =
+      12;  // 以位来表示各车道是否是分时公交专用车道
+  repeated LaneTimeSpan conditional_bus_lane_timespans =
+      13;  // 分时公交车道生效时间段信息, 数组长度为分时公交车道数
+  repeated LaneTimeSpan reversible_lane_timespans =
+      14;  // 潮汐车道生效时间段信息, 数组长度为潮汐车道数
+  optional uint32 usage = 15;                     // 道路用途标识
+  repeated FormWay formways = 23;                 // 多种道路形态
+  optional bool tunnel = 16;                      // 是否为隧道
+  repeated ConnectivityData in_links_data = 17;   // 入边信息对象数组
+  repeated ConnectivityData out_links_data = 18;  // 出边信息对象数组
+  optional bool elevated = 21;                    // 是否为高架
+  optional bool toll_station_at_link_start = 22;  // 路段起点处是否有收费站
+  repeated LaneAttr lane_attrs = 24;  // 车道级属性，从左到右表示所有车道的信息
+  optional uint64 start_node_id = 25;           // 起点节点id
+  optional uint64 end_node_id = 26;             // 终点节点id
+  optional uint64 main_node_id = 27;            // 主节点id
+  optional uint32 tile_id = 28;                 // 路段所在图幅ID
+  optional uint32 experience_speed_limit = 30;  // 道路经验限速km/h
+  optional int32 admin_code = 31;               // 行政区划代码
+  optional LaneInfoData lane_info_data = 32;    // 车道信息
+  optional uint32 exact_speed_limit = 33;       // 道路确定限速km/h
+  repeated Camera camera = 34;                  // 电子眼
+
+  repeated common.PointLLH points = 101;   // 形状点, 使用编码02经纬度
+  repeated common.Point2D points2d = 102;  // 形状点, 使用地图坐标系
+}
+
+message SdLinks {
+  enum Frame {
+    UNKNOWN = 0;
+    WGS84 = 1;
+    GCJ02 = 2;
+    UTM = 3;
+    VEHICLE = 4;
+  }
+
+  optional Frame link_frame = 1;  // coordinate frame where links are defined at
+  repeated LinkData links =
+      2;  // link data, its points are defined wrt. to link_frame
+}
+
+message SDMap {
+  message Header {
+    optional string map_version = 1;
+    optional string release_date = 2;
+  }
+  optional Header header = 1;
+  repeated LinkData links = 2;
+  repeated uint64 not_found_dr_link_ids = 3;
+}
+
+message SDMapOnboard {
+  optional int32 id = 1;
+  optional SDMap sd_map = 2;
+}
+
+message SDMapVersionOnboard {
+  message TencentSDVersion {
+    message FormatVersion {
+      optional uint32 main_version = 1;
+      optional uint32 sub_version = 2;
+    }
+    optional FormatVersion format_version = 1;
+    optional uint32 versoin_id = 2;
+  }
+  enum TransferProtocol {
+    HTTP = 0;
+    GRPC = 1;
+  }
+
+  message ConnectConfig {
+    optional int32 request_timeout_sec = 1;
+    optional int32 connection_timeout_sec = 2;
+    optional bool use_long_connection = 3;
+    optional string service_name = 4;
+  }
+
+  message GraphMatchRoutingConfig {
+    optional bool able_segmented_routing = 1;
+    optional int32 pre_link_num = 2;
+    optional uint64 max_segm_distance = 3;
+    optional bool send_pre_polyline = 4;
+
+    // 最大分段数量
+    optional int32 max_segm_num = 5;
+  }
+
+  optional string sd_map_plus_version = 1;
+  optional TencentSDVersion tencent_sd_version = 2;
+  optional TransferProtocol transfer_protocol = 3;
+  repeated ConnectConfig connect_config = 4;
+
+  optional GraphMatchRoutingConfig graph_match_routing_config = 5;
+}

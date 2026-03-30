@@ -1,0 +1,9 @@
+syntax = "proto2";
+
+package deeproute.common;
+message DevicesConfig {
+  optional bool has_remote_controller = 1 [default = false];
+  optional bool has_remote_cockpit = 2 [default = false];
+  optional bool has_video_transmission_device = 3 [default = false];
+  optional bool has_backup_brake = 4 [default = false];
+};

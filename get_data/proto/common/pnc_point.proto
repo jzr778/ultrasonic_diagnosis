@@ -1,0 +1,122 @@
+syntax = "proto2";
+
+// Defined Point types that are commonly used in PnC (Planning and Control)
+// modules.
+
+package deeproute.common;
+
+import "common/geometry.proto";
+
+message SLPoint {
+  optional double s = 1;
+  optional double l = 2;
+}
+
+message FrenetFramePoint {
+  optional double s = 1;
+  optional double l = 2;
+  optional double dl = 3;
+  optional double ddl = 4;
+  optional double dddl = 6;
+  optional int32 reference_line_index = 5 [default = 0];
+}
+
+message SpeedPoint {
+  optional double s = 1;
+  optional double t = 2;
+  // speed (m/s)
+  optional double v = 3;
+  // acceleration (m/s^2)
+  optional double a = 4;
+  // jerk (m/s^3)
+  optional double da = 5;
+
+  optional double max_acc = 6 [default = 4.0];
+  optional double min_acc = 7 [default = -10.0];
+  optional double max_lon_jerk = 8 [default = 20.0];
+  optional double min_lon_jerk = 9 [default = -20.0];
+}
+
+message SimplifiedPathPoint {
+  optional double s = 1;
+  optional double l = 2;
+
+  optional double x = 3;
+  optional double y = 4;
+}
+
+message PathPoint {
+  // coordinates
+  optional double x = 1;
+  optional double y = 2;
+  optional double z = 3;
+
+  // direction on the x-y plane
+  optional double theta = 4;
+  // curvature on the x-y planning
+  optional double kappa = 5;
+  // accumulated distance from beginning of the path
+  optional double s = 6;
+
+  // derivative of kappa w.r.t s.
+  optional double dkappa = 7;
+  // derivative of derivative of kappa w.r.t s.
+  optional double ddkappa = 8;
+  // The lane ID where the path point is on
+  optional string lane_id = 9;
+
+  // derivative of x and y w.r.t parametric parameter t in CosThetareferenceline
+  optional double x_derivative = 10;
+  optional double y_derivative = 11;
+
+  optional FrenetFramePoint frenet_point = 12;
+}
+
+message Path {
+  optional string name = 1;
+  repeated PathPoint path_point = 2;
+}
+
+message TrajectoryPoint {
+  // path point
+  optional PathPoint path_point = 1;
+  // linear velocity
+  optional double v = 2;  // in [m/s]
+  // linear acceleration
+  optional double a = 3;
+  // relative time from beginning of the trajectory
+  optional double relative_time = 4;
+  // longitudinal jerk
+  optional double da = 5;
+  // The angle between vehicle front wheel and vehicle longitudinal axis
+  optional double steer = 6;
+  optional double max_acc = 7[default = 4.0];
+  optional double min_acc = 8[default = -10.0];
+  optional double max_lon_jerk = 9[default = 20.0];
+  optional double min_lon_jerk = 10[default = -20.0];
+
+  optional double kappa_dot = 11 [default = 0.0];
+  optional double kappa_ddot = 12 [default = 0.0];
+}
+
+message Trajectory {
+  optional string name = 1;
+  repeated TrajectoryPoint trajectory_point = 2;
+}
+
+message VehicleMotionPoint {
+  // trajectory point
+  optional TrajectoryPoint trajectory_point = 1;
+  // The angle between vehicle front wheel and vehicle longitudinal axis
+  optional double steer = 2;
+}
+
+message VehicleMotion {
+  optional string name = 1;
+  repeated VehicleMotionPoint vehicle_motion_point = 2;
+}
+
+message Waypoint {
+  optional deeproute.common.Point3D point = 1;
+  optional double heading = 2;
+}

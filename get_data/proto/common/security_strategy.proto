@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package deeproute.proto;
+
+import "common/module_status.proto";
+import "common/error_code.proto";
+
+enum SecurityStrategy {
+  NOT_DEFINED = 0;
+  EXIT_AUTO_MODE = 1;
+  PULL_OVER = 2;
+  EMERGENCY_STOP = 3;
+  SLOW_DOWN = 4;
+  SLOW_DOWN_TO_STOP = 5;
+}
+
+message SecurityStrategyCMD { // send 'SecurityStrategyReport' message in '/common/security_strategy_cmd' topic
+  string id = 1;
+  MODULE source = 2;
+  MODULE destination = 3; 
+  oneof cmd {
+    SecurityStrategy strategy = 4;
+    UpdateSecurityStrategyCMD update_strategy = 5;
+  }
+}
+
+message SecurityStrategyCMDRP { // send 'SecurityStrategyRsp' message in '/common/security_strategy_cmdrp' topic
+  string id = 1;
+  MODULE source = 2;
+  MODULE destination = 3; 
+  deeproute.common.StatusPb error_code = 4;
+}
+
+message SecurityStrategyTrigger {
+  repeated ModuleErrorCode error_code = 1;
+  repeated MODULE error_module = 2;
+  repeated MODULE lost_heartbeat = 3;
+}
+
+message SecurityStrategyContext {
+  SecurityStrategyTrigger trigger = 1;
+  SecurityStrategy strategy = 2;
+}
+
+message UpdateSecurityStrategyCMD {
+  repeated MODULE high_priority_modules = 1;
+  repeated SecurityStrategyContext context = 2;
+  uint32 module_timeout_duration = 3;//unit : ms 
+}

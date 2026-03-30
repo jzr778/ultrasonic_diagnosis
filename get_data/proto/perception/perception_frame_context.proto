@@ -1,0 +1,38 @@
+syntax = "proto2";
+
+package deeproute.perception;
+
+import "common/geometry.proto";
+import "common/vehicle_state/vehicle_state.proto";
+
+message SensorInputDebugInfo {
+  // Sensor identifier. E.g. "lidar", "camera_1", "traffic_2"
+  optional string sensor_name = 1;
+
+  // MD5 hash of the sensor input data. E.g. for lidar, it is the MD5 hash of
+  // raw point cloud data. For camera, it is the MD5 hash of the raw/jpeg image
+  // data.
+  optional string md5_hash_string = 2;
+
+  // Timestamp used to fetch the interpolated pose. Unit is microsecond.
+  optional int64 timestamp_micro = 3;
+
+  // Interpolated pose of the sensor at the timestamp above
+  optional deeproute.common.Point3D position = 4;
+  optional deeproute.common.Point3D roll_pitch_yaw = 5;
+}
+
+message FrameContext {
+  // Frame ID that comes from the perception input.
+  optional uint64 frame_id = 1;
+
+  // A list of car states that are used as input fed to perception.
+  repeated deeproute.common.VehicleState input_car_states = 2;
+
+  // A list of sensor input debug info that are used for perception internal
+  // calculation.
+  repeated SensorInputDebugInfo sensor_input_debug_infos = 3;
+
+  // Serialized bytes of line manager hidden states.
+  optional bytes line_manager_hidden_states = 4;
+}

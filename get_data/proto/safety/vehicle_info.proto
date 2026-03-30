@@ -1,0 +1,83 @@
+syntax = "proto2";
+
+package dr.safety.vehicle_info;
+
+import "common/geometry.proto";
+
+enum DrivingMode {
+  MODE_UNKNOWN = 0;
+  MANUAL = 1;
+  ASSISTED_DRIVING = 2;
+  REMOTE_DRIVING = 3;
+}
+
+enum Beam {
+  BEAM_NULL = 0;
+  HIGH = 1;
+  LOW = 2;
+}
+
+enum CoordinateType {
+  WGS84 = 0;
+  GCJ02 = 1;
+}
+
+// All data in the following message is optional
+message VehicleInfo {
+  optional float speed = 1;                  // m/s
+  optional float lateral_velocity = 2;       // 横向
+  optional float longitudinal_velocity = 3;  // 纵向
+  optional float vertical_velocity = 4;      // 垂直，m/s
+
+  optional float lateral_acceleration = 5;  // 横向加速度
+  optional float longitudinal_acceleration = 6;
+  optional float vertical_acceleration = 7;
+
+  optional float wheel_angle = 8;
+  optional float wheel_speed = 9;
+
+  optional bool accelerator_pressed = 10;
+  optional float accelerator_actual_pedal = 11;
+
+  optional float steering_wheel_angle = 12;
+
+  optional bool brake_pressed = 13;
+  optional float brake_pedal = 14;
+  optional bool abs_active = 15;
+
+  optional double wgs_lng = 16 [deprecated = true];
+  optional double wgs_lat = 17 [deprecated = true];
+  optional double wgs_alt = 18 [deprecated = true];
+
+  optional DrivingMode mode = 19;
+
+  optional bool front_left_door = 20;
+  optional bool front_right_door = 21;
+  optional bool rear_left_door = 22;
+  optional bool rear_right_door = 23;
+  optional bool trunk = 24;
+  optional bool hood = 25;
+
+  optional Beam beam = 26;
+  optional bool left_turn_light = 27;
+  optional bool right_turn_light = 28;
+  optional bool warning_light = 29;
+
+  optional bool driver_seat_belt = 30;
+  repeated bool passenger_seat_belt = 31;
+
+  optional double lng = 32;
+  optional double lat = 33;
+  optional double alt = 34;
+  optional CoordinateType coordinate_type = 35 [default = WGS84];
+
+  // 1/s, -51.2 to 50.8
+  optional double accelerator_pedal_rate = 40;
+  optional double steering_wheel_speed = 41;
+  optional double total_odometer = 42;
+  optional uint32 current_road_class = 43;
+
+  // in used,Yaw = 0 when the car heads to east, pi/2 when the car heads to north.
+  optional deeproute.common.Point3D roll_pitch_yaw = 50;
+  optional bool privacy_sts = 51;
+}

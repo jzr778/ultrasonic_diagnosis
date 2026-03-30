@@ -1,0 +1,51 @@
+syntax = "proto2";
+
+package deeproute.planning;
+
+enum EmergencyState {
+  PLANNING_EMERGENCY_NORMAL = 0;
+  PLANNING_EMERGENCY_STOP = 1;
+  PLANNING_EMERGENCY_PULLOVER = 2;
+  PLANNING_EMERGENCY_STOP_FINISH = 3;
+  PLANNING_EMERGENCY_PULLOVER_FINISH = 4;
+  PLANNING_EMERGENCY_TEMPORARY_STOP = 5;         // deprecated
+  PLANNING_EMERGENCY_TEMPORARY_STOP_FINISH = 6;  // deprecated
+}
+
+// No used any more
+enum BlockStatus {
+  PLANNING_BLOCKING_NONE = 0;
+  PLANNING_BLOCKING_SINGLE = 1;
+  PLANNING_BLOCKING_ALL = 2;
+  PLANNING_BLOCKING_ENDED = 3;
+}
+
+enum SelectionOverloadStatus {
+  SELECTION_NO_OVERLOAD = 0;
+  SELECTION_OVERLOAD_LEFT = 1;
+  SELECTION_OVERLOAD_MIDDLE = 2;
+  SELECTION_OVERLOAD_RIGHT = 3;
+}
+
+enum PlannerSelection {
+  SELECTION_EM = 0;
+  SELECTION_TRACE = 1;
+  SELECTION_OPEN_SPACE = 2;
+  SELECTION_GLOBAL = 3;
+  SELECTION_REVERSE_TRACKING = 4;
+}
+
+message OpenSpacePoint {
+  optional double x = 1;
+  optional double y = 2;
+  optional double z = 3;
+  optional double heading = 4;
+}
+
+enum PlannerType {
+  EM_PLANNER = 0;
+  TRACE_PLANNER = 1;
+  OPEN_SPACE_PLANNER = 2;
+  GLOBAL_PLANNER = 3;
+  REVERSE_TRACKING_PLANNER = 4;
+}

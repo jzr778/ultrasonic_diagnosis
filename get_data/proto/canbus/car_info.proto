@@ -1,0 +1,598 @@
+syntax = "proto2";
+
+package deeproute.canbus;
+
+import "canbus/chassis.proto";
+import "common/configs/vehicle_config.proto";
+import "canbus/m5_chassis_detail.proto";
+import "canbus/mar_chassis_detail.proto";
+import "canbus/m7_chassis_detail.proto";
+import "canbus/byd_chassis_detail.proto";
+import "canbus/gwm_chassis_detail.proto";
+import "common/vehicle_signal.proto";
+
+message CarInfo {
+  // in us
+  optional sfixed64 time_meas = 1;
+
+  // 50hz
+  optional SteerReport steer_report = 2;
+
+  // 20hz
+  optional ShiftReport shift_report = 3;
+
+  // 50hz
+  optional ThrottleReport throttle_report = 4;
+  // 100hz
+  optional ThrottleInfo throttle_info = 5;
+
+  // 50hz
+  optional BrakeReport brake_report = 6;
+  optional BrakeInfo brake_info = 7;
+
+  // 20hz
+  optional Misc misc = 8;
+
+  // 10hz, -0.00108696 to 1
+  optional double fuel_level = 9;
+
+  // 2hz
+  optional TirePressure tire_pressure = 10;
+
+  // Vehicle speed from CAN bus, in m/s, also exitst in car_state.
+  optional double speed = 11;
+
+  enum DriverOverrideSource {
+    NO_OVERRIDE = 0;
+    STEER = 1;
+    SHIFT = 2;
+    THROTTLE = 3;
+    BRAKE = 4;
+  }
+  optional DriverOverrideSource driver_override_source = 12;
+
+  optional bool override = 13;
+
+  enum DriverOverrideBrake {
+    NO_CHANGE_BRAKE = 0;
+    M_TO_AUTO_BRAKE = 1;
+    OVERRIDE_BRAKE = 2;
+    TO_M_BRAKE = 3;
+  }
+  optional DriverOverrideBrake driver_override_brake = 14;
+
+  enum DriverOverrideSteer {
+    NO_CHANGE_STEER = 0;
+    M_TO_AUTO_STEER = 1;
+    OVERRIDE_STEER = 2;
+    TO_M_STEER = 3;
+  }
+  optional DriverOverrideSteer driver_override_steer = 15;
+
+  enum VehicleMode {
+    VEHICLE_MANUAL = 0;
+    VEHICLE_AUTO = 1;
+    // To get back to AUTO from override, must set to MANUAL first,
+    // then AUTO
+    VEHICLE_OVERRIDE = 2;
+    VEHICLE_INVALID = 3;
+  }
+  optional VehicleMode vehicle_mode = 16;
+
+  optional VehichleModeRequest vehichle_mode_request = 17;
+
+  optional LateralInformSts lat_info_sts = 18;
+
+  optional deeproute.canbus.Surround sonar = 19;
+  optional SurroundInfo surround_info = 20;
+  optional LidarDistance lidar_dis = 21;
+  optional double total_odometer = 22;
+  // unit km, After the canbus is started, it is accumulated from 0
+  optional double single_odometer = 23;
+  // unit km, After the canbus is started, it is accumulated from 0,
+  // driving_mode must be LATERAL_AUTO or AUTO
+  optional double single_auto_odometer = 24;
+  // Remaining vehicle range, unit km
+  optional double remaining_odometer = 25;
+  // unit m/s^2
+  optional double chassis_long_acceleration = 26;
+  optional double chassis_lat_acceleration = 27;
+  // unit rad/s
+  optional double chassis_yaw_rate = 28;
+
+  optional AebReport aeb_report = 30;
+  optional ChassisGPS chassis_gps = 31;
+  // vehicle chassis standstill state, 0: not standstill, 1: standstill
+  optional bool standstill = 32;
+  optional EpbReport epb_report = 33;
+  optional ApaReport apa_report = 34;
+
+  // in us
+  optional sfixed64 time_mgmt_plane = 35;
+  // in us
+  optional sfixed64 time_system = 36;
+  optional bool soc_module_lost_heartbeat = 37;
+  optional bool aeb_lost_heartbeat = 38;
+  optional bool blc_lost_heartbeat = 39;
+  optional bool control_lost_heartbeat = 40;
+  optional bool mcu_detect_soc_lost_heartbeat = 41;
+
+  optional ChassisDetails chassis_details = 100;
+}
+
+message LateralInformSts {
+  optional bool eps_states = 1; // 0:not failed 1:failed
+  optional int32 eps_mod_sts = 2;
+  optional bool angle_ctrl_abort_fb = 3;
+  optional bool angle_ctrl_req_fb = 4;
+  optional bool angle_ctrl_sts = 5;
+  optional int32 torque_ctrl_sts = 6;
+}
+
+message VehichleModeRequest {
+  // true: requet for entering auto driving mode, false: no request
+  optional bool vehicle_auto_request = 1;
+  // true: requet for entering manual driving mode, false: no request
+  optional bool vehicle_manual_request = 2;
+}
+
+message SteerReport {
+  // Steering wheel angle in rad, -8.20305(left) to 8.20305(right)
+  optional double actual_angle = 1;
+  // Steering wheel angle in rad, -8.20305(left) to 8.20305(right)
+  optional double requested_angle = 2; // in rad
+  optional double torque = 3;          // Nm, -8.0000 fto 7.9375
+  optional bool steer_cmd_enabled = 4; // interface fault(0),normal(1)
+  optional bool steer_override = 5;
+  optional bool driver_activity = 6;
+  optional double wheel_speed = 7;
+  optional double motor_current = 8;
+  optional double actual_curvature = 9;
+  optional double requested_curvature = 10;
+  optional double actual_curvature_rate = 11;
+  optional double requested_curvature_rate = 12;
+  optional bool hand_off_monitor = 13;// torque
+  optional bool active = 14; // interface is executing(1), or not(0)
+  // calibration status of steering angle sensor, calibrated(1), or not(0)
+  optional bool calibrated = 15;
+  optional bool hand_off_monitor_cap = 16;// Capacitance
+  optional HandOnWheel hand_on_wheel = 17;
+  optional bool torque_override = 18;
+}
+
+message HandOnWheel {
+  enum HandState {
+    HAND_ON = 0;
+    HAND_OFF = 1;
+    INVALID= 2;
+  }
+  optional HandState hand_state = 1;
+}
+
+
+message ShiftReport {
+  optional deeproute.canbus.Chassis.GearPosition actual_gear = 1;
+  optional deeproute.canbus.Chassis.GearPosition requested_gear = 2;
+  
+  optional bool shift_override = 3;
+}
+
+message ThrottleReport {
+  optional double requested_pedal_physical = 1; // 0 to 1
+  optional double requested_pedal_cmd = 2;      // 0 to 1
+  // max of above
+  optional double actual_pedal = 3; // 0 to 1
+
+  optional bool pedal_cmd_enabled = 4; // interface fault(0),normal(1)
+
+  optional bool driver_activity = 5;
+
+  optional bool throttle_override = 6;
+
+  optional bool active = 7; // interface is executing(1), or not(0)
+}
+
+message ThrottleInfo {
+  optional double engine_rpm = 1; // unit rpm, 0 to 16383.75
+  // 0 to 0.999
+  optional double accel_pedal_percent = 2;
+  // 1/s, -51.2 to 50.8
+  optional double accel_pedal_rate = 3;
+  // Positive value means the motor speed points to the front end of the car,
+  // Negative value means the motor speed points to the rear end of the car.
+  optional double front_motor_rpm = 4;
+  optional double rear_motor_rpm = 5;
+}
+
+message BrakeReport {
+  optional double requested_pedal_physical = 1; // 0 to 1
+  optional double requested_pedal_cmd = 2;      // 0 to 1
+  // max of above two
+  optional double actual_pedal = 3; // 0 to 1
+
+  // Brake light status
+  optional bool bool_physical_request = 4;
+  optional bool bool_cmd_request = 5;
+  // max of above
+  optional bool actual_bool = 6;
+
+  // watchdog is applying brakes
+  optional bool dog_brake = 7;
+
+  optional bool pedal_cmd_enabled = 8; // interface fault(0),normal(1)
+
+  optional bool driver_activity = 9;
+
+  optional bool brake_override = 10;
+  // Pressure in the master cylinder, unit: bar
+  optional double master_cylinder_pressure = 11;
+
+  optional bool active = 12; // interface is executing(1), or not(0)
+}
+
+message BrakeInfo {
+  // unit Nm, 0 to 16380
+  optional int32 requested_brake_torque = 1;
+  enum HillAssist {
+    INACTIVE = 0;
+    FINDING_GRADIENT = 1;
+    ACTIVE_PRESSED = 2;
+    ACTIVE_RELEASED = 3;
+    FAST_RELEASE = 4;
+    SLOW_RELEASE = 5;
+    FAILED = 6;
+    UNDEFINED_HILL_STATUS = 7;
+  }
+  optional HillAssist hill_status = 2;
+
+  // vehicle stationary: move(0), stationary(1)
+  optional bool car_stationary = 3;
+
+  optional int32 actual_brake_torque = 4; // unit Nm, 0 to 16380
+
+  enum HillMode {
+    HILL_MODE_OFF = 0;
+    AUTO = 1;
+    MANUAL = 2;
+    UNDEFINED_HILL_MODE = 3;
+  }
+  optional HillMode hill_mode = 5;
+
+  enum ParkingBrakeStatus {
+    PARKING_BRAKE_STATUS_OFF = 0;
+    TRANSITION = 1;
+    PARKING_BRAKE_STATUS_ON = 2;
+    FAULT = 3;
+  }
+  optional ParkingBrakeStatus parking_brake_status = 6;
+
+  optional int32 actual_wheel_torque = 7; // unit Nm, -32768 to 32764
+
+  // unit m/s^2, -17.92 to 17.885
+  optional double acceleration_over_ground = 8;
+
+  optional bool abs_active = 9;
+  optional bool abs_enabled = 10;
+
+  optional bool stab_ctrl_active = 11;
+  optional bool stab_ctrl_enabled = 12;
+
+  optional bool traction_ctrl_active = 13;
+  optional bool traction_ctrl_enabled = 14;
+  optional double brake_pedal_rate = 15;   
+}
+
+message ChassisDetails {
+  optional deeproute.common.VehicleBrand brand = 1;
+  oneof detail {
+    M5ChassisDetail m5 = 2;
+    MarChassisDetail mar = 3;
+    M7ChassisDetail m7 = 4;
+    deeproute.canbus.byd.BydChassisDetail byd = 5;
+    GwmChassisDetail gwm = 6;
+  }
+}
+
+message AebReport {
+  message AebMode {
+    optional bool available = 1; // interface fault(0),normal(1)
+    optional bool active = 2; // interface is executing(1), or not(0)
+  }
+  optional AebMode fcw = 1;
+  optional AebMode aeb = 2;
+  optional AebMode abp = 3;
+  optional AebMode awb = 4;
+  optional AebMode eba = 5;
+  optional AebMode aba = 6;
+  optional AebMode meb = 7;
+  optional AebMode rctb = 8;
+}
+
+message EpbReport {
+  enum EpbStatus {
+    DEFAULT = 0;
+    PARKED = 1;
+    RELEASED = 2;
+    PARKING = 3;
+    RELEASING = 4;
+  }
+  enum FaultStatus {
+    NORMAL = 0;
+    FAULT = 1;
+  }
+
+  optional EpbStatus epb_sts = 1;
+  optional FaultStatus fault_sts = 2;
+}
+
+message ApaReport {
+  message ApaMode {
+    optional bool available = 1; // 1: APA available, 0: APA not vailable
+    optional bool active = 2; // 1: APA active, 0: APA not active
+  }
+  optional ApaMode apa = 1;
+  optional ApaMode apa_lateral = 2;
+  optional ApaMode apa_longitudinal = 3;
+}
+
+message Misc {
+  enum Beam {
+    HIGH_BEAM_NULL = 0;
+    FLASH_TO_PASS = 1;
+    HIGH = 2;
+    LOW = 3;
+  }
+  optional Beam beam = 1;
+
+  enum Wiper {
+    WIPER_OFF = 0;
+    AUTO_OFF = 1;
+    OFF_MOVING = 2;
+    MANUAL_OFF = 3;
+    MANUAL_ON = 4;
+    MANUAL_LOW = 5;
+    MANUAL_HIGH = 6;
+    MIST_FLIT = 7;
+    WASH = 8;
+    AUTO_LOW = 9;
+    AUTO_HIGH = 10;
+    COURTESY_WIPE = 11;
+    AUTO_ADJUST = 12;
+    RESERVED = 13;
+    STALLED = 14;
+    WIPER_NO_DATA = 15;
+  }
+  optional Wiper wiper = 2;
+
+  // ambient light
+  enum AmbientSignal {
+    DARK = 0;
+    LIGHT = 1;
+    TWILIGHT = 2;
+    TUNNEL_ON = 3;
+    TUNNEL_OFF = 4;
+    AMBIENT_SIGNAL_NO_DATA = 5;
+  }
+  optional AmbientSignal ambient_signal = 3;
+
+  // acc(accessories) control:
+  // acc on button, pressed or not
+  optional bool acc_on = 4;
+  // acc off button
+  optional bool acc_off = 5;
+  // acc resume button
+  optional bool acc_resume = 6;
+  // acc cancel button
+  optional bool acc_cancel = 7;
+  // acc on/off button
+  optional bool acc_on_off = 8;
+  // acc resume/cancel button
+  optional bool acc_resume_cancel = 9;
+  // acc increment set speed
+  optional bool acc_incre_speed = 10;
+  // acc decrement set speed
+  optional bool acc_decre_speed = 11;
+  // acc increment following gap
+  optional bool acc_incre_gap = 12;
+  // acc decrement following gap
+  optional bool acc_decre_gap = 13;
+
+  // lane keeping assisst on/off button
+  optional bool lane_keep = 14;
+
+  // doors
+  // driver door open(1) or not(0)
+  optional bool driver_door = 15;
+  // passenger door open(1) or not(0)
+  optional bool passen_door = 16;
+  // left rear door
+  optional bool rear_l_door = 17;
+  // right rear door
+  optional bool rear_r_door = 18;
+
+  // hood open(1) or not(0)
+  optional bool hood = 19;
+  // trunk open(1) or not(0)
+  optional bool trunk = 20;
+
+  // passenger detection
+  optional bool passen_detect = 21;
+  // passenger airbag, abled (1)
+  optional bool passen_airbag = 22;
+  // driver seat belt, buckled(1)
+  optional bool driver_belt = 23;
+  // passenger seat belt, buckled(1)
+  optional bool passen_belt = 24;
+
+  optional bool horn = 25;
+
+  // Lane Centering Control
+  enum LccLaneRequest {
+    NONE = 0;
+    LEFT = 1;
+    RIGHT = 2;
+  }
+  optional LccLaneRequest lcc_lane_request = 26;
+
+  optional Wiper rear_wiper = 27;
+  // open(1), close(0)
+  optional bool charging_cap = 28;
+  optional bool fuel_cap = 29;
+  optional BeltReport belt_report = 30;
+  optional PassengerDetecor passenger_detecor = 31;
+  optional DoorReport door_report = 32;
+  // rear view mirror, fold(0), unfold(1), value map: fl(1),fr(2)...
+  repeated bool rear_view_mirror = 33;
+  // unit: km/h
+  optional double ic_vehicle_speed = 34;
+  optional WindowReport window_report = 35;
+  optional BrakeLightReport brake_light_report = 36;
+  optional TemperatureReport temp_report = 37;
+  optional FogLightReport fog_light_report = 38;
+  optional BeamReport beam_report = 39;
+
+  //control request trun signal
+  optional deeproute.common.VehicleSignal.TurnSignal request_turn_signal = 40;
+}
+
+message TirePressure {
+  // kPa, 0 to 65535
+  optional double front_left = 1;
+  optional double front_right = 2;
+  optional double rear_left = 3;
+  optional double rear_right = 4;
+}
+
+message SurroundInfo {
+  message SonarInfo {
+    optional int32 dis_alarm_level = 1;
+    optional int32 status = 2;
+    optional double distance = 3;
+  }
+  optional SonarInfo sonar01 = 1;
+  optional SonarInfo sonar02 = 2;
+  optional SonarInfo sonar03 = 3;
+  optional SonarInfo sonar04 = 4;
+  optional SonarInfo sonar05 = 5;
+  optional SonarInfo sonar06 = 6;
+  optional SonarInfo sonar07 = 7;
+  optional SonarInfo sonar08 = 8;
+  optional SonarInfo sonar09 = 9;
+  optional SonarInfo sonar10 = 10;
+  optional SonarInfo sonar11 = 11;
+  optional SonarInfo sonar12 = 12;
+  optional SonarInfo sonar13 = 13;
+  optional SonarInfo sonar14 = 14;
+  optional SonarInfo sonar15 = 15;
+  optional SonarInfo sonar16 = 16;
+  optional SonarInfo sonar17 = 17;
+  optional SonarInfo sonar18 = 18;
+  optional SonarInfo sonar19 = 19;
+  optional SonarInfo sonar20 = 20;
+  optional SonarInfo sonar21 = 21;
+  optional SonarInfo sonar22 = 22;
+  optional SonarInfo sonar23 = 23;
+  optional SonarInfo sonar24 = 24;
+  optional SonarInfo sonar25 = 25;
+  optional SonarInfo sonar26 = 26;
+}
+
+message LidarDistance {
+  optional double distance_201 = 1;
+  optional double distance_202 = 2;
+  optional double distance_203 = 3;
+  optional double distance_204 = 4;
+}
+
+message WindowReport {
+  enum WindowStatus {
+    WINDOW_CLOSED = 0;
+    WINDOW_OPENED = 1;
+    STOPPED = 2;
+    AUTO_UP_MOVING = 3;
+    MANUAL_UP_MOVING = 4;
+    AUTO_DOWN_MOVING = 5;
+    MANUAL_DOWN_MOVING = 6;
+    INVALID = 7;
+  }
+
+  optional WindowStatus lf = 1;
+  optional WindowStatus rf = 2;
+  optional WindowStatus lr = 3;
+  optional WindowStatus rr = 4;
+}
+
+message TemperatureReport {
+  // incar temperature, [degreeC]
+  optional double cabin_temp = 1;
+  // ambient temperature, [degreeC]
+  optional double ambient_temp = 2;
+}
+
+message FogLightReport {
+  enum FogSts {
+    ON = 0;
+    OFF = 1;
+  }
+  optional FogSts front = 1;
+  optional FogSts rear = 2;
+}
+
+// seat belt status
+message BeltReport {
+  enum BeltSts {
+    UNTIED = 0;
+    TIED = 1;
+  }
+
+  // value map: fl(1),fr(2),rl(3),rm(4),rr(5)...
+  repeated BeltSts belt_sts = 1;
+}
+
+message PassengerDetecor {
+  enum DetecorSts {
+    NOT_DETECTED = 0;
+    DETECTED = 1;
+  }
+
+  // value map: fl(1),fr(2),rl(3),rm(4),rr(5)...
+  repeated DetecorSts detecor_sts = 1;
+}
+// vehicle door report
+message DoorReport {
+  enum DoorSts {
+    CLOSE = 0;
+    OPEN = 1;
+  }
+  enum DoorLock {
+    LOCK = 0;
+    UNLOCK = 1;
+  }
+
+  // value map: fl(1),fr(2),rl(3),rr(4)...
+  repeated DoorSts door_sts = 1;
+  // value map: fl(1),fr(2),rl(3),rr(4)...
+  repeated DoorLock door_lock = 2;
+}
+// vehicle brake light
+message BrakeLightReport {
+  enum LightSts {
+    OFF = 0;
+    ON = 1;
+  }
+
+  optional LightSts light_sts = 1;
+}
+
+// vehicle Beam
+message BeamReport {
+  enum Beam {
+    OFF = 0;
+    ON = 1;
+    FLASH_TO_PASS = 2;
+    FAULT = 3;
+  }
+
+  optional Beam low_light = 1;
+  optional Beam high_light = 2;
+}

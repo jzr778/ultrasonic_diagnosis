@@ -22,24 +22,21 @@ _runtime_version.ValidateProtobufRuntimeVersion(
 _sym_db = _symbol_database.Default()
 
 
-from dem import execution_process_state_pb2 as dem_dot_execution__process__state__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1e\x64\x65m/function_group_state.proto\x12\rdeeproute.dem\x1a!dem/execution_process_state.proto\"J\n\x12\x45xecutionStartTime\x12\x16\n\x0e\x65xecution_name\x18\x01 \x01(\t\x12\x1c\n\x14\x65xecution_start_time\x18\x02 \x01(\x03\"W\n\x13\x45xecutionsStartTime\x12@\n\x15\x65xecutions_start_time\x18\x01 \x03(\x0b\x32!.deeproute.dem.ExecutionStartTime\"\x88\x01\n\x12\x46unctionGroupState\x12\x1b\n\x13\x66unction_group_name\x18\x01 \x01(\t\x12\x12\n\nstate_name\x18\x02 \x01(\t\x12\x41\n\x15\x65xecutions_start_time\x18\x03 \x01(\x0b\x32\".deeproute.dem.ExecutionsStartTime\"[\n\x1b\x42usinessFunctionGroupsState\x12<\n\x11\x62usiness_fg_state\x18\x01 \x03(\x0b\x32!.deeproute.dem.FunctionGroupState\"\xac\x01\n\x14\x44\x65mFunctionGroupInfo\x12*\n\tnode_info\x18\x01 \x03(\x0b\x32\x17.deeproute.dem.NodeInfo\x12\x1b\n\x13\x66unction_group_name\x18\x02 \x01(\t\x12\x1c\n\x14\x66unction_group_state\x18\x03 \x01(\t\x12\x16\n\x0e\x63urrent_dem_id\x18\x04 \x01(\x05\x12\x15\n\rcurrent_fg_id\x18\x05 \x01(\x05')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1e\x64\x65m/function_group_state.proto\x12\rdeeproute.dem\"\x88\x01\n\x12\x46unctionGroupState\x12\x1b\n\x13\x66unction_group_name\x18\x01 \x01(\t\x12\x12\n\nstate_name\x18\x02 \x01(\t\x12\x41\n\x15\x65xecutions_start_time\x18\x03 \x01(\x0b\x32\".deeproute.dem.ExecutionsStartTime\"J\n\x12\x45xecutionStartTime\x12\x16\n\x0e\x65xecution_name\x18\x01 \x01(\t\x12\x1c\n\x14\x65xecution_start_time\x18\x02 \x01(\x03\"W\n\x13\x45xecutionsStartTime\x12@\n\x15\x65xecutions_start_time\x18\x01 \x03(\x0b\x32!.deeproute.dem.ExecutionStartTime\"[\n\x1b\x42usinessFunctionGroupsState\x12<\n\x11\x62usiness_fg_state\x18\x01 \x03(\x0b\x32!.deeproute.dem.FunctionGroupState')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'dem.function_group_state_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_EXECUTIONSTARTTIME']._serialized_start=84
-  _globals['_EXECUTIONSTARTTIME']._serialized_end=158
-  _globals['_EXECUTIONSSTARTTIME']._serialized_start=160
-  _globals['_EXECUTIONSSTARTTIME']._serialized_end=247
-  _globals['_FUNCTIONGROUPSTATE']._serialized_start=250
-  _globals['_FUNCTIONGROUPSTATE']._serialized_end=386
-  _globals['_BUSINESSFUNCTIONGROUPSSTATE']._serialized_start=388
-  _globals['_BUSINESSFUNCTIONGROUPSSTATE']._serialized_end=479
-  _globals['_DEMFUNCTIONGROUPINFO']._serialized_start=482
-  _globals['_DEMFUNCTIONGROUPINFO']._serialized_end=654
+  _globals['_FUNCTIONGROUPSTATE']._serialized_start=50
+  _globals['_FUNCTIONGROUPSTATE']._serialized_end=186
+  _globals['_EXECUTIONSTARTTIME']._serialized_start=188
+  _globals['_EXECUTIONSTARTTIME']._serialized_end=262
+  _globals['_EXECUTIONSSTARTTIME']._serialized_start=264
+  _globals['_EXECUTIONSSTARTTIME']._serialized_end=351
+  _globals['_BUSINESSFUNCTIONGROUPSSTATE']._serialized_start=353
+  _globals['_BUSINESSFUNCTIONGROUPSSTATE']._serialized_end=444
 # @@protoc_insertion_point(module_scope)

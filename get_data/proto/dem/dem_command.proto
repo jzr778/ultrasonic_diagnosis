@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package deeproute.dem;
+
+message DataStorageInfo {
+  enum StorageStatus {
+    UNKNOWN = 0;
+    EXTERNAL = 1;  // 外接盘
+    INTERNAL = 2;  // 域控内
+    ABNORMAL = 3;  // 存储异常
+  }
+
+  // status: true表示所有数据存储路径都创建成功，false表示有数据存储路径创建失败
+  bool status = 1;
+
+  StorageStatus bag_storage_status = 2;  // 表示bag存储状态
+  string data_path = 3;                  // 所有数据存储目录路径
+}
+
+// topic: /em/dem_cmd_rq
+message DemCommandRequest {
+  int64 id = 1;
+  oneof requests {
+    DataStorageInfo data_storage_info = 2;
+  }
+}
+
+// topic: /em/dem_cmd_rp
+message DemCommandResponse {
+  int64 id = 1;  // 表示接收方已经确认收到id为xxx的request了
+}

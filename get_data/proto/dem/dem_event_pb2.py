@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x13\x64\x65m/dem_event.proto\x12\rdeeproute.dem\"\x90\x02\n\x0e\x44\x65mReportEvent\x12\x13\n\x0bmodule_name\x18\x01 \x01(\t\x12\x0b\n\x03msg\x18\x02 \x01(\t\x12\x12\n\nalert_info\x18\x03 \x01(\t\x12\x16\n\x0e\x64river_version\x18\x04 \x01(\t\x12\x1b\n\x13\x66unction_group_name\x18\x05 \x01(\t\x12\x15\n\rmeta_override\x18\x06 \x01(\r\x12\x13\n\x0bmeta_driver\x18\x07 \x01(\t\x12\x16\n\x0emeta_trip_name\x18\x08 \x01(\t\x12\x17\n\x0fmeta_event_time\x18\t \x01(\x04\x12\x36\n\x0frecovery_method\x18\n \x01(\x0e\x32\x1d.deeproute.dem.RecoveryMethod*{\n\x0eRecoveryMethod\x12\x13\n\x0fRECOVERY_IGNORE\x10\x00\x12\x13\n\x0fRECOVERY_MODULE\x10\x01\x12\x0f\n\x0bRECOVERY_FG\x10\x02\x12\x12\n\x0eRECOVERY_RESET\x10\x03\x12\x1a\n\x16RECOVERY_MODULE_DIRECT\x10\x04')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x13\x64\x65m/dem_event.proto\x12\rdeeproute.dem\"\x90\x02\n\x0e\x44\x65mReportEvent\x12\x13\n\x0bmodule_name\x18\x01 \x01(\t\x12\x0b\n\x03msg\x18\x02 \x01(\t\x12\x12\n\nalert_info\x18\x03 \x01(\t\x12\x16\n\x0e\x64river_version\x18\x04 \x01(\t\x12\x1b\n\x13\x66unction_group_name\x18\x05 \x01(\t\x12\x15\n\rmeta_override\x18\x06 \x01(\r\x12\x13\n\x0bmeta_driver\x18\x07 \x01(\t\x12\x16\n\x0emeta_trip_name\x18\x08 \x01(\t\x12\x17\n\x0fmeta_event_time\x18\t \x01(\x04\x12\x36\n\x0frecovery_method\x18\n \x01(\x0e\x32\x1d.deeproute.dem.RecoveryMethod*_\n\x0eRecoveryMethod\x12\x13\n\x0fRECOVERY_IGNORE\x10\x00\x12\x13\n\x0fRECOVERY_MODULE\x10\x01\x12\x0f\n\x0bRECOVERY_FG\x10\x02\x12\x12\n\x0eRECOVERY_RESET\x10\x03')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -32,7 +32,7 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'dem.dem_event_pb2', _global
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
   _globals['_RECOVERYMETHOD']._serialized_start=313
-  _globals['_RECOVERYMETHOD']._serialized_end=436
+  _globals['_RECOVERYMETHOD']._serialized_end=408
   _globals['_DEMREPORTEVENT']._serialized_start=39
   _globals['_DEMREPORTEVENT']._serialized_end=311
 # @@protoc_insertion_point(module_scope)

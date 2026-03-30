@@ -1,0 +1,943 @@
+//@F_Mark@ignore@;
+syntax = "proto3";
+
+import "drapi/business_info.proto";
+import "drapi/base.proto";
+import "drapi/local_config.proto";
+import "drapi/operation_status.proto";
+import "dsm/dsm.proto";
+import "google/protobuf/any.proto";
+
+package dr.command;
+
+/********************************command指令定义*******************************/
+message Command {  // topic: (to blc)/blc/command (to dsm)/dsm/command
+  string id = 1;
+  oneof cmd {
+    // 0~99 reserved
+    // 100~999 common
+    UpdateConfig update_config = 100;
+
+    // acc 1000~1999
+    EnableACC enable_acc = 1000;
+    GetACCTTC get_acc_tcc = 1001;
+    GetACCSpeedLimit get_acc_speed_limit = 1002;
+    // acc internal
+    SetACCTTC set_ttc = 1100;
+
+    // ica 2000~2999
+    EnableICA enable_ica = 2000;
+    ChangeLane change_lane = 2005;
+    ChangeAutoUpgrade change_auto_upgrade = 2006;  //升级到NCA,降级到ICA指令
+
+    // nca 3000~3999
+    EnableNCA enable_nca = 3000;
+    StartNavigation start_navigation = 3002;
+    CancelNavigation cancel_navigation = 3003;
+
+    // nca internal
+    GetPath get_path = 3100;
+    GetCurPath get_cur_path = 3101;
+    GetCurPathId get_cur_path_id = 3102;
+
+    // las 4000~4999
+    EnableLDW enable_ldw = 4000;
+    EnableRDP enable_rdp = 4500;
+
+    // apa 5000~5999
+    ActiveAPA active_apa = 5000;                       // 界面进入APA
+    RequestImagePixelToPos image_pixel_to_pos = 5001;  // 自定义车位坐标转换
+    APAParkIn parking = 5002;                          // 执行泊入
+    APAParkOut out_parking = 5003;                     // 泊出
+    UpdateApaSetting update_apa_settings = 5005;       // 修改设置
+    APAParkingSwitchMode apa_parking_switch_mode =
+        5008;  // 切换界面泊入泊出模式
+    APAParkingUpdateStatus apa_parking_update = 5009;  // 暂停，取消，恢复泊车
+    APAGetActiveSource apa_get_active_source = 5010;  // 获取APA 激活原因
+    APAGetRealtimeParkingSpace apa_get_realtime_parkingspace =
+        5011;  // 获取实时车位
+    APASelectAVMParkingSpace apa_select_avm_parkingspace = 5012;
+    APAAPPSelectParkingSpace apa_app_select_parkingspace =
+        5013;  // 界面上选中了车位
+    APASuggestOutParking apa_suggest_out_parking =
+        5014;  // 获取泊出推荐车位信息
+    APAActiveParkOut apa_active_out_park = 5015;  // 直接从standby->parkout
+    APASkipCountDownClock apa_skip_countdown_clock =
+        5016;  // 跳过FINISH/FAILED 倒计时, 直接到 standby
+    APAEnterCustomParking apa_enter_custom_parking = 5017;  //进入自选车位
+    APALeaveCustomParking apa_leave_custom_parking = 5018;  //退出自选车位
+    APASelectCustomParkingSpace apa_select_custom_parking_space =
+        5019;  //选择自选车位
+
+    GWParkingCommand gw_parking_command = 5101;  // GWM APA
+    // vpa 6000~6999
+    VPARouting vpa_routing = 6001;
+    VPALearning vpa_learning = 6002;
+    VPARoutingSwitchMode vpa_routing_switch_mode = 6003;
+    VPAGetInfoRQ vpa_get_info = 6004;
+    VPARoutingGetMap vpa_routing_get_map =
+        6005;  //巡航地图匹配成功后获取语义地图+统计信息
+    BtnEnaReq btn_ena_req = 6006;  // GWM VPA
+
+    // hma 7000~7099
+    EnableHMA enable_hma = 7000;
+
+    // bsd 7100~7199
+    EnableBSD enable_bsd = 7100;
+
+    // lca 7200~7299
+    EnableLCA enable_lca = 7200;
+
+    // dow 7300~7399
+    EnableDOW enable_dow = 7300;
+
+    // rcta 7400~7499
+    EnableRCTA enable_rcta = 7400;
+
+    // rcw 7500~7599
+    EnableRCW enable_rcw = 7500;
+
+    // rctb 7600-7699
+    EnableRCTB enable_rctb = 7600;
+
+    // avm 7700-7799
+    EnableAVM enable_avm = 7701;
+    SwitchAVMView switch_avm = 7702;
+    ParkedShoting parking_shot = 7703;
+    GetAVMSettings get_avm_settings = 7704;
+
+    // aeb 7800-7899
+    EnableAEB enable_aeb = 7800;
+
+    // 7900-7999
+    StartCalibration start_calibration = 7900;
+
+    // ELK 8000-8099
+    EnableELK enable_elk = 8000;
+    LSSMute lss_mute = 8001;
+
+    // PDC 8100-8199
+    PDCUpdate pdc_curve = 8100;
+
+    // RPA 8200-8299
+    RPAParkIn rpa_parkin = 8201;
+    RPAParkOut rpa_parkout = 8202;
+    RPAParkingUpdate rpa_park_update = 8203;
+    RPAStraightInOut straight_in_out = 8204;
+    RPAAppHeartbeat rpa_heartbeat = 8205;
+    RPAInit rpa_init = 8206;
+    RPAClose rpa_close = 8207;
+    RPACheck rpa_check = 8208;
+    RPASuggestOutParking rpa_suggest_out_parking =
+        8209;  // 获取泊出推荐车位信息
+
+    // TJP 8300-8350
+    TJPCmd tjp_cmd = 8301;
+
+    // sentry mode 8351-8399
+    SentryModeCommand sentry_mode_cmd =
+        8351;  // 回复见CommandRP， 需要检查CommandRP.error_code,
+               // 原因放在了CommandRP.fail_reason
+    SentryModeGetStatistic sentry_mode_get_statistic =
+        8352;  // 获取哨兵模式统计信息
+
+    // DSM 8400~8499
+    dr.dsm.Trigger dsm_trigger = 8400;
+    SetDefaultMode default_mode = 8401;
+    bool get_tracking_data = 8402;
+
+    // GWM 8500~8599
+    SelPrkgFctnCmd select_parking_function = 8500;
+    ContnPrkgReq continue_parking_request = 8501;
+
+    // tsr 8600~8699
+    EnableTSR enable_tsr = 8600;
+    EnableSLW enable_slw = 8601;
+  }
+}
+
+enum Module {
+  UNKNOWN_MODULE = 0;
+  SENSOR_LIDAR = 1;
+  SENSOR_USS = 2;
+  SENSOR_INS = 3;
+  SENSOR_RADAR = 4;
+  MAP_ENGINE = 5;
+  LOCK_ON_ROAD = 6;
+  INS_ONLINE = 7;
+  LOCALIZATION = 8;
+  PERCEPTION = 9;
+  PLANNING = 10;
+  CANBUS = 11;
+  BLC = 12;
+  SAFETY = 13;
+  STARTER = 14;
+  PERF_COLLECTOR = 15;
+  CHURCH = 16;
+  SENTRY = 17;
+  SENSOR_CAMERA = 18;
+  LOCAL_ROUTING = 19;
+  CONTROL = 20;
+  ROUTING = 21;
+  PARKING_ENTRY_DETECTION = 22;
+  RTK_POSE_FORWARD = 23;
+  DSM = 24;
+}
+
+enum MapEngineCode {
+  SUCCESS = 0;
+  // routing 服务内部错误
+  INTERNAL = 1;
+  // route id未找到或请求区域没有地图数据
+  NOT_FOUND = 2;
+  // 请求参数有误
+  INVALID_ARGUMENT = 3;
+  // 算路失败
+  UNAVAILABLE = 4;
+  // 路线超长或是途经点过多
+  OUT_OF_RANGE = 5;
+  // 网络地址解析错误
+  NETWORK_ADDRESS_RESOLUTION_ERROR = 6;
+  // 请求超时
+  DEADLINE_EXCEEDED = 7;
+  ROUTING_UNKNOWN = 8;
+}
+
+message
+CommandRP {  // topic: /blc/command_response  topic: /dsm/command_response
+  string id = 1;
+  dr.base.ErrorCode error_code = 2;
+  oneof cmdrp {
+    // acc 1000~1999
+    GetACCTTCRP acc_tcc = 1000;
+    GetACCSpeedLimitRP acc_speed_limit = 1001;
+
+    // nca 3000~3999
+    // nca internal
+    GetPathRP path_response = 3100;
+    GetCurPathRP cur_path_response = 3101;
+    GetCurPathIdRP cur_path_id_response = 3102;
+
+    // apa 5000~5999
+    RequestImagePixelToPosRP pos = 5003;
+    APAParkRP apa_parkin_res = 5004;  // Response for APAParkIn/APAParkOut,
+                                      // when error_code != ErrorCode::SUCCESS,
+                                      // you should check this field
+    APARealtimeParkingSpaceRP apa_realtime_parkingspace = 5005;
+    APASelectAVMParkingSpace apa_avm_parkingspace = 5006;
+    APASuggestOutParkingRP apa_suggest_out_parking = 5007;
+    // vpa 6000~6999
+    VPARoutingRP vpa_routing_rp = 6002;
+    VPAGetInfoRP vpa_info = 6003;
+    VPARoutingGetMapRP vpa_routing_get_map_info =
+        6004;  //巡航地图匹配成功后输出语义地图+统计信息
+    VPALearningRP vpa_learning_rp =
+        6005;  //结束学习成功时返回语义地图信息给到vis
+
+    // hma 7000-7099
+    // GetHMAStateMachineStatusRP hma_status = 7000;
+
+    // bsd 7100-7199
+    // GetBSDStateMachineStatusRP bsd_status = 7100;
+
+    // lca 7200-7299
+    // GetLCAStateMachineStatusRP lca_status = 7200;
+
+    // dow 7300~7399
+    // GetDOWStateMachineStatusRP dow_status = 7300;
+
+    // rcta 7400~7499
+    // GetRCTAStateMachineStatusRP rcta_status = 7400;
+
+    // rcw 7500~7599
+    // GetRCWStateMachineStatusRP rcw_status = 7500;
+
+    // avm 7700-7799
+    EnableAVMRP avm_status = 7700;
+
+    SwitchAVMViewRP avm_view_status = 7701;
+
+    ParkedShotingRP avm_parking_shot_status = 7702;
+
+    GetAVMSettingsRP current_avm_settings = 7703;
+
+    StartCalibrationRP start_calibration_rp = 7704;
+    // rpa 8000-8099
+    RPASuggestOutParkingRP rpa_suggest_out_parking = 7705;
+
+    // Dsm 8100~8150
+    dr.dsm.TrackingData tracking_data_rp = 8100;
+
+    // sentry mode 8151-8199
+    dr.business_info.SentryModeStatistic sentry_mode_statistic = 8151;
+
+    // common 8200~8299
+    dr.localconfig.UserConfig curr_config = 8200;
+  }
+
+  dr.operationstatus.CommonStatusFailReason fail_reason = 9000;
+
+  Module module = 9101;
+  oneof ModuleErrorCode {
+    MapEngineCode map_engine_code = 9102;
+  }
+  string module_err_msg =
+      9103;  // module(only map engine for now)'s response error message
+}
+
+// common
+message UpdateConfig {
+  dr.localconfig.UserConfig user_config = 1;
+}
+
+// sent by app, and should be executed immediately
+message EnableACC {
+  bool enable = 1;
+}
+
+message GetACCTTC {
+}
+message GetACCTTCRP {
+  dr.business_info.FollowTimeGap ttc = 1;
+}
+
+message SetACCTTC {
+  double ttc = 1;
+}
+
+message GetACCSpeedLimit {
+}
+
+message GetACCSpeedLimitRP {
+  int32 speed_limit = 1;
+}
+
+// ica
+message EnableICA {
+  bool enable = 1;
+}
+
+message ChangeLane {
+  enum Action {
+    NONE = 0;
+    TURN_LEFT = 1;
+    TURN_RIGHT = 2;
+  }
+  Action action = 1;
+}
+
+message ChangeAutoUpgrade {
+  enum Action {
+    NONE = 0;
+    DOWN_TO_ICA = 1;
+    UPGRADE_TO_NCA = 2;
+  }
+  Action action = 1;
+}
+
+// nca
+message EnableNCA {
+  bool enable = 1;
+}
+
+message GetPath {
+  enum RoutePlanningDataSource {
+    TENCENT_DATA = 0;
+    NAVI_DATA = 1;
+  }
+  repeated dr.base.PointLLH points = 1;
+  dr.business_info.RoutingOption option = 2;
+  RoutePlanningDataSource route_planning_data_source = 3;
+  int32 max_path_num = 6;                   // Valid range: 1-3
+  google.protobuf.Any amap_extra_info = 7;  // amap navigation info
+  dr.localconfig.SwitchStatus retry_on_net_error =
+      8;  // sd routing would retry when net error and switch on
+}
+
+message GetPathRP {
+  dr.business_info.RoutingResult routing_result = 1;
+}
+
+message GetCurPath {
+}
+
+message GetCurPathRP {
+  dr.business_info.Path path = 1;
+}
+
+message GetCurPathId {
+}
+
+message GetCurPathIdRP {
+  int32 path_id = 1;      // ready to deprecate
+  uint64 path_id_64 = 2;  // recomand using this to replace path_id
+}
+
+message StartNavigation {
+  repeated dr.base.PointLLH points = 1;
+  // ready to deprecate
+  int32 path_id = 2;
+  repeated dr.base.PointLLH route_points = 3;
+  // recomand using this to replace path_id
+  uint64 path_id_64 = 4;
+}
+
+message CancelNavigation {
+  int32 path_id = 3;      // ready to deprecate
+  uint64 path_id_64 = 4;  // recomand using this to replace path_id
+}
+
+// las
+message EnableLDW {
+  bool enable = 1;
+}
+
+message EnableRDP {
+  bool enable = 1;
+}
+
+// apa
+message ActiveAPA {
+  bool active = 1;
+}
+
+message EnableVPA {
+  bool enable = 1;
+}
+
+// 前端app 切换泊车模式,对应状态机 parking<->parking out
+message APAParkingSwitchMode {
+  enum Mode {
+    PARK_IN = 0;
+    PARK_OUT = 1;
+  }
+  Mode type = 1;
+}
+
+message ActiveVPA {
+  bool active = 1;
+}
+
+// 开始泊入/泊出之后修改任务状态，状态机处于 APA_PARKING_ACTIVE \
+// APA_PARKING_PAUSED 时接收该命令
+message APAParkingUpdateStatus {
+  enum OperationType {
+    PAUSE = 0;    // 暂停泊入\出
+    RECOVER = 1;  // 恢复泊入\出
+    CANCEL = 2;   // 取消泊入\出
+  }
+  OperationType operation = 1;
+}
+
+message APAGetRealtimeParkingSpace {
+}
+
+message APARealtimeParkingSpaceRP {
+  dr.base.ParkingSpace parking_space = 1;
+}
+
+message APAAPPSelectParkingSpace {
+  dr.base.ParkingSpace parking_space = 1;
+}
+
+message APASuggestOutParking {
+}
+
+message APASuggestOutParkingRP {
+  dr.business_info.SuggestOutParkingInfo suggest_out_parking_info =
+      1;  // deprecated
+}
+
+message APAActiveParkOut {
+}
+
+message APASkipCountDownClock {
+}
+
+message APAEnterCustomParking {
+}
+
+message APALeaveCustomParking {
+}
+
+message APASelectCustomParkingSpace {
+}
+
+message VPALearning {
+  enum LearningOpType {
+    UNKNOWN = 0;
+    START_ROUTE_LEARNING = 1;  // 开始路线学习
+    SAVE_ROUTE = 2;            // 保存路线
+    DROP_ROUTE = 3;            //丢弃路线
+  }
+  LearningOpType operation_type = 1;
+}
+
+message VPARoutingSwitchMode {
+  enum Mode {
+    UNKNOWN = 0;
+    VPA_ROUTING = 1;
+    VPA_SEARCHINE = 2;
+  }
+  Mode mode = 1;
+}
+
+message VPARouting {
+  enum RougintOpType {
+    UNKNOWN = 0;
+    START_ROUTING = 1;   //开始巡航
+    CANCEL_ROUTING = 2;  //结束巡航,预留
+  }
+
+  RougintOpType operation_type = 1;
+}
+
+message VPARoutingRP {
+  dr.base.ParkingSpace parking_space = 1;
+}
+
+message VPAGetInfoRQ {
+}
+
+message VPAGetInfoRP {
+  dr.business_info.VPASummary summary = 1;
+}
+
+message VPARoutingGetMap {
+}
+
+message VPARoutingGetMapRP {
+  uint32 vpa_estimated_distance = 1;  //预计距离
+  uint32 vpa_estimated_time = 2;      //预计耗时
+  bytes semantic_map = 3;             //语义地图 deeproute.map.RASMapPlus
+}
+
+message VPALearningRP {
+  uint32 vpa_learning_distance = 1;  //学习距离
+  uint32 vpa_speed_bumps = 2;        //减速带数量
+  bytes semantic_map = 3;            //语义地图 deeproute.map.RASMapPlus
+}
+
+// CDC\VIS 进入 AVM
+message EnableAVM {
+  bool active = 1;
+  dr.business_info.AVMEnableMode enable_mode = 2;
+}
+
+// AVM 返回当前状态机状态
+message EnableAVMRP {
+  dr.business_info.AVMSettingInfo status = 1;
+}
+
+// CDC\VIS 切换AVM 视角， 发送 SwitchAVMView 请求
+message SwitchAVMView {
+  bool bird_view_enabled = 1;
+  bool round_view_enable = 2;
+  oneof View {
+    dr.business_info.AVM2DViewSetting avm2dview = 3;
+    dr.business_info.AVM3DView avm3dview = 4;
+    dr.business_info.AVMWheelView avmwheelview = 5;
+  }
+}
+
+// 切换AVM视角 返回当状态机前状态
+message SwitchAVMViewRP {
+  dr.business_info.AVMSettingInfo status = 1;
+}
+
+// 停车拍照
+message ParkedShoting {
+  bool active = 1;
+}
+
+// 停车拍照响应
+message ParkedShotingRP {
+  dr.business_info.AVMSettingInfo status = 1;
+}
+
+message GetAVMSettings {
+}
+
+message GetAVMSettingsRP {
+  dr.business_info.AVMSettingInfo status = 1;
+}
+
+message PDCUpdate {
+  bool request_pdc_curve_data = 1;
+}
+
+// HMA
+message EnableHMA {
+  bool enable = 1;
+}
+
+// BSD
+message EnableBSD {
+  bool enable = 1;
+}
+
+// LCA
+message EnableLCA {
+  bool enable = 1;
+}
+
+// DOW
+message EnableDOW {
+  bool enable = 1;
+}
+
+// RCTA
+message EnableRCTA {
+  bool enable = 1;
+}
+
+// RCW
+message EnableRCW {
+  bool enable = 1;
+}
+
+// RCTB
+message EnableRCTB {
+  bool enable = 1;
+}
+
+message UpdateApaSetting {
+  bool mute = 1;  // 单次静音
+}
+
+// APA
+message APAParkIn {
+  dr.base.ParkingSpace parking_space = 1;
+  string vpa_task_id = 2;
+}
+
+message APAParkOut {
+  dr.business_info.APAOutDirection direction = 1;
+}
+
+message APAParkRP {
+  dr.operationstatus.APAStatusReason reason = 1;
+}
+
+message APAGetActiveSource {
+  message VPAActiveInfo {
+    string task_id = 1;
+  }
+  message APAActiveInfo {
+  }
+  oneof source {
+    VPAActiveInfo vpa_info = 1;
+    APAActiveInfo apa_info = 2;
+  }
+}
+
+message RequestImagePixelToPos {
+  repeated dr.business_info.ImagePixelCoordinates coordinates = 1;
+}
+
+message RequestImagePixelToPosRP {
+  repeated dr.business_info.TransformedObject objects = 1;
+}
+
+message APASelectAVMParkingSpace {
+  dr.base.Point2D point = 1;
+}
+
+message APASelectAVMParkingSpaceRP {
+  dr.base.ParkingSpace parking_space = 1;
+}
+// rpa
+
+message RPACheck {
+}
+
+message RPAParkIn {
+}
+
+message RPAParkingUpdate {
+  enum OperationType {
+    OP_NONE = 0;
+    OP_PAUSE = 1;
+    OP_CANCEL = 2;
+    OP_RESUME = 3;
+  }
+  OperationType operation = 1;
+}
+
+message RPAParkOut {
+  dr.business_info.APAOutDirection direction = 1;
+}
+
+message RPASuggestOutParkingRP {
+  dr.business_info.SuggestOutParkingInfo suggest_out_parking_info = 1;
+}
+
+message RPAStraightInOut {
+  enum Direction {
+    DIR_UNKNOWN = 0;
+    DIR_STRAIGHT_IN = 1;
+    DIR_STRAIGHT_OUT = 2;
+  }
+  enum OperationType {
+    OP_NONE = 0;
+    OP_START = 1;
+    OP_PAUSE = 2;
+    OP_CANCEL = 3;
+    OP_RESUME = 4;
+  }
+  Direction direction = 1;
+  OperationType operation = 2;
+}
+
+enum RPAType {
+  UNKNOWN = 0;
+  PARKING_IN = 1;
+  PARKING_OUT = 2;
+  STARAIGHT_IN_OUT = 3;
+}
+
+message RPAAppHeartbeat {
+  RPAType type = 1;
+}
+
+message RPAInit {
+  RPAType type = 1;
+}
+
+message RPAClose {
+}
+
+message RPASuggestOutParking {
+}
+
+// aeb
+message EnableAEB {
+  bool enable = 1;
+}
+
+message StartCalibration {
+  enum OperationType {
+    UNKNOWN = 0;
+    START = 1;
+    STOP = 2;
+  }
+  OperationType operation_type = 1;
+  dr.business_info.CalibrationMode calib_mode = 2;
+  repeated dr.business_info.CalibrationBoardInfo calibration_info = 3;
+  bool is_rear_axle_positioning = 4;
+}
+
+message StartCalibrationRP {
+}
+
+// elk
+message EnableELK {
+  bool enable = 1;
+}
+
+message LSSMute {
+}
+
+// tjp
+message TJPCmd {
+  enum CmdType {
+    UNKNOWN = 0;
+    REMIND_READY_TO_ACTIVE = 1;  // 提醒可激活TJP
+    REMIND_TAKEOVER = 2;         // 发出介入请求
+    SPEED_LIMIT_LEVEL_1 = 3;     // 限速30
+    SPEED_LIMIT_LEVEL_2 = 4;     // 限速40
+    SPEED_LIMIT_LEVEL_3 = 5;     // 限速60
+    SIGNAL_LAMP = 6;             // 信号灯
+    TUNNEL = 7;                  // 隧道
+    TOLL_STATION = 8;            // 收费站
+  }
+  CmdType type = 1;
+}
+
+message SetDefaultMode {
+  dr.dsm.State default_state = 1;
+  dr.dsm.SubState default_mode = 2;
+}
+
+message SelPrkgFctnCmd {
+  enum CmdType {
+    NO_SELECT = 0;
+    APA_PARKING = 1;
+    P2P_PARKING = 2;
+    EXPLORE_FORWARD = 3;
+    DRIVE_BACK = 4;  //循迹倒车
+  }
+  CmdType type = 1;
+}
+
+message ContnPrkgReq {
+  enum CmdType {
+    NO_SELECT = 0;
+    CONTINUE_PARKING = 1;  //恢复泊车/循迹倒车
+    CANCEL_PARKING = 2;    //取消泊车/循迹倒车
+    INVALID = 3;
+  }
+  CmdType type = 1;
+}
+
+message BtnEnaReq {
+  enum ReqCmd {
+    NONE = 0;
+    CONTINUE_SEARCH_SLOT = 1;  //继续找车位
+    ACTIVE_SIGNAL = 2;  //点击记忆泊车功能按键或语音开启记忆泊车
+    START_HAVP_VR = 3;            //自动推送后激活记忆泊车
+    CONFRIM_MAPBUILT = 4;         //点击开始学习按键
+    CANCEL = 5;                   //点击左上角取消按键
+    CONFRIM_START_PARKING = 6;    //点击开始记忆泊车按键
+    SEARCH_SLOT_ALONG_WAY = 7;    //点击沿途搜索车位
+    HAVP_COMPLETED = 8;           //点击记忆泊车完成按键
+    TRY = 9;                      //点击马上试试按键
+    LEARNING_COMPLETED = 10;      //点击学习完成按键
+    CONTINUE_LEARN = 11;          //点击继续学习按键
+    START_SVP_VR = 12;            //主动推送后激活SVP
+    CANCEL_PRE_MAPPING = 0xa1;    //取消预建图
+    CONTINUE_PRE_MAPPING = 0xa2;  //继续预建图
+  }
+  ReqCmd cmd = 1;
+}
+
+message GWParkingCommand {
+  // 功能开启
+  message SelPrkgFctnCmd {
+    enum Cmd {
+      NO_SELECT = 0;
+      SELECT_APA_PARKING = 1;
+      SELECT_P2P_PARKING = 2;
+      SELECT_EXPLORE_FORWARD = 3;
+      SELECT_DRIVE_BACK = 4;
+      SELECT_HAVP_PARKING = 5;
+      SELECT_PAVP_PARKING = 6;
+      RESERVED = 7;
+    }
+    Cmd cmd = 1;
+  }
+  // 暂停恢复取消
+  message ContnPrkgReq {
+    enum Cmd {
+      NO_SELECT = 0;
+      SELECT_CONTINUE_PARKING = 1;
+      CANCEL_PARKING = 2;
+      RESERVED = 3;
+    }
+    enum Valid {
+      VALID = 0;
+      INVALID = 1;
+    }
+    Cmd cmd = 1;
+    Valid valid = 2;
+  }
+  // 一键退出
+  message PASWorkCmd {
+    enum Cmd {
+      OFF = 0;
+      ON = 1;
+    }
+    Cmd cmd = 1;
+  }
+  // 选择泊出方向
+  message SelPrkOutDirReq {
+    enum Cmd {
+      NO_SELECTION = 0;
+      PARK_OUT_FRONT_VERTICAL_HEAD_OUT = 1;
+      PARK_OUT_REAR_VERTICAL_TAIL_OUT = 2;
+      PARK_OUT_LEFT_PARALLEL_LEFT_OUT = 3;
+      PARK_OUT_RIGHT_PARALLEL_RIGHT_OUT = 4;
+      PARK_OUT_LEFT_VERTICAL_LEFT_OUT = 5;
+      PARK_OUT_RIGHT_VERTICAL_RIGHT_OUT = 6;
+      RESERVED = 7;
+
+      // dr
+      FRONT_LEFT = 8;
+      FRONT_RIGHT = 9;
+      BACK_LEFT = 10;
+      BACK_RIGHT = 11;
+    }
+    Cmd cmd = 1;
+  }
+  // 车头、车尾泊入
+  message PrkModreq {
+    enum Cmd {
+      NO_SELECT = 0;
+      HEAD_PARKING_IN = 1;
+      TAIL_PARKING_IN = 2;
+      // RESERVED range includes 0x3 to 0x4
+      RESERVED_0x3 = 3;
+      RESERVED_0x4 = 4;
+    }
+    Cmd cmd = 1;
+  }
+  // 开始泊车\进入RPA 泊车
+  message PrkgCtrlModReq {
+    enum Cmd {
+      NO_ACTION = 0;
+      PARKING_IN_CAR = 1;
+      REMOTE_PARKING = 2;
+      RESERVED = 3;
+    }
+    enum Valid {
+      VALID = 0;
+      INVALID = 1;
+    }
+    Cmd cmd = 1;
+    Valid valid = 2;
+  }
+  // 对应 BackReq_APS
+  message BackReqAPS {
+    enum Cmd {
+      NO_REQUEST = 0;
+      REQUEST = 1;
+    }
+    Cmd cmd = 1;
+  }
+  // 语音 / 智能泊车开关
+  message APSSwtReqVR {
+    enum Cmd {
+      NO_ACTION = 0;
+      OFF = 1;
+      ON = 2;
+      RESERVED = 3;
+    }
+    Cmd cmd = 1;
+  }
+  // 泊入车位
+  message SlotNumVR {
+    dr.base.ParkingSpace parking_space = 1;
+  }
+
+  oneof type {
+    SelPrkgFctnCmd sel_prkg_fctn_cmd = 1;
+    ContnPrkgReq contn_prkg_req = 2;
+    PASWorkCmd pas_work_cmd = 3;
+    SelPrkOutDirReq sel_prk_out_dir_req = 4;
+    PrkModreq prk_mod_req = 5;
+    BackReqAPS back_req_aps = 6;
+    PrkgCtrlModReq prkg_ctrl_mod_req = 7;
+    APSSwtReqVR aps_swt_req_vr = 8;
+    SlotNumVR slot_num_vr = 9;
+  }
+}
+
+message SentryModeCommand {
+  enum CmdType {
+    NO_SELECT = 0;
+    START_SENTRY_MODE = 1;
+    STOP_SENTRY_MODE = 2;
+  }
+  CmdType type = 1;
+}
+
+message SentryModeGetStatistic {
+}
+
+message EnableTSR {
+  bool enable = 1;
+}
+
+message EnableSLW {
+  bool enable = 1;
+}

@@ -1,0 +1,92 @@
+syntax = "proto3";
+
+import "app/deeproute_app_base.proto";
+
+package deeproute.app.event;
+
+message AcceptedEvent {
+}
+
+message StartedEvent {
+}
+
+message PreArriveEvent {
+  deeproute.app.base.PointType type = 1;
+  int32 index = 2;
+}
+
+message Travel {
+  double total_distance = 1;
+  double total_time = 2;
+}
+
+message ArrivedEvent {
+  deeproute.app.base.PointType type = 1;
+  int32 index = 2;
+  Travel travel = 3;
+  string point_name_cn = 4;
+  string point_name_en = 5;
+}
+
+message PassengerCheckedEvent {
+  bool passed = 1;
+}
+
+//'go' clicked
+message RouteConfirmedEvent {
+}
+
+enum EndType {
+  UNKNOWN_TYPE = 0;
+  COMPLETED = 1;
+  CANCELLED = 2;
+}
+
+message EndedEvent {
+  Travel travel = 1;
+  EndType end_type = 2;
+  deeproute.app.base.Operator operator = 3;
+}
+
+message PassingPointNotifyEvent {
+  repeated deeproute.app.base.Position pos = 1;
+  repeated deeproute.app.base.Position pos_wgs = 2;
+  string end_name = 3;
+  string end_name_en = 4;
+}
+
+message NearGarageEvent {
+}
+
+message EnteringGarageEvent {
+}
+
+message ParkingEvent {
+  enum Type {
+    UNKNOWN_TYPE = 0;
+    COMPLETED = 1;
+    CANCELLED_BY_APP = 2;
+    CANCELLED_BY_DTU = 3;  // abnormal
+  }
+  Type type = 1;
+}
+
+message PausedEvent {
+  enum Reason {
+    REASON_KNOWN = 0;
+    PAUSED_BY_APP = 1;
+    BLOCK_BY_OBSTACLE = 2;
+    BLOCK_BY_CONTROL = 3;
+
+    DRIVER_DOOR_OPEN = 100;
+    PASSENGER_DOOR_OPEN = 101;
+    REAR_LEFT_DOOR_OPEN = 102;
+    REAR_RIGHT_DOOR_OPEN = 103;
+    HOOD_OPEN = 104;
+    TRUNK_OPEN = 105;
+    DRIVER_BELT_NOT_BUCKLED = 106;
+    PASSENGER_BELT_NOT_BUCKLED = 107;
+    REAR_VIEW_MIRROR_FOLDED = 108;
+  }
+  repeated Reason reasons = 1;
+}

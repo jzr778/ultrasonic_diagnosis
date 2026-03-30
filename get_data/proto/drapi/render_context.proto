@@ -1,0 +1,83 @@
+syntax = "proto3";
+
+package dr.hmi;
+
+message CriticalObject {
+  int32 id = 1;
+  enum ObjectType {
+    GREEN_ALARM_OBJ = 0;
+    YELLOW_ALARM_OBJ = 1;
+    RED_ALARM_OBJ = 2;
+  }
+  ObjectType object_type = 2;
+  float distance = 3;
+}
+
+message DrivingRenderContext {
+  repeated CriticalObject critical_objects = 1;
+}
+
+message ParkingSpaceMapping {
+  message MappingData {
+    int32 number = 1;
+    int32 parkingspace_id = 2;
+  }
+  repeated MappingData mappings = 1;
+}
+
+message SearchSuspendInfo {
+  enum SearchSuspendType {
+    TYPE_NONE = 0;
+    TYPE_NORMAL = 1;  //车速超限、安全带：正常释放车位
+    TYPE_SELECTABLE = 2;  //五门一盖、后视镜：不释放新车位，原可泊车位可选
+    TYPE_UNSELECTABLE = 3;  //坡度超限：不释放新车位，原可泊车位不可选
+  }
+  bool search_suspend = 1;
+  SearchSuspendType suspend_type = 2;
+}
+
+message ParkingRenderContext {
+  enum ParkingActiveMode {
+    UNKNOWN = 0;
+    PARKING_IN = 1;
+    PARKING_OUT = 2;
+  };
+  enum APAOutParkingDirection {
+    DIRECTION_UNKNOWN = 0;
+    PARELLEL_LEFT = 1;   // 水平车位左
+    PARELLEL_RIGHT = 2;  // 水平车位右
+    FRONT_LEFT = 3;      // 垂直、斜列左前
+    FRONT_RIGHT = 4;     // 垂直、斜列右前
+    BACK_LEFT = 5;       // 垂直、斜列后左
+    BACK_RIGHT = 6;      // 垂直、斜列后右
+    STRAIGHT_FRONT = 7;  // 垂直、斜列前
+    STRAIGHT_BACK = 8;   // 垂直、斜列后
+  }
+  int64 timestamp = 1;
+  ParkingSpaceMapping parkingspace_mapping = 2;
+  bool background_search = 3;  // 是否后台搜车位，不是情况下仪表不释放车位
+  int32 target_parkingspace_id = 4;  // 巡航目标车位
+  ParkingActiveMode parking_active_mode = 5;
+  string parkin_trajectory_id = 6;  // 全局轨迹线path匹配
+  bool search_suspend = 7;  // 是否搜车位暂停，暂停情况下不释放车位 （后续弃用）
+  bool is_dir_and_gear_not_consistent_ =
+      8;  // 泊出方向是否与档位不一致，开启泊出时判断
+  APAOutParkingDirection apa_out_parking_direction = 9;
+  bool is_routing_end_target_slot_occupied_ =
+      10;  //巡航终点目标车位是否被占用，用于巡航终点是否显示车位编号判断
+  SearchSuspendInfo search_suspend_info = 11;  //只在搜车位暂停时发送
+  bool is_map_saving_done =
+      12;  // 是否完成地图保存，此时状态1s后才到 learning_completed
+}
+
+message GWMRenderContext {
+  DrivingRenderContext driving_render_data = 1;
+  ParkingRenderContext parking_render_data = 2;
+}
+
+// topic: /blc/render_context
+message RenderContext {
+  oneof type {
+    GWMRenderContext gwm_data = 1;
+  }
+}

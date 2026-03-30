@@ -24,17 +24,17 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1arecorder/topic_group.proto\x12\x12\x64\x65\x65proute.recorder\"u\n\x05Topic\x12\r\n\x05topic\x18\x01 \x01(\t\x12\x12\n\nqueue_size\x18\x02 \x01(\r\x12\x35\n\x0c\x63hannel_type\x18\x03 \x01(\x0e\x32\x1f.deeproute.recorder.ChannelType\x12\x12\n\ncache_time\x18\x04 \x01(\r\"7\n\nTopicGroup\x12)\n\x06topics\x18\x01 \x03(\x0b\x32\x19.deeproute.recorder.Topic*R\n\x0b\x43hannelType\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x07\n\x03ROS\x10\x01\x12\x07\n\x03SHM\x10\x02\x12\x0b\n\x07ICEORYX\x10\x03\x12\x0b\n\x07\x46\x41STDDS\x10\x04\x12\n\n\x06\x44W_CGF\x10\x05')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1arecorder/topic_group.proto\x12\x12\x64\x65\x65proute.recorder\"a\n\x05Topic\x12\r\n\x05topic\x18\x01 \x01(\t\x12\x12\n\nqueue_size\x18\x02 \x01(\r\x12\x35\n\x0c\x63hannel_type\x18\x03 \x01(\x0e\x32\x1f.deeproute.recorder.ChannelType\"7\n\nTopicGroup\x12)\n\x06topics\x18\x01 \x03(\x0b\x32\x19.deeproute.recorder.Topic*R\n\x0b\x43hannelType\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x07\n\x03ROS\x10\x01\x12\x07\n\x03SHM\x10\x02\x12\x0b\n\x07ICEORYX\x10\x03\x12\x0b\n\x07\x46\x41STDDS\x10\x04\x12\n\n\x06\x44W_CGF\x10\x05')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'recorder.topic_group_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_CHANNELTYPE']._serialized_start=226
-  _globals['_CHANNELTYPE']._serialized_end=308
+  _globals['_CHANNELTYPE']._serialized_start=206
+  _globals['_CHANNELTYPE']._serialized_end=288
   _globals['_TOPIC']._serialized_start=50
-  _globals['_TOPIC']._serialized_end=167
-  _globals['_TOPICGROUP']._serialized_start=169
-  _globals['_TOPICGROUP']._serialized_end=224
+  _globals['_TOPIC']._serialized_end=147
+  _globals['_TOPICGROUP']._serialized_start=149
+  _globals['_TOPICGROUP']._serialized_end=204
 # @@protoc_insertion_point(module_scope)

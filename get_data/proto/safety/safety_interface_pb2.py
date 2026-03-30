@@ -25,7 +25,7 @@ _sym_db = _symbol_database.Default()
 from safety import safety_event_pb2 as safety_dot_safety__event__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1dsafety/safety_interface.proto\x12\tdr.safety\x1a\x19safety/safety_event.proto\"\x1a\n\tBoolValue\x12\r\n\x05value\x18\x01 \x01(\x08\"\xd9\x01\n\tGetEvents\x12\x14\n\x0cstart_tm_sec\x18\x01 \x01(\x05\x12\x12\n\nend_tm_sec\x18\x02 \x01(\x05\x12!\n\x03\x64tc\x18\x03 \x01(\x0b\x32\x14.dr.safety.BoolValue\x12\'\n\ttrace_log\x18\x04 \x01(\x0b\x32\x14.dr.safety.BoolValue\x12+\n\x0f\x63hoosed_modules\x18\x05 \x01(\x0b\x32\x12.dr.safety.Modules\x12)\n\x0e\x63hoosed_events\x18\x06 \x01(\x0b\x32\x11.dr.safety.Events\"c\n\x0bGetEventsRp\x12\x12\n\ntotal_nums\x18\x01 \x01(\r\x12\x13\n\x0bstart_index\x18\x02 \x01(\r\x12+\n\x0b\x65vent_infos\x18\x03 \x03(\x0b\x32\x16.dr.safety.SafetyEvent\"c\n\x0fSetSafetyPolicy\x12\x15\n\renable_policy\x18\x01 \x01(\x08\x12\x1e\n\x16\x65nable_critical_policy\x18\x02 \x01(\x08\x12\x19\n\x11\x65nable_mcu_policy\x18\x03 \x01(\x08\"h\n\x11SetSafetyPolicyRp\x12\x16\n\x0epolicy_enabled\x18\x01 \x01(\x08\x12\x1f\n\x17\x63ritical_policy_enabled\x18\x02 \x01(\x08\x12\x1a\n\x12mcu_policy_enabled\x18\x03 \x01(\x08\"\x19\n\x17GetSafetyPolicyStatusRq\"n\n\x17GetSafetyPolicyStatusRp\x12\x16\n\x0epolicy_enabled\x18\x01 \x01(\x08\x12\x1f\n\x17\x63ritical_policy_enabled\x18\x02 \x01(\x08\x12\x1a\n\x12mcu_policy_enabled\x18\x03 \x01(\x08\"7\n\x18ManageSafetyEventRequest\x12\x1b\n\x13\x65nable_safety_event\x18\x01 \x01(\x08\"8\n\x19ManageSafetyEventResponse\x12\x1b\n\x13safety_event_status\x18\x01 \x01(\x08\"\xb0\x01\n\x12TopicCheckOverride\x12\x12\n\ntopic_name\x18\x01 \x01(\t\x12+\n\x06\x61\x63tion\x18\x02 \x01(\x0e\x32\x1b.dr.safety.TopicCheckAction\x12\x1f\n\x12threshold_override\x18\x03 \x01(\x01H\x00\x88\x01\x01\x12\x0f\n\x07ttl_sec\x18\x04 \x01(\r\x12\x10\n\x08operator\x18\x05 \x01(\tB\x15\n\x13_threshold_override\"G\n\x13TopicCheckControlRq\x12\x30\n\toverrides\x18\x01 \x03(\x0b\x32\x1d.dr.safety.TopicCheckOverride\"\xad\x01\n\x17TopicCheckControlResult\x12\x12\n\ntopic_name\x18\x01 \x01(\t\x12\"\n\x04\x63ode\x18\x02 \x01(\x0e\x32\x14.dr.safety.ErrorCode\x12\x0f\n\x07message\x18\x03 \x01(\t\x12\x15\n\rcheck_enabled\x18\x04 \x01(\x08\x12\x1b\n\x13\x65\x66\x66\x65\x63tive_threshold\x18\x05 \x01(\x01\x12\x15\n\rexpire_at_sec\x18\x06 \x01(\x04\"J\n\x13TopicCheckControlRp\x12\x33\n\x07results\x18\x01 \x03(\x0b\x32\".dr.safety.TopicCheckControlResult\"\xec\x02\n\x07Request\x12\n\n\x02id\x18\x01 \x01(\t\x12\x11\n\ttimestamp\x18\x02 \x01(\x03\x12*\n\nget_events\x18\x03 \x01(\x0b\x32\x14.dr.safety.GetEventsH\x00\x12\x37\n\x11set_safety_policy\x18\x04 \x01(\x0b\x32\x1a.dr.safety.SetSafetyPolicyH\x00\x12J\n\x1bmanage_safety_event_request\x18\x05 \x01(\x0b\x32#.dr.safety.ManageSafetyEventRequestH\x00\x12I\n\x1bget_safety_policy_status_rq\x18\x06 \x01(\x0b\x32\".dr.safety.GetSafetyPolicyStatusRqH\x00\x12@\n\x16topic_check_control_rq\x18\x07 \x01(\x0b\x32\x1e.dr.safety.TopicCheckControlRqH\x00\x42\x04\n\x02rq\"\x8a\x03\n\x08Response\x12\n\n\x02id\x18\x01 \x01(\t\x12\"\n\x04\x63ode\x18\x02 \x01(\x0e\x32\x14.dr.safety.ErrorCode\x12/\n\rget_events_rp\x18\x03 \x01(\x0b\x32\x16.dr.safety.GetEventsRpH\x00\x12<\n\x14set_safety_policy_rp\x18\x04 \x01(\x0b\x32\x1c.dr.safety.SetSafetyPolicyRpH\x00\x12L\n\x1cmanage_safety_event_response\x18\x05 \x01(\x0b\x32$.dr.safety.ManageSafetyEventResponseH\x00\x12I\n\x1bget_safety_policy_status_rp\x18\x06 \x01(\x0b\x32\".dr.safety.GetSafetyPolicyStatusRpH\x00\x12@\n\x16topic_check_control_rp\x18\x07 \x01(\x0b\x32\x1e.dr.safety.TopicCheckControlRpH\x00\x42\x04\n\x02rp\"$\n\rTrackingChain\x12\x13\n\x0b\x65vent_index\x18\x01 \x03(\x05\"}\n\x0b\x45ventStatus\x12\x11\n\ttimestamp\x18\x01 \x01(\x03\x12+\n\x0b\x65vent_infos\x18\x02 \x03(\x0b\x32\x16.dr.safety.SafetyEvent\x12.\n\x0c\x65vent_chains\x18\x03 \x03(\x0b\x32\x18.dr.safety.TrackingChain*\x91\x01\n\tErrorCode\x12\x0b\n\x07SUCCESS\x10\x00\x12\x16\n\x0eINTERNEL_ERROR\x10\x01\x1a\x02\x08\x01\x12\x1a\n\x16METHOD_NOT_FOUND_ERROR\x10\x02\x12\x13\n\x0fPARAMETER_ERROR\x10\x03\x12\x1a\n\x16\x45VENTS_NOT_EXIST_ERROR\x10\x04\x12\x12\n\x0eINTERNAL_ERROR\x10\x05*a\n\x10TopicCheckAction\x12\x13\n\x0fTCA_UNSPECIFIED\x10\x00\x12\x0e\n\nTCA_ENABLE\x10\x01\x12\x0f\n\x0bTCA_DISABLE\x10\x02\x12\x17\n\x13TCA_RESET_TO_CONFIG\x10\x03\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1dsafety/safety_interface.proto\x12\tdr.safety\x1a\x19safety/safety_event.proto\"\x1a\n\tBoolValue\x12\r\n\x05value\x18\x01 \x01(\x08\"\xd9\x01\n\tGetEvents\x12\x14\n\x0cstart_tm_sec\x18\x01 \x01(\x05\x12\x12\n\nend_tm_sec\x18\x02 \x01(\x05\x12!\n\x03\x64tc\x18\x03 \x01(\x0b\x32\x14.dr.safety.BoolValue\x12\'\n\ttrace_log\x18\x04 \x01(\x0b\x32\x14.dr.safety.BoolValue\x12+\n\x0f\x63hoosed_modules\x18\x05 \x01(\x0b\x32\x12.dr.safety.Modules\x12)\n\x0e\x63hoosed_events\x18\x06 \x01(\x0b\x32\x11.dr.safety.Events\"c\n\x0bGetEventsRp\x12\x12\n\ntotal_nums\x18\x01 \x01(\r\x12\x13\n\x0bstart_index\x18\x02 \x01(\r\x12+\n\x0b\x65vent_infos\x18\x03 \x03(\x0b\x32\x16.dr.safety.SafetyEvent\"(\n\x0fSetSafetyPolicy\x12\x15\n\renable_policy\x18\x01 \x01(\x08\"+\n\x11SetSafetyPolicyRp\x12\x16\n\x0epolicy_enabled\x18\x01 \x01(\x08\"\x93\x01\n\x07Request\x12\n\n\x02id\x18\x01 \x01(\t\x12\x11\n\ttimestamp\x18\x02 \x01(\x03\x12*\n\nget_events\x18\x03 \x01(\x0b\x32\x14.dr.safety.GetEventsH\x00\x12\x37\n\x11set_safety_policy\x18\x04 \x01(\x0b\x32\x1a.dr.safety.SetSafetyPolicyH\x00\x42\x04\n\x02rq\"\xaf\x01\n\x08Response\x12\n\n\x02id\x18\x01 \x01(\t\x12\"\n\x04\x63ode\x18\x02 \x01(\x0e\x32\x14.dr.safety.ErrorCode\x12/\n\rget_events_rp\x18\x03 \x01(\x0b\x32\x16.dr.safety.GetEventsRpH\x00\x12<\n\x14set_safety_policy_rp\x18\x04 \x01(\x0b\x32\x1c.dr.safety.SetSafetyPolicyRpH\x00\x42\x04\n\x02rp\"$\n\rTrackingChain\x12\x13\n\x0b\x65vent_index\x18\x01 \x03(\x05\"}\n\x0b\x45ventStatus\x12\x11\n\ttimestamp\x18\x01 \x01(\x03\x12+\n\x0b\x65vent_infos\x18\x02 \x03(\x0b\x32\x16.dr.safety.SafetyEvent\x12.\n\x0c\x65vent_chains\x18\x03 \x03(\x0b\x32\x18.dr.safety.TrackingChain*\x91\x01\n\tErrorCode\x12\x0b\n\x07SUCCESS\x10\x00\x12\x16\n\x0eINTERNEL_ERROR\x10\x01\x1a\x02\x08\x01\x12\x1a\n\x16METHOD_NOT_FOUND_ERROR\x10\x02\x12\x13\n\x0fPARAMETER_ERROR\x10\x03\x12\x1a\n\x16\x45VENTS_NOT_EXIST_ERROR\x10\x04\x12\x12\n\x0eINTERNAL_ERROR\x10\x05\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -34,10 +34,8 @@ if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
   _globals['_ERRORCODE'].values_by_name["INTERNEL_ERROR"]._loaded_options = None
   _globals['_ERRORCODE'].values_by_name["INTERNEL_ERROR"]._serialized_options = b'\010\001'
-  _globals['_ERRORCODE']._serialized_start=2315
-  _globals['_ERRORCODE']._serialized_end=2460
-  _globals['_TOPICCHECKACTION']._serialized_start=2462
-  _globals['_TOPICCHECKACTION']._serialized_end=2559
+  _globals['_ERRORCODE']._serialized_start=1001
+  _globals['_ERRORCODE']._serialized_end=1146
   _globals['_BOOLVALUE']._serialized_start=71
   _globals['_BOOLVALUE']._serialized_end=97
   _globals['_GETEVENTS']._serialized_start=100
@@ -45,31 +43,15 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_GETEVENTSRP']._serialized_start=319
   _globals['_GETEVENTSRP']._serialized_end=418
   _globals['_SETSAFETYPOLICY']._serialized_start=420
-  _globals['_SETSAFETYPOLICY']._serialized_end=519
-  _globals['_SETSAFETYPOLICYRP']._serialized_start=521
-  _globals['_SETSAFETYPOLICYRP']._serialized_end=625
-  _globals['_GETSAFETYPOLICYSTATUSRQ']._serialized_start=627
-  _globals['_GETSAFETYPOLICYSTATUSRQ']._serialized_end=652
-  _globals['_GETSAFETYPOLICYSTATUSRP']._serialized_start=654
-  _globals['_GETSAFETYPOLICYSTATUSRP']._serialized_end=764
-  _globals['_MANAGESAFETYEVENTREQUEST']._serialized_start=766
-  _globals['_MANAGESAFETYEVENTREQUEST']._serialized_end=821
-  _globals['_MANAGESAFETYEVENTRESPONSE']._serialized_start=823
-  _globals['_MANAGESAFETYEVENTRESPONSE']._serialized_end=879
-  _globals['_TOPICCHECKOVERRIDE']._serialized_start=882
-  _globals['_TOPICCHECKOVERRIDE']._serialized_end=1058
-  _globals['_TOPICCHECKCONTROLRQ']._serialized_start=1060
-  _globals['_TOPICCHECKCONTROLRQ']._serialized_end=1131
-  _globals['_TOPICCHECKCONTROLRESULT']._serialized_start=1134
-  _globals['_TOPICCHECKCONTROLRESULT']._serialized_end=1307
-  _globals['_TOPICCHECKCONTROLRP']._serialized_start=1309
-  _globals['_TOPICCHECKCONTROLRP']._serialized_end=1383
-  _globals['_REQUEST']._serialized_start=1386
-  _globals['_REQUEST']._serialized_end=1750
-  _globals['_RESPONSE']._serialized_start=1753
-  _globals['_RESPONSE']._serialized_end=2147
-  _globals['_TRACKINGCHAIN']._serialized_start=2149
-  _globals['_TRACKINGCHAIN']._serialized_end=2185
-  _globals['_EVENTSTATUS']._serialized_start=2187
-  _globals['_EVENTSTATUS']._serialized_end=2312
+  _globals['_SETSAFETYPOLICY']._serialized_end=460
+  _globals['_SETSAFETYPOLICYRP']._serialized_start=462
+  _globals['_SETSAFETYPOLICYRP']._serialized_end=505
+  _globals['_REQUEST']._serialized_start=508
+  _globals['_REQUEST']._serialized_end=655
+  _globals['_RESPONSE']._serialized_start=658
+  _globals['_RESPONSE']._serialized_end=833
+  _globals['_TRACKINGCHAIN']._serialized_start=835
+  _globals['_TRACKINGCHAIN']._serialized_end=871
+  _globals['_EVENTSTATUS']._serialized_start=873
+  _globals['_EVENTSTATUS']._serialized_end=998
 # @@protoc_insertion_point(module_scope)

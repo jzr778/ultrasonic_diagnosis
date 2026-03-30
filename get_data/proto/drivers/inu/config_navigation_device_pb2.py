@@ -25,7 +25,7 @@ _sym_db = _symbol_database.Default()
 from common import geometry_pb2 as common_dot_geometry__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n*drivers/inu/config_navigation_device.proto\x12\x15\x64\x65\x65proute.drivers.inu\x1a\x15\x63ommon/geometry.proto\"+\n\x08Vector3d\x12\t\n\x01x\x18\x01 \x01(\x01\x12\t\n\x01y\x18\x02 \x01(\x01\x12\t\n\x01z\x18\x03 \x01(\x01\"\x91\x01\n\x08Matrix3d\x12+\n\x02\x63\x30\x18\x01 \x01(\x0b\x32\x1f.deeproute.drivers.inu.Vector3d\x12+\n\x02\x63\x31\x18\x02 \x01(\x0b\x32\x1f.deeproute.drivers.inu.Vector3d\x12+\n\x02\x63\x32\x18\x03 \x01(\x0b\x32\x1f.deeproute.drivers.inu.Vector3d\"\xcc\x04\n\x0e\x43\x61librationImu\x12\x37\n\x0egyro_zero_bias\x18\x01 \x01(\x0b\x32\x1f.deeproute.drivers.inu.Vector3d\x12\x37\n\x0e\x61\x63\x63\x65_zero_bias\x18\x02 \x01(\x0b\x32\x1f.deeproute.drivers.inu.Vector3d\x12<\n\x13gyro_coupling_error\x18\x03 \x01(\x0b\x32\x1f.deeproute.drivers.inu.Matrix3d\x12<\n\x13\x61\x63\x63\x65_coupling_error\x18\x04 \x01(\x0b\x32\x1f.deeproute.drivers.inu.Matrix3d\x12;\n\x12imu_misalign_error\x18\x08 \x01(\x0b\x32\x1f.deeproute.drivers.inu.Matrix3d\x12\x15\n\rserial_number\x18\t \x01(\t\x12\x36\n\x13install_angle_error\x18\n \x01(\x0b\x32\x19.deeproute.common.Vector3\x12 \n\x18is_static_imu_calibrated\x18\x0b \x01(\x08\x12%\n\x19is_dynamic_imu_calibrated\x18\x0c \x01(\x08\x42\x02\x18\x01\x12N\n\x18\x64ynamic_imu_calib_status\x18\r \x01(\x0e\x32,.deeproute.drivers.inu.DynamicImuCalibStatus\x12\'\n\x1f\x64ynamic_imu_calib_failure_count\x18\x0e \x01(\x05\"z\n\x0f\x43\x61librationGnss\x12H\n\x1flevel_arm_imu_to_gnss_antenna_1\x18\x01 \x01(\x0b\x32\x1f.deeproute.drivers.inu.Vector3d\x12\x1d\n\x15\x61ntenna_serial_number\x18\x03 \x01(\t\"\xf2\x01\n\x10\x43\x61librationWheel\x12Q\n(level_arm_imu_to_left_non_steering_wheel\x18\x01 \x01(\x0b\x32\x1f.deeproute.drivers.inu.Vector3d\x12R\n)level_arm_imu_to_right_non_steering_wheel\x18\x02 \x01(\x0b\x32\x1f.deeproute.drivers.inu.Vector3d\x12\x1a\n\x12left_serial_number\x18\x03 \x01(\t\x12\x1b\n\x13right_serial_number\x18\x04 \x01(\t\"\xaf\x01\n\x0b\x43\x61libration\x12\x32\n\x03imu\x18\x01 \x01(\x0b\x32%.deeproute.drivers.inu.CalibrationImu\x12\x34\n\x04gnss\x18\x02 \x01(\x0b\x32&.deeproute.drivers.inu.CalibrationGnss\x12\x36\n\x05wheel\x18\x03 \x01(\x0b\x32\'.deeproute.drivers.inu.CalibrationWheel\"\xf0\x01\n\tConfigImu\x12\x36\n\x04type\x18\x01 \x01(\x0e\x32(.deeproute.drivers.inu.ConfigImu.ImuType\x12\x19\n\x11gyro_scale_factor\x18\x02 \x01(\x01\x12\x19\n\x11\x61\x63\x63\x65_scale_factor\x18\x03 \x01(\x01\x12\x17\n\x0fsample_interval\x18\x04 \x01(\x01\x12\x16\n\x0enum_subsamples\x18\x05 \x01(\r\"D\n\x07ImuType\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x0e\n\nEPSON_G320\x10\x01\x12\x0e\n\nEPSON_G365\x10\x02\x12\x0c\n\x08SCHA_634\x10\x03\"\x90\x01\n\x10\x43onfigWheelSpeed\x12\x14\n\x0cwheel_radius\x18\x01 \x01(\x01\x12\x17\n\x0fsample_interval\x18\x02 \x01(\x01\x12\x1d\n\x15pulses_per_revolution\x18\x03 \x01(\r\x12\x16\n\x0emax_pulses_sum\x18\x04 \x01(\x05\x12\x16\n\x0emin_pulses_sum\x18\x05 \x01(\x05\"\x86\x02\n\nConfigGnss\x12%\n\x1dgnss_position_sample_interval\x18\x01 \x01(\x01\x12$\n\x1cgnss_heading_sample_interval\x18\x02 \x01(\x01\x12%\n\x1dgnss_velocity_sample_interval\x18\x03 \x01(\x01\x12\x38\n\x04type\x18\x04 \x01(\x0e\x32*.deeproute.drivers.inu.ConfigGnss.GnssType\"J\n\x08GnssType\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x10\n\x0cNOVATEL_718D\x10\x01\x12\x0c\n\x08\x42YNAV_M1\x10\x02\x12\x11\n\rQUECTEL_LG69T\x10\x03\"\xa2\x02\n\x16\x43onfigNavigationDevice\x12\x34\n\nconfig_imu\x18\x01 \x01(\x0b\x32 .deeproute.drivers.inu.ConfigImu\x12\x43\n\x12\x63onfig_wheel_speed\x18\x02 \x01(\x0b\x32\'.deeproute.drivers.inu.ConfigWheelSpeed\x12\x36\n\x0b\x63onfig_gnss\x18\x03 \x01(\x0b\x32!.deeproute.drivers.inu.ConfigGnss\x12\x37\n\x0b\x63\x61libration\x18\x05 \x01(\x0b\x32\".deeproute.drivers.inu.Calibration\x12\x1c\n\x0e\x66ixed_interval\x18\x06 \x01(\x08:\x04true*w\n\x15\x44ynamicImuCalibStatus\x12!\n\x1d\x44YNAMIC_IMU_CALIB_UNCOMPLETED\x10\x00\x12\x1c\n\x18\x44YNAMIC_IMU_CALIB_FAILED\x10\x01\x12\x1d\n\x19\x44YNAMIC_IMU_CALIB_SUCCESS\x10\x02')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n*drivers/inu/config_navigation_device.proto\x12\x15\x64\x65\x65proute.drivers.inu\x1a\x15\x63ommon/geometry.proto\"+\n\x08Vector3d\x12\t\n\x01x\x18\x01 \x01(\x01\x12\t\n\x01y\x18\x02 \x01(\x01\x12\t\n\x01z\x18\x03 \x01(\x01\"\x91\x01\n\x08Matrix3d\x12+\n\x02\x63\x30\x18\x01 \x01(\x0b\x32\x1f.deeproute.drivers.inu.Vector3d\x12+\n\x02\x63\x31\x18\x02 \x01(\x0b\x32\x1f.deeproute.drivers.inu.Vector3d\x12+\n\x02\x63\x32\x18\x03 \x01(\x0b\x32\x1f.deeproute.drivers.inu.Vector3d\"\xcc\x04\n\x0e\x43\x61librationImu\x12\x37\n\x0egyro_zero_bias\x18\x01 \x01(\x0b\x32\x1f.deeproute.drivers.inu.Vector3d\x12\x37\n\x0e\x61\x63\x63\x65_zero_bias\x18\x02 \x01(\x0b\x32\x1f.deeproute.drivers.inu.Vector3d\x12<\n\x13gyro_coupling_error\x18\x03 \x01(\x0b\x32\x1f.deeproute.drivers.inu.Matrix3d\x12<\n\x13\x61\x63\x63\x65_coupling_error\x18\x04 \x01(\x0b\x32\x1f.deeproute.drivers.inu.Matrix3d\x12;\n\x12imu_misalign_error\x18\x08 \x01(\x0b\x32\x1f.deeproute.drivers.inu.Matrix3d\x12\x15\n\rserial_number\x18\t \x01(\t\x12\x36\n\x13install_angle_error\x18\n \x01(\x0b\x32\x19.deeproute.common.Vector3\x12 \n\x18is_static_imu_calibrated\x18\x0b \x01(\x08\x12%\n\x19is_dynamic_imu_calibrated\x18\x0c \x01(\x08\x42\x02\x18\x01\x12N\n\x18\x64ynamic_imu_calib_status\x18\r \x01(\x0e\x32,.deeproute.drivers.inu.DynamicImuCalibStatus\x12\'\n\x1f\x64ynamic_imu_calib_failure_count\x18\x0e \x01(\x05\"\xa2\x01\n\x0f\x43\x61librationGnss\x12H\n\x1flevel_arm_imu_to_gnss_antenna_1\x18\x01 \x01(\x0b\x32\x1f.deeproute.drivers.inu.Vector3d\x12&\n\x1emisalignment_angle_imu_to_gnss\x18\x02 \x01(\x01\x12\x1d\n\x15\x61ntenna_serial_number\x18\x03 \x01(\t\"\xf2\x01\n\x10\x43\x61librationWheel\x12Q\n(level_arm_imu_to_left_non_steering_wheel\x18\x01 \x01(\x0b\x32\x1f.deeproute.drivers.inu.Vector3d\x12R\n)level_arm_imu_to_right_non_steering_wheel\x18\x02 \x01(\x0b\x32\x1f.deeproute.drivers.inu.Vector3d\x12\x1a\n\x12left_serial_number\x18\x03 \x01(\t\x12\x1b\n\x13right_serial_number\x18\x04 \x01(\t\"Z\n\x10\x43\x61librationLidar\x12\x46\n\x1btransformation_lidar_to_imu\x18\x01 \x01(\x0b\x32!.deeproute.common.Transformation3\"\xe7\x01\n\x0b\x43\x61libration\x12\x32\n\x03imu\x18\x01 \x01(\x0b\x32%.deeproute.drivers.inu.CalibrationImu\x12\x34\n\x04gnss\x18\x02 \x01(\x0b\x32&.deeproute.drivers.inu.CalibrationGnss\x12\x36\n\x05wheel\x18\x03 \x01(\x0b\x32\'.deeproute.drivers.inu.CalibrationWheel\x12\x36\n\x05lidar\x18\x04 \x01(\x0b\x32\'.deeproute.drivers.inu.CalibrationLidar\"\xf0\x01\n\tConfigImu\x12\x36\n\x04type\x18\x01 \x01(\x0e\x32(.deeproute.drivers.inu.ConfigImu.ImuType\x12\x19\n\x11gyro_scale_factor\x18\x02 \x01(\x01\x12\x19\n\x11\x61\x63\x63\x65_scale_factor\x18\x03 \x01(\x01\x12\x17\n\x0fsample_interval\x18\x04 \x01(\x01\x12\x16\n\x0enum_subsamples\x18\x05 \x01(\r\"D\n\x07ImuType\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x0e\n\nEPSON_G320\x10\x01\x12\x0e\n\nEPSON_G365\x10\x02\x12\x0c\n\x08SCHA_634\x10\x03\"\x90\x01\n\x10\x43onfigWheelSpeed\x12\x14\n\x0cwheel_radius\x18\x01 \x01(\x01\x12\x17\n\x0fsample_interval\x18\x02 \x01(\x01\x12\x1d\n\x15pulses_per_revolution\x18\x03 \x01(\r\x12\x16\n\x0emax_pulses_sum\x18\x04 \x01(\x05\x12\x16\n\x0emin_pulses_sum\x18\x05 \x01(\x05\"\x86\x02\n\nConfigGnss\x12%\n\x1dgnss_position_sample_interval\x18\x01 \x01(\x01\x12%\n\x1dgnss_velocity_sample_interval\x18\x02 \x01(\x01\x12$\n\x1cgnss_heading_sample_interval\x18\x03 \x01(\x01\x12\x38\n\x04type\x18\x04 \x01(\x0e\x32*.deeproute.drivers.inu.ConfigGnss.GnssType\"J\n\x08GnssType\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x10\n\x0cNOVATEL_718D\x10\x01\x12\x0c\n\x08\x42YNAV_M1\x10\x02\x12\x11\n\rQUECTEL_LG69T\x10\x03\"&\n\x0b\x43onfigLidar\x12\x17\n\x0fsample_interval\x18\x01 \x01(\x01\"\xdc\x02\n\x16\x43onfigNavigationDevice\x12\x34\n\nconfig_imu\x18\x01 \x01(\x0b\x32 .deeproute.drivers.inu.ConfigImu\x12\x43\n\x12\x63onfig_wheel_speed\x18\x02 \x01(\x0b\x32\'.deeproute.drivers.inu.ConfigWheelSpeed\x12\x36\n\x0b\x63onfig_gnss\x18\x03 \x01(\x0b\x32!.deeproute.drivers.inu.ConfigGnss\x12\x38\n\x0c\x63onfig_lidar\x18\x04 \x01(\x0b\x32\".deeproute.drivers.inu.ConfigLidar\x12\x37\n\x0b\x63\x61libration\x18\x05 \x01(\x0b\x32\".deeproute.drivers.inu.Calibration\x12\x1c\n\x0e\x66ixed_interval\x18\x06 \x01(\x08:\x04true*w\n\x15\x44ynamicImuCalibStatus\x12!\n\x1d\x44YNAMIC_IMU_CALIB_UNCOMPLETED\x10\x00\x12\x1c\n\x18\x44YNAMIC_IMU_CALIB_FAILED\x10\x01\x12\x1d\n\x19\x44YNAMIC_IMU_CALIB_SUCCESS\x10\x02')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -34,30 +34,34 @@ if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
   _globals['_CALIBRATIONIMU'].fields_by_name['is_dynamic_imu_calibrated']._loaded_options = None
   _globals['_CALIBRATIONIMU'].fields_by_name['is_dynamic_imu_calibrated']._serialized_options = b'\030\001'
-  _globals['_DYNAMICIMUCALIBSTATUS']._serialized_start=2371
-  _globals['_DYNAMICIMUCALIBSTATUS']._serialized_end=2490
+  _globals['_DYNAMICIMUCALIBSTATUS']._serialized_start=2658
+  _globals['_DYNAMICIMUCALIBSTATUS']._serialized_end=2777
   _globals['_VECTOR3D']._serialized_start=92
   _globals['_VECTOR3D']._serialized_end=135
   _globals['_MATRIX3D']._serialized_start=138
   _globals['_MATRIX3D']._serialized_end=283
   _globals['_CALIBRATIONIMU']._serialized_start=286
   _globals['_CALIBRATIONIMU']._serialized_end=874
-  _globals['_CALIBRATIONGNSS']._serialized_start=876
-  _globals['_CALIBRATIONGNSS']._serialized_end=998
-  _globals['_CALIBRATIONWHEEL']._serialized_start=1001
-  _globals['_CALIBRATIONWHEEL']._serialized_end=1243
-  _globals['_CALIBRATION']._serialized_start=1246
-  _globals['_CALIBRATION']._serialized_end=1421
-  _globals['_CONFIGIMU']._serialized_start=1424
-  _globals['_CONFIGIMU']._serialized_end=1664
-  _globals['_CONFIGIMU_IMUTYPE']._serialized_start=1596
-  _globals['_CONFIGIMU_IMUTYPE']._serialized_end=1664
-  _globals['_CONFIGWHEELSPEED']._serialized_start=1667
-  _globals['_CONFIGWHEELSPEED']._serialized_end=1811
-  _globals['_CONFIGGNSS']._serialized_start=1814
-  _globals['_CONFIGGNSS']._serialized_end=2076
-  _globals['_CONFIGGNSS_GNSSTYPE']._serialized_start=2002
-  _globals['_CONFIGGNSS_GNSSTYPE']._serialized_end=2076
-  _globals['_CONFIGNAVIGATIONDEVICE']._serialized_start=2079
-  _globals['_CONFIGNAVIGATIONDEVICE']._serialized_end=2369
+  _globals['_CALIBRATIONGNSS']._serialized_start=877
+  _globals['_CALIBRATIONGNSS']._serialized_end=1039
+  _globals['_CALIBRATIONWHEEL']._serialized_start=1042
+  _globals['_CALIBRATIONWHEEL']._serialized_end=1284
+  _globals['_CALIBRATIONLIDAR']._serialized_start=1286
+  _globals['_CALIBRATIONLIDAR']._serialized_end=1376
+  _globals['_CALIBRATION']._serialized_start=1379
+  _globals['_CALIBRATION']._serialized_end=1610
+  _globals['_CONFIGIMU']._serialized_start=1613
+  _globals['_CONFIGIMU']._serialized_end=1853
+  _globals['_CONFIGIMU_IMUTYPE']._serialized_start=1785
+  _globals['_CONFIGIMU_IMUTYPE']._serialized_end=1853
+  _globals['_CONFIGWHEELSPEED']._serialized_start=1856
+  _globals['_CONFIGWHEELSPEED']._serialized_end=2000
+  _globals['_CONFIGGNSS']._serialized_start=2003
+  _globals['_CONFIGGNSS']._serialized_end=2265
+  _globals['_CONFIGGNSS_GNSSTYPE']._serialized_start=2191
+  _globals['_CONFIGGNSS_GNSSTYPE']._serialized_end=2265
+  _globals['_CONFIGLIDAR']._serialized_start=2267
+  _globals['_CONFIGLIDAR']._serialized_end=2305
+  _globals['_CONFIGNAVIGATIONDEVICE']._serialized_start=2308
+  _globals['_CONFIGNAVIGATIONDEVICE']._serialized_end=2656
 # @@protoc_insertion_point(module_scope)

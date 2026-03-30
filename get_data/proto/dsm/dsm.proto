@@ -1,0 +1,272 @@
+syntax = "proto3";
+
+package dr.dsm;
+
+/*DSM define*/
+enum TriggerType {
+  UNKNOWN_TRIGGER_TYPE = 0;  // 重启信号
+  WORKING_SWITCH = 1;        // 上电working模式切换
+  EOL_START = 2;             // 进入EOL模式
+  EOL_QUIT = 3;              // 退出EOL模式
+  DEBUG_SWITCH = 4;
+  OTA_START = 5;                 // 进入OTA模式
+  OTA_QUIT = 6;                  // 退出OTA模式
+  ONLINE_CALIBRATION_START = 7;  // 进入在线标定
+  ONLINE_CALIBRATION_QUIT = 8;   // 退出在线标定
+  STOP_TASK = 9;                 // 结束任务
+  // reserve 10
+  DATA_COLLECTOR_START = 11;     // 进入数据采集模式
+  IMU_CALIBRATION_START = 12;    // 进入动态标定模式
+}
+
+// TOPIC /dsm/trigger
+message Trigger {
+  TriggerType type = 1;
+  int32 mode = 2;              // 对应proto-SubState
+  string context_payload = 3;  // 状态切换的附加信息序列化
+  string trans_id = 4;  // 发送者自定义的唯一标识，用于确认状态切换结果
+}
+
+// TOPIC /dsm/state_notifier
+/*DSM define*/
+message StateNotifier {
+  int32 to_state = 1;   // vehicle级状态, 对应proto-State
+  int32 sub_state = 2;  // 目标状态下的子状态, 对应proto-SubState
+  SwitchModeStep switch_mode_step = 3;
+}
+enum SwitchModeStep {
+  COMPLETE = 0; // 完成模式切换
+  START = 1; // 开始模式切换，上电初始化不发
+  SWITCH_FAILED = 2; // 切换模式失败
+}
+
+// TOPIC /dsm/trigger_out_notifier
+message TriggerOutNotifier {
+  State state = 1;
+  SubState mode = 2;
+  AdapterState adapter_state = 3;
+  UploadState upload_state = 4;
+  RecordState record_state = 5;
+}
+enum State {
+  UNKNOWN_STATE = 0;
+  OFF = 1;                 // SOC下电
+  WORKING = 2;             // SOC上电working
+  EOL = 3;                 // 产线模式
+  DEBUG = 4;               // 调试模式
+  OTA = 5;                 // OTA模式
+  ONLINE_CALIBRATION = 6;  // 在线标定
+  IDLE = 7;                // IDLE模式
+  PRE_OFF = 8;             // 下电工作模式
+  DATA_COLLECTOR = 9;      // 数据采集模式
+  IMU_CALIBRATION = 10;    // 动态标定模式
+}
+enum SubState {
+  UNKNOWN_SUBSTATE = 0;
+  /* 1~99 for WORKING */
+  ALL_FUNCTION = 1;  // AD All Function
+  LOW_POWER = 2;     // AD Low Power
+  PURE_VISION = 3;   // AD Vision
+  SENTINEL_MODE = 4;
+  GWM_SENTINEL_MODE = 5;
+  ALL_FUNCTION_TEST = 6; // 全功能测试模式，起sentry
+  /* 100~199 for EOL */
+  INU_EOL_CALIBRATION = 100 [deprecated = true];
+  INU_DYNAMIC_CALIBRATION = 101 [deprecated = true];
+  EOL_PRE_PROCESS = 102 [deprecated = true];
+  EOL_CALIBRATION = 103;
+  EOL_TEST_MODE = 104;
+  /* 200~299 for DEBUG */
+  AEB = 200;
+  DRIVING = 201;
+  PARKING = 202;
+  ADAS = 203;
+  CONTROL_CALIB = 204;
+  /* 300~399 for OTA */
+  OTA_MODE = 300;
+  /* 400~499 for Online Calibration */
+  ONLINE_CALIBRATION_MODE = 400;
+  IDLE_MODE = 500;
+  /* 551~599 for PRE_OFF */
+  PRE_OFF_MODE = 551;   // 预下电模式
+  WAIT_OFF_MODE = 552 [deprecated = true];  // 准下电模式
+  /* 600~649 for DATA_COLLECTOR*/
+  DATA_COLLECTOR_PARKING = 600;      // 泊车采集
+  DATA_COLLECTOR_FACTORY_CALIB = 601;  // 生产标定采集
+  /* 650 ~ 699 for IMU */
+  IMU_CALIBRATION_MODE = 650; // 惯性导航动态标定
+}
+
+enum AdapterState {
+  UNKNOWN_ADAPTER_STATE = 0; // 默认值，不用
+  ADAPTER_ACTIVE = 1; // Adapter与外部通信
+  ADAPTER_DISABLED = 2; // Adapter停止与外部通信
+}
+
+enum UploadState {
+  UNKNOWN_UPLOAD_STATE = 0;  // 默认值，不用
+  UP_ACTIVE = 1; // 闲时上传激活
+  UP_OFF = 2; // 闲时上传抑制
+}
+
+enum RecordState {
+  UNKNOWN_RECORD_STATE = 0; // 默认值不用
+  RECORD_NO_SENTRY = 1; // 录小包
+  RECORD_ONLY_SENTRY = 2; // 录大包
+  RECORD_DISABLED = 3; // 完全关闭
+}
+
+enum DSMCode {
+  SUCCESS = 0;
+  FAILURE = 1;
+  AD_ACTIVED = 2;
+  INIT_FAILED = 3;
+  IN_TRANSITION = 4;
+  INVALID_TRANSITION = 5;
+
+  // Sentinel related 11-20
+  SENTINEL_DEFAULT = 11;
+  SENTINEL_GEAR_NOT_IN_P = 12; // 档位
+  SENTINEL_NO_DISK_SPACE = 13; // 磁盘空间不足
+  SENTINEL_BATTERY_LOW = 14; // 电池电量
+}
+// TOPIC /dsm/trigger_response
+message TriggerRP {
+  string trans_id = 1;
+  DSMCode return_code = 2;
+  repeated string failed_modules = 3;  // filled if return_code==FAILURE/INIT_FAILED
+}
+
+message TrackingData {
+  message TimeRecord {
+    string module_name = 1;
+    int64 boot_time = 2;        // ms
+    int64 data_ready_time = 3;  // ms
+    int64 fast_topic_time = 4;
+  }
+  repeated TimeRecord time_record = 1;
+  int64 time_stamp = 2;  // ms
+}
+
+enum TimeRecordType {
+  TRT_UNKNOWN = 0;         //
+  TRT_COLD_START = 1;      // 冷启动
+  TRT_MODE_SWITCHING = 2;  // 热切换/模式切换
+  TRT_WARM_START = 3;      // 热启动
+}
+
+message TimeRecordToWeb {
+  repeated string module_names = 1;
+  repeated int64 boot_times = 2;        // ms
+  repeated int64 data_ready_times = 3;  // ms
+  repeated int64 fast_topic_times = 4;  // ms
+  TimeRecordType record_type = 5;
+}
+
+enum ModuleState {
+  MS_OFF = 0;
+  MS_ON = 1;
+}
+
+message GetModuleStateRP {
+  map<string, ModuleState> module_state = 1;
+}
+
+message UpdateModule {
+  string module_name = 1;
+  ModuleState state = 2;
+}
+
+message OTASetting {
+  enum TriggerSource {
+    UNKNOWN = 0;
+    SAFE_APP = 1;
+  }
+  TriggerSource source = 1;
+}
+
+message SetRecordMode {
+  RecordState mode = 1;
+}
+
+message SetMode {
+  SubState mode = 1;
+}
+
+message DSMRequest { // topic : /dsm/request
+  string id = 1;
+  oneof request {
+    /* 1~1000 reserve for outside cmd*/
+    dr.dsm.Trigger dsm_trigger = 1001;
+    bool get_tracking_data = 1002;
+    UpdateModule update_module = 1003;
+    bool get_module_state = 1004;
+    OffLatencyStart off_latency_start = 1005;  // 模块确认等待
+    OffLatencyEnd off_latency_end = 1006;      // 模块结束等待
+    OTASetting ota_setting = 1007;
+    AdapterCommand adapter_command = 1008;
+    SetRecordMode set_record_mode = 1009;
+    SetMode set_mode = 1010;
+  }
+}
+
+message DSMResponse { // topic : /dsm/response
+  string id = 1;
+  DSMCode error_code = 2;
+  oneof response {
+    /* 1~1000 reserve */
+    TriggerRP trigger_rp = 1001;
+    TrackingData tracking_data_rp = 1002;
+    GetModuleStateRP module_state_rp = 1003;
+  }
+}
+
+message OffLatencyStart {
+  string transaction_id = 1;
+  string module_name = 2;        // 模块名，如planning, blc
+  int64 estimate_cost_time = 3;  // 预估耗时ms，不得超过30s(30000ms)
+}
+message OffLatencyEnd {
+  string transaction_id = 1;
+  string module_name = 2;  // 模块名，如planning, blc
+}
+
+// topic: /dsm/transaction
+message Transaction {
+  string transaction_id = 1;
+  int64 start_time = 2;  // 事务下发时间戳ms
+  oneof trans_info {
+    PreOff pre_off = 10;  // 预下电事务
+  }
+}
+message PreOff {
+  int64 max_wait_time = 1;      // dsm最大等待时间ms
+  int64 request_wait_time = 2;  // dsm等待业务模块延迟下电请求时间ms
+}
+
+message StartupFailReport {
+  uint32 meta_override = 1; 
+  string meta_driver = 2; 
+  string meta_trip_name = 3;
+  uint64 meta_event_time = 4;
+  uint32 failed_count = 5; 
+}
+
+message AdapterCommand {
+  enum CommandType {
+    UNKNOWN_COMMAND_TYPE = 0;
+    ENABLE_ADAPTER = 1;
+    DISABLE_ADAPTER = 2;
+  }
+  CommandType command = 1;
+}
+
+enum SmartSMStates {
+  SMART_OFF = 0;
+  SMART_INIT = 1;
+  SMART_WORKING = 2;
+  SMART_OTA = 3;
+}
+message SmartSM { // topic: /dsm/smart_sm_state
+  SmartSMStates state = 1;
+}

@@ -1,0 +1,14 @@
+syntax = "proto2";
+
+package deeproute.hdmap;
+
+import "common/geometry.proto";
+import "semantic_map/map_overlap.proto";
+//RoadMaskPlus means a roadmask with the direction.
+//The direction is from the first point to the second point of the polygon.
+message RoadMaskPlus {
+  optional int32 id = 1;
+  optional common.Polygon polygon = 2;
+  optional int32 layer = 3;
+  repeated Overlap overlaps = 4;
+}

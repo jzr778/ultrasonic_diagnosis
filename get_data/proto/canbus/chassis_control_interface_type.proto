@@ -1,0 +1,73 @@
+syntax = "proto2";
+
+package deeproute.canbus;
+
+// 底盘支持线控的接口类型定义
+
+// Chassis Domain
+
+message EpbRequest {
+  enum Request {
+    NO_REQUEST = 0;
+    PARK = 1;
+    RELEASE = 2;
+  }
+  optional Request request = 1;
+}
+
+message GearRequest {
+  enum Request {
+    INVALID = 0;
+    PARK = 1;
+    REVERSE = 2;
+    NEUTRAL = 3;
+    DRIVE = 4;
+    LOW = 5;
+    UNSPECIFIED = 6;
+  }
+  optional Request request = 1;
+}
+
+// Body Domain
+
+message WiperRequest {
+  enum Request {
+    NO_REQUEST = 0;
+    CLOSED = 1;
+    INTERMITTENT = 2;
+    SLOW = 3;
+    FAST = 4;
+    AUTO = 5;
+  }
+
+  enum WashRequest {
+    WASH_NO_REQUEST = 0;
+    WASH_REQUEST = 1;
+    WASH_AUTO_REQUEST = 2;
+    WASH_CLOSE = 3;
+  }
+
+  optional Request wiper_request = 1;
+  optional WashRequest wash_request = 2;
+}
+
+message SeatbeltRequest {
+  enum Seatbelt {
+    NO_REQUEST = 0x0;
+    SHOCK = 0x1;
+    TENSION = 0x2;
+  }
+
+  repeated Seatbelt seatbelt = 1;
+}
+
+message DoorLockRequest {
+  // 一次控制所有门锁
+  enum AllLockRequest {
+    LOCK_NO_REQUEST = 0x0;
+    LOCK = 0x1;
+    UNLOCK = 0x2;
+    DRIVE_UNLOCK_AND_OTHER_LOCK = 0x3;
+  }
+  optional AllLockRequest all_lock_request = 1;
+}

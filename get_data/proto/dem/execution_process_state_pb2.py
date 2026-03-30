@@ -24,19 +24,15 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n!dem/execution_process_state.proto\x12\rdeeproute.dem\"c\n\x15\x45xecutionProcessState\x12\x16\n\x0e\x65xecution_name\x18\x01 \x01(\t\x12\x32\n\rprocess_state\x18\x02 \x01(\x0e\x32\x1b.deeproute.dem.ProcessState\"\xe6\x01\n\x08NodeInfo\x12\x11\n\tnode_name\x18\x01 \x01(\t\x12\x10\n\x08node_log\x18\x02 \x01(\t\x12-\n\x06status\x18\x03 \x01(\x0e\x32\x1d.deeproute.dem.ExecutionState\x12\x0b\n\x03pid\x18\x04 \x01(\x05\x12\x1a\n\x12init_start_time_ms\x18\x05 \x01(\x03\x12\x18\n\x10init_end_time_ms\x18\x06 \x01(\x03\x12\x1d\n\x15init_duration_time_ms\x18\x07 \x01(\x03\x12\r\n\x05\x63rash\x18\x08 \x01(\x08\x12\x15\n\rrestart_times\x18\t \x01(\r*4\n\x0cProcessState\x12\t\n\x05START\x10\x00\x12\x0c\n\x08SHUTDOWN\x10\x01\x12\x0b\n\x07RESTART\x10\x02*\xa5\x01\n\x0e\x45xecutionState\x12\x08\n\x04kOff\x10\x00\x12\x11\n\rkInitializing\x10\x01\x12\x0f\n\x0bkInitFailed\x10\x02\x12\x0c\n\x08kRunning\x10\x03\x12\x14\n\x10kAbnormalExiting\x10\x04\x12\x11\n\rkAbnormalExit\x10\x05\x12\x0f\n\x0bkNormalExit\x10\x06\x12\x1d\n\x19kAbnormalExitWhenShutdown\x10\x07')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n!dem/execution_process_state.proto\x12\rdeeproute.dem\"c\n\x15\x45xecutionProcessState\x12\x16\n\x0e\x65xecution_name\x18\x01 \x01(\t\x12\x32\n\rprocess_state\x18\x02 \x01(\x0e\x32\x1b.deeproute.dem.ProcessState*4\n\x0cProcessState\x12\t\n\x05START\x10\x00\x12\x0c\n\x08SHUTDOWN\x10\x01\x12\x0b\n\x07RESTART\x10\x02')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'dem.execution_process_state_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_PROCESSSTATE']._serialized_start=386
-  _globals['_PROCESSSTATE']._serialized_end=438
-  _globals['_EXECUTIONSTATE']._serialized_start=441
-  _globals['_EXECUTIONSTATE']._serialized_end=606
+  _globals['_PROCESSSTATE']._serialized_start=153
+  _globals['_PROCESSSTATE']._serialized_end=205
   _globals['_EXECUTIONPROCESSSTATE']._serialized_start=52
   _globals['_EXECUTIONPROCESSSTATE']._serialized_end=151
-  _globals['_NODEINFO']._serialized_start=154
-  _globals['_NODEINFO']._serialized_end=384
 # @@protoc_insertion_point(module_scope)

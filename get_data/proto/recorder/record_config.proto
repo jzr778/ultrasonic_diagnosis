@@ -1,0 +1,81 @@
+syntax = "proto2";
+
+package deeproute.recorder;
+
+message SplitConfig {
+  /**
+   @~english size of each split (unsupported)
+   @~chinese 根据大小分包（暂不支持）
+   **/
+  optional uint64 size = 1;
+
+  /**
+   @~english split by time duration, in nanoseconds
+   @~chinese 根据时间分包，单位为ns
+   **/
+  optional uint64 duration_nanoseconds = 2;
+}
+
+enum RecordFormat {
+  /**
+   @~english auto select based on config
+   @~chinese 据版本配置自动选择
+   **/
+  AUTO = 0;
+
+  /**
+   @~english ros1 rosbag format
+   @~chinese 和ros1兼容的rosbag格式
+   **/
+  ROSBAG = 1;
+
+  /**
+   @~english onlmcap format (experimental)
+   @~chinese 实验性的OnlMCAP格式
+   **/
+  MCAP = 2;
+}
+
+message RecordConfig {
+
+  /**
+   @~english config splitting
+   @~chinese 分包配置
+   TripRecorder only
+   **/
+  optional SplitConfig split = 1;
+
+  /**
+   @~english limit the size of internal buffer
+   @~chinese 限制录制buffer的大小
+   (currenty have no effect)
+   **/
+  optional uint64 buffer_size = 2;
+
+  /**
+   @~english size of rosbag chunks
+   @~chinese 录制rosbag格式时，设置chunk大小
+   **/
+  optional uint64 chunk_size = 3;
+
+  /**
+   @~english format for output data
+   @~chinese 输出数据的格式
+   **/
+  optional RecordFormat format = 4;
+
+  /**
+   @~english write bags_info.json to sentry-specified location
+   @~chinese 向sentry指定的路径生成bags_info.json
+   TripRecorder only
+   **/
+  optional string bags_info_path = 5;
+
+  /**
+   @~english record to filename.active，rename to filename on complete
+   @~chinese 先录制到filename.active，完成后移动到filename
+   TripRecorder only
+   **/
+  optional bool use_active = 6;
+}
+

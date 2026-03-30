@@ -24,17 +24,17 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1crecorder/record_config.proto\x12\x12\x64\x65\x65proute.recorder\"9\n\x0bSplitConfig\x12\x0c\n\x04size\x18\x01 \x01(\x04\x12\x1c\n\x14\x64uration_nanoseconds\x18\x02 \x01(\x04\"\xdc\x01\n\x0cRecordConfig\x12.\n\x05split\x18\x01 \x01(\x0b\x32\x1f.deeproute.recorder.SplitConfig\x12\x13\n\x0b\x62uffer_size\x18\x02 \x01(\x04\x12\x12\n\nchunk_size\x18\x03 \x01(\x04\x12\x30\n\x06\x66ormat\x18\x04 \x01(\x0e\x32 .deeproute.recorder.RecordFormat\x12\x16\n\x0e\x62\x61gs_info_path\x18\x05 \x01(\t\x12\x12\n\nuse_active\x18\x06 \x01(\x08\x12\x15\n\ruse_bags_info\x18\x07 \x01(\x08*.\n\x0cRecordFormat\x12\x08\n\x04\x41UTO\x10\x00\x12\n\n\x06ROSBAG\x10\x01\x12\x08\n\x04MCAP\x10\x02')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1crecorder/record_config.proto\x12\x12\x64\x65\x65proute.recorder\"9\n\x0bSplitConfig\x12\x0c\n\x04size\x18\x01 \x01(\x04\x12\x1c\n\x14\x64uration_nanoseconds\x18\x02 \x01(\x04\"\xc5\x01\n\x0cRecordConfig\x12.\n\x05split\x18\x01 \x01(\x0b\x32\x1f.deeproute.recorder.SplitConfig\x12\x13\n\x0b\x62uffer_size\x18\x02 \x01(\x04\x12\x12\n\nchunk_size\x18\x03 \x01(\x04\x12\x30\n\x06\x66ormat\x18\x04 \x01(\x0e\x32 .deeproute.recorder.RecordFormat\x12\x16\n\x0e\x62\x61gs_info_path\x18\x05 \x01(\t\x12\x12\n\nuse_active\x18\x06 \x01(\x08*.\n\x0cRecordFormat\x12\x08\n\x04\x41UTO\x10\x00\x12\n\n\x06ROSBAG\x10\x01\x12\x08\n\x04MCAP\x10\x02')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'recorder.record_config_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_RECORDFORMAT']._serialized_start=334
-  _globals['_RECORDFORMAT']._serialized_end=380
+  _globals['_RECORDFORMAT']._serialized_start=311
+  _globals['_RECORDFORMAT']._serialized_end=357
   _globals['_SPLITCONFIG']._serialized_start=52
   _globals['_SPLITCONFIG']._serialized_end=109
   _globals['_RECORDCONFIG']._serialized_start=112
-  _globals['_RECORDCONFIG']._serialized_end=332
+  _globals['_RECORDCONFIG']._serialized_end=309
 # @@protoc_insertion_point(module_scope)

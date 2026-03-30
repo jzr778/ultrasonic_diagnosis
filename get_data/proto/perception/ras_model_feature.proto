@@ -1,0 +1,9 @@
+
+syntax = "proto2";
+
+package deeproute.perception;
+
+message RasModelFeature {
+  optional bytes data = 1;
+}
+

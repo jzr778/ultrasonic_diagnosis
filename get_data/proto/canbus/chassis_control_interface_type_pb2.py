@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n+canbus/chassis_control_interface_type.proto\x12\x10\x64\x65\x65proute.canbus\"u\n\nEpbRequest\x12\x35\n\x07request\x18\x01 \x01(\x0e\x32$.deeproute.canbus.EpbRequest.Request\"0\n\x07Request\x12\x0e\n\nNO_REQUEST\x10\x00\x12\x08\n\x04PARK\x10\x01\x12\x0b\n\x07RELEASE\x10\x02')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n+canbus/chassis_control_interface_type.proto\x12\x10\x64\x65\x65proute.canbus\"u\n\nEpbRequest\x12\x35\n\x07request\x18\x01 \x01(\x0e\x32$.deeproute.canbus.EpbRequest.Request\"0\n\x07Request\x12\x0e\n\nNO_REQUEST\x10\x00\x12\x08\n\x04PARK\x10\x01\x12\x0b\n\x07RELEASE\x10\x02\"\xa6\x01\n\x0bGearRequest\x12\x36\n\x07request\x18\x01 \x01(\x0e\x32%.deeproute.canbus.GearRequest.Request\"_\n\x07Request\x12\x0b\n\x07INVALID\x10\x00\x12\x08\n\x04PARK\x10\x01\x12\x0b\n\x07REVERSE\x10\x02\x12\x0b\n\x07NEUTRAL\x10\x03\x12\t\n\x05\x44RIVE\x10\x04\x12\x07\n\x03LOW\x10\x05\x12\x0f\n\x0bUNSPECIFIED\x10\x06\"\xc3\x02\n\x0cWiperRequest\x12=\n\rwiper_request\x18\x01 \x01(\x0e\x32&.deeproute.canbus.WiperRequest.Request\x12@\n\x0cwash_request\x18\x02 \x01(\x0e\x32*.deeproute.canbus.WiperRequest.WashRequest\"U\n\x07Request\x12\x0e\n\nNO_REQUEST\x10\x00\x12\n\n\x06\x43LOSED\x10\x01\x12\x10\n\x0cINTERMITTENT\x10\x02\x12\x08\n\x04SLOW\x10\x03\x12\x08\n\x04\x46\x41ST\x10\x04\x12\x08\n\x04\x41UTO\x10\x05\"[\n\x0bWashRequest\x12\x13\n\x0fWASH_NO_REQUEST\x10\x00\x12\x10\n\x0cWASH_REQUEST\x10\x01\x12\x15\n\x11WASH_AUTO_REQUEST\x10\x02\x12\x0e\n\nWASH_CLOSE\x10\x03\"\x83\x01\n\x0fSeatbeltRequest\x12<\n\x08seatbelt\x18\x01 \x03(\x0e\x32*.deeproute.canbus.SeatbeltRequest.Seatbelt\"2\n\x08Seatbelt\x12\x0e\n\nNO_REQUEST\x10\x00\x12\t\n\x05SHOCK\x10\x01\x12\x0b\n\x07TENSION\x10\x02\"\xbb\x01\n\x0f\x44oorLockRequest\x12J\n\x10\x61ll_lock_request\x18\x01 \x01(\x0e\x32\x30.deeproute.canbus.DoorLockRequest.AllLockRequest\"\\\n\x0e\x41llLockRequest\x12\x13\n\x0fLOCK_NO_REQUEST\x10\x00\x12\x08\n\x04LOCK\x10\x01\x12\n\n\x06UNLOCK\x10\x02\x12\x1f\n\x1b\x44RIVE_UNLOCK_AND_OTHER_LOCK\x10\x03')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -35,4 +35,22 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_EPBREQUEST']._serialized_end=182
   _globals['_EPBREQUEST_REQUEST']._serialized_start=134
   _globals['_EPBREQUEST_REQUEST']._serialized_end=182
+  _globals['_GEARREQUEST']._serialized_start=185
+  _globals['_GEARREQUEST']._serialized_end=351
+  _globals['_GEARREQUEST_REQUEST']._serialized_start=256
+  _globals['_GEARREQUEST_REQUEST']._serialized_end=351
+  _globals['_WIPERREQUEST']._serialized_start=354
+  _globals['_WIPERREQUEST']._serialized_end=677
+  _globals['_WIPERREQUEST_REQUEST']._serialized_start=499
+  _globals['_WIPERREQUEST_REQUEST']._serialized_end=584
+  _globals['_WIPERREQUEST_WASHREQUEST']._serialized_start=586
+  _globals['_WIPERREQUEST_WASHREQUEST']._serialized_end=677
+  _globals['_SEATBELTREQUEST']._serialized_start=680
+  _globals['_SEATBELTREQUEST']._serialized_end=811
+  _globals['_SEATBELTREQUEST_SEATBELT']._serialized_start=761
+  _globals['_SEATBELTREQUEST_SEATBELT']._serialized_end=811
+  _globals['_DOORLOCKREQUEST']._serialized_start=814
+  _globals['_DOORLOCKREQUEST']._serialized_end=1001
+  _globals['_DOORLOCKREQUEST_ALLLOCKREQUEST']._serialized_start=909
+  _globals['_DOORLOCKREQUEST_ALLLOCKREQUEST']._serialized_end=1001
 # @@protoc_insertion_point(module_scope)

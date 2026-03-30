@@ -27,7 +27,7 @@ from lock_on_road import lock_on_road_pb2 as lock__on__road_dot_lock__on__road__
 from map import sd_map_pb2 as map_dot_sd__map__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n%lock_on_road/lock_on_road_debug.proto\x12\x16\x64\x65\x65proute.localization\x1a\x15\x63ommon/geometry.proto\x1a\x1flock_on_road/lock_on_road.proto\x1a\x10map/sd_map.proto\"\xeb\x02\n\x1dLockOnRoadSinglePoseDebugInfo\x12+\n\x08position\x18\x01 \x01(\x0b\x32\x19.deeproute.common.Point3D\x12/\n\x0c\x65uler_angles\x18\x02 \x01(\x0b\x32\x19.deeproute.common.Point3D\x12\x33\n\x10matched_position\x18\x03 \x01(\x0b\x32\x19.deeproute.common.Point3D\x12\x11\n\tgnss_type\x18\x04 \x01(\x05\x12\x16\n\x0eobs_lane_index\x18\x05 \x01(\x05\x12\x14\n\x0cobs_lane_sum\x18\x06 \x01(\x05\x12\x13\n\x0bras_lane_id\x18\x07 \x01(\x03\x12\x0c\n\x04time\x18\x08 \x01(\x03\x12?\n\x06status\x18\t \x01(\x0e\x32/.deeproute.localization.LockOnRoadResult.Status\x12\x12\n\nsd_link_id\x18\n \x01(\t\"\xe3\x03\n\x17LockOnRoadDdmmDebugInfo\x12\x0c\n\x04time\x18\x01 \x01(\x03\x12+\n\x08sd_links\x18\x02 \x01(\x0b\x32\x19.deeproute.sd_map.SdLinks\x12V\n\x11trajectory_points\x18\x03 \x03(\x0b\x32;.deeproute.localization.LockOnRoadDdmmDebugInfo.TimeAndPose\x12X\n\x10model_input_data\x18\x04 \x03(\x0b\x32>.deeproute.localization.LockOnRoadDdmmDebugInfo.ValueAndNumber\x12\x15\n\rmatched_links\x18\x05 \x03(\t\x12\x18\n\x10matched_dr_links\x18\x06 \x03(\t\x1ay\n\x0bTimeAndPose\x12\x0c\n\x04time\x18\x01 \x01(\x03\x12+\n\x08position\x18\x02 \x01(\x0b\x32\x19.deeproute.common.Point3D\x12/\n\x0c\x65uler_angles\x18\x03 \x01(\x0b\x32\x19.deeproute.common.Point3D\x1a/\n\x0eValueAndNumber\x12\r\n\x05value\x18\x01 \x01(\x02\x12\x0e\n\x06number\x18\x02 \x01(\x02\"e\n\x13LockOnRoadDebugInfo\x12N\n\x0fpose_debug_info\x18\x01 \x03(\x0b\x32\x35.deeproute.localization.LockOnRoadSinglePoseDebugInfo\"D\n\x19NavigationSourceReadyTime\x12\x13\n\x0bsource_name\x18\x01 \x01(\t\x12\x12\n\nready_time\x18\x02 \x01(\x04\"m\n#NavigationSourceReadyTimeComparison\x12\x46\n\x0bready_times\x18\x01 \x03(\x0b\x32\x31.deeproute.localization.NavigationSourceReadyTime')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n%lock_on_road/lock_on_road_debug.proto\x12\x16\x64\x65\x65proute.localization\x1a\x15\x63ommon/geometry.proto\x1a\x1flock_on_road/lock_on_road.proto\x1a\x10map/sd_map.proto\"\xd7\x02\n\x1dLockOnRoadSinglePoseDebugInfo\x12+\n\x08position\x18\x01 \x01(\x0b\x32\x19.deeproute.common.Point3D\x12/\n\x0c\x65uler_angles\x18\x02 \x01(\x0b\x32\x19.deeproute.common.Point3D\x12\x33\n\x10matched_position\x18\x03 \x01(\x0b\x32\x19.deeproute.common.Point3D\x12\x11\n\tgnss_type\x18\x04 \x01(\x05\x12\x16\n\x0eobs_lane_index\x18\x05 \x01(\x05\x12\x14\n\x0cobs_lane_sum\x18\x06 \x01(\x05\x12\x13\n\x0bras_lane_id\x18\x07 \x01(\x03\x12\x0c\n\x04time\x18\x08 \x01(\x03\x12?\n\x06status\x18\t \x01(\x0e\x32/.deeproute.localization.LockOnRoadResult.Status\"\xe3\x03\n\x17LockOnRoadDdmmDebugInfo\x12\x0c\n\x04time\x18\x01 \x01(\x03\x12+\n\x08sd_links\x18\x02 \x01(\x0b\x32\x19.deeproute.sd_map.SdLinks\x12V\n\x11trajectory_points\x18\x03 \x03(\x0b\x32;.deeproute.localization.LockOnRoadDdmmDebugInfo.TimeAndPose\x12X\n\x10model_input_data\x18\x04 \x03(\x0b\x32>.deeproute.localization.LockOnRoadDdmmDebugInfo.ValueAndNumber\x12\x15\n\rmatched_links\x18\x05 \x03(\t\x12\x18\n\x10matched_dr_links\x18\x06 \x03(\t\x1ay\n\x0bTimeAndPose\x12\x0c\n\x04time\x18\x01 \x01(\x03\x12+\n\x08position\x18\x02 \x01(\x0b\x32\x19.deeproute.common.Point3D\x12/\n\x0c\x65uler_angles\x18\x03 \x01(\x0b\x32\x19.deeproute.common.Point3D\x1a/\n\x0eValueAndNumber\x12\r\n\x05value\x18\x01 \x01(\x02\x12\x0e\n\x06number\x18\x02 \x01(\x02\"e\n\x13LockOnRoadDebugInfo\x12N\n\x0fpose_debug_info\x18\x01 \x03(\x0b\x32\x35.deeproute.localization.LockOnRoadSinglePoseDebugInfo')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -35,17 +35,13 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'lock_on_road.lock_on_road_d
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
   _globals['_LOCKONROADSINGLEPOSEDEBUGINFO']._serialized_start=140
-  _globals['_LOCKONROADSINGLEPOSEDEBUGINFO']._serialized_end=503
-  _globals['_LOCKONROADDDMMDEBUGINFO']._serialized_start=506
-  _globals['_LOCKONROADDDMMDEBUGINFO']._serialized_end=989
-  _globals['_LOCKONROADDDMMDEBUGINFO_TIMEANDPOSE']._serialized_start=819
-  _globals['_LOCKONROADDDMMDEBUGINFO_TIMEANDPOSE']._serialized_end=940
-  _globals['_LOCKONROADDDMMDEBUGINFO_VALUEANDNUMBER']._serialized_start=942
-  _globals['_LOCKONROADDDMMDEBUGINFO_VALUEANDNUMBER']._serialized_end=989
-  _globals['_LOCKONROADDEBUGINFO']._serialized_start=991
-  _globals['_LOCKONROADDEBUGINFO']._serialized_end=1092
-  _globals['_NAVIGATIONSOURCEREADYTIME']._serialized_start=1094
-  _globals['_NAVIGATIONSOURCEREADYTIME']._serialized_end=1162
-  _globals['_NAVIGATIONSOURCEREADYTIMECOMPARISON']._serialized_start=1164
-  _globals['_NAVIGATIONSOURCEREADYTIMECOMPARISON']._serialized_end=1273
+  _globals['_LOCKONROADSINGLEPOSEDEBUGINFO']._serialized_end=483
+  _globals['_LOCKONROADDDMMDEBUGINFO']._serialized_start=486
+  _globals['_LOCKONROADDDMMDEBUGINFO']._serialized_end=969
+  _globals['_LOCKONROADDDMMDEBUGINFO_TIMEANDPOSE']._serialized_start=799
+  _globals['_LOCKONROADDDMMDEBUGINFO_TIMEANDPOSE']._serialized_end=920
+  _globals['_LOCKONROADDDMMDEBUGINFO_VALUEANDNUMBER']._serialized_start=922
+  _globals['_LOCKONROADDDMMDEBUGINFO_VALUEANDNUMBER']._serialized_end=969
+  _globals['_LOCKONROADDEBUGINFO']._serialized_start=971
+  _globals['_LOCKONROADDEBUGINFO']._serialized_end=1072
 # @@protoc_insertion_point(module_scope)

@@ -1,0 +1,91 @@
+syntax = "proto2";
+
+package deeproute.esa;
+
+import "common/header.proto";
+
+// topic: /visualizer/esa_command
+message VisualizerCommand {
+  optional deeproute.common.Header header = 1;
+  optional int32 request_id = 2;
+  // priority 1, for esa function switch on off
+  optional VisualizerCommandFunction vis_cmd_function = 3;
+  // priority 2, for esa state machine tbd variables
+  optional VisualizerCommandStateMachine vis_cmd_state_machine = 4;
+  // priority 3, for esa internal parameters
+  optional VisualizerCommandInternalParam vis_cmd_internal_param = 5;
+}
+
+message VisualizerCommandFunction {
+  enum EsaEnableType {
+    UNKNOWN_SWITCH = 0;
+    ENABLE = 1;
+    DISABLE = 2;
+  }
+  enum EsaModeType {
+    UNKNOWN_MODE = 0;
+    CLOSELOOP = 1;
+    OPENLOOP = 2;
+  }
+  // 开启ESA功能
+  // esa_enable: default value: ENABLE = 1
+  optional EsaEnableType esa_enable = 1;
+  // ESA仅规划不控底盘
+  // esa_mode: default value: CLOSELOOP = 1
+  optional EsaModeType esa_mode = 2;
+}
+
+message VisualizerCommandStateMachine {
+  // ESA激活条件之车辆速度(km/h)
+  // state_active_lookup_speed: fixed size: 9
+  repeated double state_active_lookup_speed = 1;
+  // ESA激活条件之方向盘转角(degree)
+  // state_active_lookup_steer_angle: fixed size: 9
+  repeated double state_active_lookup_steer_angle = 2;
+  // ESA激活条件之方向盘转角速率(degree/s)
+  // state_active_lookup_steer_rate: fixed size: 9
+  repeated double state_active_lookup_steer_rate = 3;
+  // ESA激活条件之第III危险等级ttc(second)
+  optional double state_active_ttc = 4;
+  // ESA激活条件之静止物体最大速度(km/h)
+  optional double actv_cond_obj_standstil_max_speed = 5;
+  // ESA激活条件之静止物体最大横向速度(km/h)
+  optional double actv_cond_obj_max_lat_speed = 6;
+  // ESA退出条件之平行行驶最大角度(rad)
+  optional double state_quit_parallel_heading_diff = 11;
+  // ESA退出条件之本车实际行驶轨迹与目标行驶轨迹纵向偏差距离(m)
+  optional double exit_cond_traj_deviation_lon = 12;
+  // ESA退出条件之本车实际行驶轨迹与目标行驶轨迹横向偏差距离(m)
+  optional double exit_cond_traj_deviation_lat = 13;
+  // ESA抑制条件之车辆速度10-130(km/h)
+  repeated double inhib_cond_lookup_speed_1 = 21;
+  // ESA抑制条件之驾驶员操纵方向盘转角(deg)
+  repeated double inhib_cond_lookup_steer_angle = 22;
+  // ESA抑制条件之驾驶员操纵方向盘转角速率(deg/s)
+  repeated double inhib_cond_lookup_steer_rate = 23;
+  // ESA抑制条件之车辆速度50-130(km/h)
+  repeated double inhib_cond_lookup_speed_2 = 24;
+  // ESA抑制条件之激活时刻车辆横向加速度(m/s^2)
+  repeated double inhib_cond_lookup_lat_acc = 25;
+}
+
+message VisualizerCommandInternalParam {
+  optional uint32 path_sample_points_num_each_level = 1;
+  optional double path_sample_points_lat_dist_each_level = 2;
+  optional double path_cost_unknown_unmovable_dist_thres = 11;
+  optional double path_cost_others_dist_thres = 12;
+  // ESA规划限制之车辆速度(km/h)
+  // path_check_lookup_speed: fixed size: 14
+  repeated double path_check_lookup_speed = 21;
+  // ESA规划限制之方向盘转角(degree)
+  // state_active_lookup_steer_angle: fixed size: 14
+  repeated double path_check_lookup_steer_angle = 22;
+  // ESA规划限制之方向盘转角速率(degree/s)
+  // state_active_lookup_steer_rate: fixed size: 14
+  repeated double path_check_lookup_steer_rate = 23;
+}
+
+// topic: /visualizer/esa_command_rp
+message VisualizerCommandResponse {
+  optional int32 response_id = 1;
+}

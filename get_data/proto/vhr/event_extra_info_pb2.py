@@ -22,16 +22,15 @@ _runtime_version.ValidateProtobufRuntimeVersion(
 _sym_db = _symbol_database.Default()
 
 
-from common import module_event_pb2 as common_dot_module__event__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1avhr/event_extra_info.proto\x12\x06\x64r.vhr\x1a\x19\x63ommon/module_event.proto\"\xd3\x01\n\x0e\x45ventExtraInfo\x12\x0f\n\x07\x61\x64_code\x18\x01 \x01(\x04\x12\x12\n\nroad_class\x18\x02 \x01(\x05\x12\x11\n\troad_type\x18\x03 \x01(\x05\x12\x15\n\rdsm_sub_state\x18\x04 \x01(\x05\x12\x15\n\rdr_road_class\x18\x05 \x01(\x05\x12*\n\x08location\x18\x06 \x01(\x0b\x32\x18.dr.common.EventLocation\x12\x18\n\x10\x64r_road_priority\x18\x07 \x01(\r\x12\x15\n\rdr_admin_code\x18\x08 \x01(\x05')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1avhr/event_extra_info.proto\x12\x06\x64r.vhr\"H\n\x0e\x45ventExtraInfo\x12\x0f\n\x07\x61\x64_code\x18\x01 \x01(\x04\x12\x12\n\nroad_class\x18\x02 \x01(\x05\x12\x11\n\troad_type\x18\x03 \x01(\x05')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'vhr.event_extra_info_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_EVENTEXTRAINFO']._serialized_start=66
-  _globals['_EVENTEXTRAINFO']._serialized_end=277
+  _globals['_EVENTEXTRAINFO']._serialized_start=38
+  _globals['_EVENTEXTRAINFO']._serialized_end=110
 # @@protoc_insertion_point(module_scope)

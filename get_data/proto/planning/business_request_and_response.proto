@@ -1,0 +1,217 @@
+syntax = "proto2";
+
+package deeproute.planning;
+import "common/geometry.proto";
+import "common/pnc_point.proto";
+import "drdtu/dtu_command.proto";
+import "routing/routing.proto";
+
+enum Module {
+  ORDER = 0;
+  PLANNER = 1;
+}
+
+enum ErrorCode {
+  UNKNOWN = 0;
+  SUCCESS = 1;
+  FAILED = 2;
+}
+
+enum StopLineOperator {
+  CREATE_OP = 0;
+  REMOVE_OP = 1;
+}
+
+enum StopRequestType {
+  TEMPORARY_STOP = 0;
+  EMERGENCY_STOP = 1;
+  PULLOVER_STOP = 2;
+  DEFAULT_STOP = 3;
+}
+
+message StopRequest {
+  optional string request_id = 1;
+  optional StopRequestType stop_type = 2;
+  optional StopLineOperator op = 3;
+}
+
+enum PlannerRequestType {
+  BLOCK_ALL_ROAD = 0;
+  ABNORMAL_SINGLE_ROAD = 1;
+  UPSTREAM_DATA_FAILURE = 2;
+  OPEN_SPACE = 3;
+  DESTINATION_REACHED = 4;
+  BLOCK_NONE = 5;
+}
+
+// including human high level decision, input points, self test upstream data
+// abnormal or not
+message PlannerRequest {
+  optional string request_id = 1;
+  optional PlannerRequestType request_type = 2;
+  // for open space planner request type
+  repeated deeproute.dtu.command.Point parking_space_vertex = 3;
+  optional deeproute.dtu.command.Point parking_space_center_point = 4;
+  optional int32 parking_space_id = 5;
+  optional deeproute.dtu.command.Point parking_space_direct_point = 6;
+}
+
+message DrivingModeRequest {
+  optional string request_id = 1;
+  optional deeproute.dtu.command.DrivingMode driving_mode = 2;
+}
+
+message DestChangeRequest {
+  optional string request_id = 1;
+  optional deeproute.common.Point3D dest_pose = 2;
+}
+
+enum HumanResponseType {
+  WAITING = 0;
+  LEFT_DETOUR = 1;
+  RIGHT_DETOUR = 2;
+  TRACING = 3;
+  REMOTE_TAKE_OVER = 4;
+}
+
+message PlannerResponse {
+  optional PlannerRequest planner_request = 1;
+  optional bool in_action = 2 [default = false];
+  optional bool has_stopped = 3;
+}
+
+message OrderRequestFromHuman {
+  optional PlannerRequest planner_request = 1;
+  repeated deeproute.common.Point3D bypass_points = 2 [deprecated = true];
+  optional HumanResponseType human_response = 3;
+  repeated deeproute.common.Waypoint waypoints = 4;
+}
+
+message OrderRequestFromHumanResponse {
+  optional OrderRequestFromHuman order_request_from_human = 1;
+  optional bool has_finished = 2 [default = false];
+}
+
+message StopResponse {
+  optional StopRequest stop_request = 1;
+  optional bool is_stopped = 2;
+}
+
+enum SpeedLimitType {
+  RELATIVE_TO_MAP_SPEED_LIMIT = 0;
+  ABSOLUTE_SPEED_LIMIT = 1;
+}
+
+message DynamicSpeedLimitRequest {
+  optional string request_id = 1;
+  optional double value = 2;
+  optional SpeedLimitType limit_type = 3;
+}
+
+message DynamicSpeedLimitResponse {
+  optional string request_id = 1;
+  optional bool in_action = 2 [default = false];
+}
+
+message DrivingModeResponse {
+  optional string request_id = 1;
+  optional bool has_finished = 2 [default = false];
+}
+
+message DestChangeResponse {
+  optional string request_id = 1;
+  optional bool has_finished = 2 [default = false];
+}
+
+message DynamicFollowDistanceRequest {
+  optional string request_id = 1;
+  optional double dynamic_follow_time = 2 [default = -1.0];
+  optional double dynamic_follow_min_distance = 3;
+}
+
+message DynamicFollowDistanceResponse {
+  optional string request_id = 1;
+  optional bool in_action = 2 [default = false];
+}
+
+message ReRoutingRequest {
+  optional string request_id = 1;
+  oneof Type {
+    deeproute.routing.RoutingRequest routing_request = 2;
+    deeproute.routing.RoutingResponse routing_response = 3;
+  }
+}
+
+message ReRoutingResponse {
+  optional string request_id = 1;
+  optional deeproute.routing.RoutingResponse routing_response = 2;
+}
+
+// topic: /planner/business_request
+message BusinessRequest {
+  optional Module source = 1;
+  optional Module destination = 2;
+  optional ErrorCode err = 3;
+  oneof Task {
+    // from order module
+    StopRequest stop_request = 4;
+    // from order module
+    DynamicSpeedLimitRequest dynamic_speed_limit_request = 5;
+    // from planner module
+    PlannerRequest planner_request = 6;
+    // from order module
+    OrderRequestFromHuman order_request_from_human = 7;
+    // from order module
+    DrivingModeRequest driving_mode_request = 8;
+    // from order module
+    DestChangeRequest dest_change_request = 9;
+    // from order module
+    ReRoutingRequest rerouting_request = 10;
+    // from order module
+    DynamicFollowDistanceRequest dynamic_follow_distance_request = 11;
+  }
+}
+
+// topic: /planner/business_response
+message BusinessResponse {
+  optional Module source = 1;
+  optional Module destination = 2;
+  optional ErrorCode err = 3;
+  oneof TaskResponse {
+    // from planner module
+    StopResponse stop_response = 4;
+    // from planner module
+    DynamicSpeedLimitResponse dynamic_speed_limit_response = 5;
+    // from planner module
+    PlannerResponse planner_response = 6;
+    // from planner module
+    OrderRequestFromHumanResponse order_request_from_human_response = 7;
+    // from planner module
+    DrivingModeResponse driving_mode_response = 8;
+    // from planner module
+    DestChangeResponse dest_change_response = 9;
+    // from planner module
+    ReRoutingResponse rerouting_response = 10;
+    // from planner module
+    DynamicFollowDistanceResponse dynamic_follow_distance_response = 11;
+  }
+}
+
+enum BusinessStatus {
+  BUSSINESS_UNKNOWN = 0;
+  BUSSINESS_PULL_OVER = 1;
+  BUSSINESS_EMERGENCY_STOP = 2;
+  BUSSINESS_OUTLANE_NUDGE = 3;
+  BUSSINESS_CHANG_LANE = 4;
+  BUSSINESS_TRACE = 5;
+}
+
+// debug_info for developing, modify at any time
+message BussinessDebugInfo {
+  optional Module source = 1;
+  optional Module desitnation = 2;
+  optional uint64 time_stamp = 3;
+  optional string request_id = 4;
+  optional BusinessStatus business_status = 5;
+  optional string debug_log = 6;
+}

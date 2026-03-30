@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+import "drapi/local_config.proto";
+
+package dr.request;
+
+/********************************request请求定义*******************************/
+message Request {
+  string id = 1;
+  oneof requests {
+    LoadConfigRequest load_config = 2;
+  }
+}
+
+message Response {
+  string id = 1;
+  oneof response {
+    LoadConfigResponse load_config = 2;
+  }
+}
+
+message LoadConfigRequest {
+}
+
+message LoadConfigResponse {
+  dr.localconfig.UserConfig user_config = 1;
+}

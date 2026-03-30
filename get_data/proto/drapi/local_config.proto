@@ -1,0 +1,267 @@
+syntax = "proto3";
+
+import "drapi/navigation_map.proto";
+
+package dr.localconfig;
+
+// user config
+message UserConfig {
+  // common 1-50
+  DrivingStyle driving_style = 1;
+
+  // common internal use
+  SwitchStatus obstacle_collision_check =
+      26;  //碰撞风险检测，开关打开，正常上报碰撞风险，开关关闭，不再检测碰撞风险
+  SwitchStatus no_front_vehicle_speed_check =
+      27;  //没有前车时车辆速度检测，开关打开，速度低时抑制行车功能激活，开关关闭，对行车没有影响
+  SwitchStatus wrong_lane_check =
+      28;  //错过最晚并线点检测，开关打开，错路时降级ICA,开关关闭，不影响行车
+  SwitchStatus traffic_light_abnormal_check =
+      29;  //红绿灯异常检测，开关打开，红绿灯异常抑制退出行车，开关关闭，不影响行车
+  SwitchStatus will_out_odd_check =
+      30;  //即将驶出odd范围检测，开关打开，即将驶出odd范围时抑制nca,
+           //开关关闭，不影响nca
+  SwitchStatus dms_check =
+      31;  // dms激活检测，开关打开，dms未激活抑制行车，开关关闭，不影响行车
+  SwitchStatus vehicle_lat_dist_check =
+      32;  //车辆距离左右车道线距离检测，开关打开，距离过小抑制行车，开关关闭，不影响行车
+  SwitchStatus vehicle_angle_diff_check =
+      33;  //车辆航向和车道线夹角检测，开关打开，抑制行车，开关关闭，不影响行车
+  SwitchStatus speed_switch_fault_check =
+      34;  //速度调节开关故障时，开关打开，退出行车，开关关闭，不影响行车
+  SwitchStatus time_gap_switch_fault_check =
+      35;  //时距调调节开关故障时，开关打开，退出行车，开关关闭，不影响行车
+  SwitchStatus emergency_light_check =
+      36;  //开关打开，双闪开启退行车，开关关闭双闪开启不影响行车
+  SwitchStatus ota_check =
+      37;  //开关打开，升级和标定是退出行车，开关关闭，升级或者标定状态不影响行车
+  SwitchStatus esa_active_check =
+      38;  //开关打开，esa激活退出行车，开关关闭，esa激活不影响行车
+  SwitchStatus aeb_active_check =
+      39;  //开关打开，aeb激活退出行车，开关关闭，aeb激活不影响行车。默认和aeb是否控车开关一致
+  SwitchStatus cruise_cancel_exit_all =
+      40;  // 如果开关打开，前拨拨杆退出所有行车功能，否则逐级退出，默认开关打开
+  SwitchStatus demo_mode =
+      41;  // planning配置开关，开关打开planning进入demo模式，默认开关关闭
+  SwitchStatus traffic_light_attention =
+      42;  // planning配置开关，开关打开planning关注红绿灯信号，默认开关关闭
+  SwitchStatus camera_check = 43;     //是否检测摄像头异常，默认关
+  SwitchStatus lane_miss_latem = 44;  //车道线消失是否临退, 默认关
+  SwitchStatus lane_narrow_latem = 45;  //车道狭窄是否临退，默认关
+  SwitchStatus turnarround_roundabout_downgrade =
+      46;  //掉头-环岛是否降级开关,默认关(不降级)
+
+  ACCConfig acc_config = 51;
+  ICAConfig ica_config = 52;
+  NCAConfig nca_config = 53;
+  AVMConfig avm_config = 54;
+  LASConfig las_config = 55;
+  TJPConfig tjp_config = 56;
+  APAConfig apa_config = 57;
+  RPAConfig rpa_config = 58;
+  HUTConfig hut_config = 59;
+
+  SwitchStatus brake_light_fault_check =
+      100;  // 刹车灯故障时，开关打开，退出行车，开关关闭，不影响行车
+  SwitchStatus ip_error_check =
+      101;  // 仪表故障时，开关打开，退出行车，开关关闭，不影响行车
+  SwitchStatus vcu_error_check =
+      102;  // VCU故障时，开关打开，退出行车，开关关闭，不影响行车
+  SwitchStatus vcu_com_error_check =
+      103;  // VCU通讯故障时，开关打开，退出行车，开关关闭，不影响行车
+  SwitchStatus eps_lka_fault_check =
+      104;  // 转向系统故障时，开关打开，退出行车，开关关闭，不影响行车
+  SwitchStatus turn_signal_error_check =
+      105;  // 转向灯故障时,开关打开,nca降级lcc,开关关闭,不影响行车
+  SwitchStatus privacy_switch_check =
+      106;  // 隐私授权关闭时,开关打开,nca降级lcc,开关关闭,不影响行车
+  SwitchStatus gps_auth_switch_check =
+      107;  // 智驾定位关闭时,开关打开,nca降级lcc,开关关闭,不影响行车
+  SwitchStatus map_status_switch_check =
+      108;  // 导航地图关闭时,开关打开,nca降级lcc,开关关闭,不影响行车
+  SwitchStatus planning_failed_switch_check =
+      109;  // planning上报规划失败时，开关打开，ica
+            // nca临退，开关关闭，不影响行车
+}
+
+// common
+enum SwitchStatus {
+  SWITCH_STATUS_UNKNOWN = 0;
+  SWITCH_ON = 1;
+  SWITCH_OFF = 2;
+}
+
+enum DrivingStyle {
+  UNKNOWN_MODE = 0;
+  CASUAL_MODE = 1;
+  STANDARD_MODE = 2;
+  SPORT_MODE = 3;
+}
+
+enum NavigationMode {
+  UNKNOWN_NAVI_MODE = 0;
+  DR_NAVIMODE = 1;
+  AMAP_NAVIMODE = 2;
+}
+
+enum LaneChangeSnvty {
+  SNVTY_UNKNOWN = 0;
+  NORMAL_SENSITIVITY = 1;
+  HIGH_SENSITIVITY = 2;
+  LOW_SENSITIVITY = 3;
+}
+
+enum HandsOffTimeSet {
+  HANDSOFF_UNKNOWN = 0;
+  HANDSOFF_NORMAL = 1;
+  HANDSOFF_LONG = 2;
+}
+
+// ACC config
+message ACCConfig {
+  SwitchStatus enable_switch_status = 1;
+  SwitchStatus isl_switch_status = 2;       //智能限速开关
+  SwitchStatus tsr_warn_switch_status = 3;  //交通标识识别开关
+
+  // acc internal
+  SwitchStatus brake_detecter_switch_status = 20;
+}
+
+// ICA config
+message ICAConfig {
+  SwitchStatus enable_switch_status = 1;
+  SwitchStatus auto_upgrade_status = 2;
+  SwitchStatus pole_lane_change_switch = 3;  //拨杆变道开关，默认开
+  SwitchStatus alc_switch = 4;               //效率变道开关
+  LaneChangeSnvty lane_change_snvty = 5;     //变道灵敏度
+  SwitchStatus detour_switch = 6;            //借道避让开关
+
+  // ica internal
+  SwitchStatus hands_on_switch = 20;  //是否开启在环检测
+}
+
+// NCA config
+message NCAConfig {
+  SwitchStatus enable_switch_status = 1;
+  SpeedOffsetConfig speed_offset_config = 2;
+  SwitchStatus exceed_speed_limit_warning = 3;
+  NavigationMode navigation_mode = 4;
+  HandsOffTimeSet handsoff_timeset = 5;
+  NCAODDTypeLimitConfig odd_type_limit_config = 6;
+
+  // nca internal
+  NCAODDConfig odd_config = 20;
+}
+
+message NCAODDConfig {
+  //允许开启nca的道路类型集合
+  repeated navigation_map.RoadClass road_class_set = 1;
+}
+
+message SpeedOffsetConfig {
+  enum Type {
+    FIXED = 0;       //[-20,20]km/h
+    PERCENTAGE = 1;  //[-20,20]
+  }
+  Type type = 1;
+  int32 offset = 2;
+}
+
+// LAS config
+message LASConfig {
+  enum LasSwitch {
+    UNKNOWN_SWITCH = 0;
+    CLOSE_ALL = 1;
+    ONLY_OPEN_LDW = 2;
+    OPEN_ALL = 3;
+  }
+  enum MuteKeyConfig {
+    UNKNOWN_MUTE = 0;
+    MUTE_ALL = 1;
+    MUTE_ELK = 2;
+  }
+  LasSwitch las_switch = 1;
+  SwitchStatus gw_warning_switch = 2;
+  MuteKeyConfig mute_config = 3;
+  SwitchStatus pnc_lat_control_switch = 4;  // planning 横向控制开关
+}
+
+// AVM config
+message AVMConfig {
+  SwitchStatus low_speed_roation_activation = 1;     // 转向辅助全景开关
+  SwitchStatus car_body_transparent_activation = 2;  // 车辆透明开关
+  NarrowPathAndObstacleAssist assist_type = 3;  // 窄道和障碍物辅助开关
+  enum NarrowPathAndObstacleAssist {
+    UNKNOWN = 0;
+    DISABLE = 1;
+    NEARLY = 2;
+    MEDIUM = 3;
+    FAR = 4;
+  }
+  SwitchStatus pdc_active_avm_only_on_level_4 = 4;
+  AVMDrivingConfig avm_driving_config = 5;
+  SwitchStatus enable_debug = 1000;  // 显示调试信息
+  SwitchStatus only_show_ultrasonic_obstacle =
+      1001;  // 只显示超声雷达障碍物信息
+  SwitchStatus pdc_bev_enable = 1002;
+  enum AvmSpeedLimit {
+    SPEED_LIMIT_UNKNOWN = 0;
+    SPEED_LIMIT_15KM = 1;
+    SPEED_LIMIT_30KM = 2;
+  }
+  AvmSpeedLimit speed_limit = 1003;
+  enum AvmTurnMode {
+    TURN_MODE_UNKNOWN = 0;
+    TURN_MODE_OFF = 1;
+    TURN_MODE_CARD = 2;
+    TURN_MODE_FULL_SCREEN = 3;
+  }
+  AvmTurnMode avm_turn_mode = 1004;
+  SwitchStatus fpas_auto_mod = 1005;
+}
+
+// 行车AVM设置
+message AVMDrivingConfig {
+  enum AVMStyle {
+    UNKNOWN = 0;
+    FULL_SCREEN = 1;  // 全屏
+    FLOATING = 2;     // 浮窗
+  }
+  AVMStyle style = 1;
+  SwitchStatus turning_enable = 2;  // 转向是否开启AVM
+}
+
+// TJP config
+message TJPConfig {
+  SwitchStatus enable_switch_status = 1;
+}
+
+// APA config
+message APAConfig {
+  SwitchStatus fast_parking = 1;  // 快速泊车开关
+  SwitchStatus enable_apa = 2;    // APA开启开关，上电默认打开
+  SwitchStatus auto_parkout =
+      3;  // 自动泊出开关, GWM AutoPrkOutSwtSts, 默认打卡
+}
+
+// RPA config
+message RPAConfig {
+  SwitchStatus ignore_side_obstacle = 1;  // 忽略侧边障碍物
+}
+
+message HUTConfig {
+  SwitchStatus enable_hut = 1;
+  SwitchStatus enable_viz = 2;
+}
+
+// 侧盲区
+message CMSConfig {
+  SwitchStatus side_bsd_disp_sts = 1;
+}
+
+message NCAODDTypeLimitConfig {
+  SwitchStatus fixed_odd_passive = 1;      // 已弃用
+  SwitchStatus temporary_odd_passive = 2;  // 已弃用
+  SwitchStatus dynamic_static_odd = 3;
+  SwitchStatus roi_odd = 4;
+}

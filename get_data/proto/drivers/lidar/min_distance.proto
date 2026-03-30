@@ -1,0 +1,17 @@
+// topic: /sensors/lidar/min_distance
+
+syntax = "proto2";
+
+package deeproute.drivers.lidar;
+
+import "common/header.proto";
+
+message LidarMinDistance {
+  optional string lidar_id = 2;
+  optional double dist = 3;
+}
+
+message MinDist {
+  optional deeproute.common.Header header = 1;
+  repeated LidarMinDistance lidar_min_dist = 2;
+}

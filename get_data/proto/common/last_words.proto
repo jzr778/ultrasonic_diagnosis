@@ -1,0 +1,16 @@
+syntax = "proto2";
+
+package deeproute.common;
+
+message LastWords {
+  // Module name.
+  optional string module = 1;
+
+  // Suspect module name.
+  optional string suspect = 2;
+
+  // The timestamp of last words. In us.
+  optional int64 timestamp = 3;
+
+  optional string content = 4;
+}

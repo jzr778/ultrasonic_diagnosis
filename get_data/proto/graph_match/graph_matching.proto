@@ -1,0 +1,63 @@
+syntax = "proto2";
+
+package deeproute.graph_match;
+
+import "common/geometry.proto";
+
+message WayPointMatchingResult {
+  optional common.PointLLH way_point = 1;
+  optional uint64 matched_link_id = 2;
+  enum MatchingStatus {
+    NORMAL = 0;
+    MISMATCH = 1;
+  }
+  optional MatchingStatus matching_status = 3;
+  optional uint32 index = 4;
+}
+
+message AmapStepMatchingResult {
+  repeated WayPointMatchingResult way_point_matching_results = 1;
+}
+
+message SdmapLinkMatchInfo {
+  optional uint64 link_id = 1;
+  optional int32 amap_start_point_index = 2;
+  optional int32 amap_end_point_index = 3;
+}
+
+message SdmapLinkMatchingResult {
+  repeated uint64 link_ids = 1;
+
+  // deprecated
+  repeated common.PointLLH shape_points_of_source_link = 2;
+  repeated common.PointLLH shape_points_of_target_link = 3;
+
+  repeated SdmapLinkMatchInfo sdmap_link_match_info = 4;
+}
+
+message AmapGraphMatchingResult {
+  repeated AmapStepMatchingResult amap_step_matching_results = 1;
+  repeated SdmapLinkMatchingResult sdmap_link_matching_results = 2;
+  optional string sd_map_version = 3;
+}
+
+// if there is [1,4], means point[2] and point[3] not match,
+// we will show the polyline from point[1] to point[4].
+// index is begin from 0
+message MismatchSegmIndex {
+  optional uint32 start_index = 1;
+  optional uint32 end_index = 2;
+}
+
+message AmapLinkMatchInfo {
+  optional int32 link_index = 1 [deprecated = true];
+  optional int32 start_point_index = 2 [deprecated = true];
+  optional int32 end_point_index = 3 [deprecated = true];
+
+  optional int32 start_step_idx = 4;
+  optional int32 end_step_idx = 5;
+  optional int32 start_link_idx = 6;
+  optional int32 end_link_idx = 7;
+  optional int32 start_point_idx = 8;
+  optional int32 end_point_idx = 9;
+}

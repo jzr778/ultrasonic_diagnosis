@@ -1,0 +1,88 @@
+syntax = "proto3";
+
+import "drapi/base.proto";
+
+package dr.map;
+
+/*****************************感知地图实时数据*********************************/
+message RASMap {
+  repeated Lane lanes = 1;
+  repeated LaneBoundary boundary = 2;
+  repeated Area area = 3;
+  repeated RoadEdge edge = 4;
+  repeated StopLine stop_line = 5;
+  uint64 time_measurement = 7;
+  repeated dr.base.ParkingSpace parking_space = 8;
+}
+
+message LaneBoundary {
+  bool virtual = 1;
+  int32 id = 2;
+  enum Color {
+    NONE = 0;
+    YELLOW = 1;
+    WHITE = 2;
+    GREEN = 3;
+  };
+  enum Shape {
+    SHAPE_UNKNOWN = 0;
+    SOLID = 1;
+    DASH = 2;
+    DOUBLE_SOLID = 3;
+    DOUBLE_DASH = 4;
+    DOUBLE_LDASH_RSOLID = 5;  // from left to right
+    DOUBLE_LSOLID_RDASH = 6;  // from right to left
+  };
+  Color lane_boundary_color = 3;
+  Shape lane_boundary_shape = 4;
+  // 'boundary' represente the keypoints of the line.
+  dr.base.Polyline boundary = 5;
+  bool is_stable = 6;
+}
+
+message Lane {
+  bool virtual = 1;
+  int32 id = 2;
+  int32 left_boundary_id = 3;
+  int32 right_boundary_id = 4;
+  dr.base.Polyline centerline = 5;
+
+  // topology
+  repeated int32 predecessor_id = 6;
+  repeated int32 successor_id = 7;
+  int32 left_neighbor_id = 8;
+  bool is_left_neighbor_reverse = 9;
+  int32 right_neighbor_id = 10;
+  bool is_right_neighbor_reverse = 11;
+  bool is_ego_lane = 12;
+}
+
+message RoadEdge {
+  int32 id = 1;
+  dr.base.Polyline polyline = 2;
+}
+
+message Area {
+  int32 id = 1;
+  dr.base.Polygon polygon = 2;
+  enum Type {
+    TYPE_UNKNOWN = 0;
+    CROSSWALK = 1;
+    TOLL_STATION = 2;
+    CLEAR_ZONE = 3;
+  }
+  Type type = 3;
+}
+
+message StopLine {
+  int32 id = 1;
+  dr.base.Polyline polyline = 2;
+  repeated int32 overlap_id = 3;
+  enum Type {
+    TL = 0;
+    HOLD = 1;
+    STOP = 2;
+    YIELD = 3;
+  }
+  Type type = 4;
+}

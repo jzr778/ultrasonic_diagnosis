@@ -1,0 +1,73 @@
+syntax = "proto2";
+
+package deeproute.recorder;
+
+enum ChannelType {
+  /**
+   @~english not to supply channel type info
+   may auto fetch from church topo in the future
+   @~chinese 不提供ChannelType相关信息
+   未来可能通过church拓扑自动获取
+   **/
+  UNKNOWN = 0;
+
+  /**
+   ros1 topic
+   **/
+  ROS = 1;
+
+  /**
+   @~english shared memory channel from apollo cyber
+   @~chinese 来自cyber的共享内存topic，目前已弃用
+   deprecated, unsupported
+   **/
+  SHM = 2;
+
+  /**
+   @~english iceoryx topic, the next-gen transport of church
+   @~chinese iceoryx topic，church的下一代通信方式
+   **/
+  ICEORYX = 3;
+
+  /**
+   @~english fastdds (experimental)
+   @~chinese fastdds（实验性支持）不推荐使用
+   **/
+  FASTDDS = 4;
+
+  /**
+   @~english driveworks CGF
+   @~chinese driveworks CGF结点输出
+   unsupported
+   **/
+  DW_CGF = 5;
+}
+
+message Topic {
+  /**
+   @~english the topic string
+   @~chinese topic字符串
+   **/
+  optional string topic = 1;
+
+  /**
+   @~english size of ros1 input queue
+   @~chinese ros1输入队列的长度
+   **/
+  optional uint32 queue_size = 2;
+
+  /**
+   @~english the transport type
+   @~chinese 通信方式
+   **/
+  optional ChannelType channel_type = 3;
+}
+
+message TopicGroup {
+  /**
+   @~english all of topics
+   @~chinese 所有topic
+   **/
+  repeated Topic topics = 1;
+}
+

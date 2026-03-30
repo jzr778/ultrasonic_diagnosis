@@ -1,0 +1,89 @@
+syntax = "proto2";
+
+package dr.safety;
+
+import "common/module_event.proto";
+
+enum FaultLevel {
+  NORMAL_LEVEL = 0;
+  WARN_LEVEL = 1;
+  ERROR_LEVEL = 2;
+  FATAL_LEVEL = 3;
+}
+
+enum TaskType {
+  UNKNOWN_TASK = 0;
+  ACC = 1;
+  ICA = 2;
+  NCA = 3;
+  LDW = 4;
+  RDP = 5;
+  HMA = 6;
+  BSD = 7;
+  LCA = 8;
+  DOW = 9;
+  RCTA = 10;
+  RCW = 11;
+  RCTB = 12;
+  AVM = 13;
+  APA = 14;
+  VPA_ROUTING = 15;   // VPA 建图
+  VPA_LEARNING = 16;  // VPA 巡航
+  PDC = 17;
+  AEB = 18;
+  ELK = 19;
+  RADS = 20;
+  MEB = 21;
+  FCTA = 22;
+  FCTB = 23;
+  FCW = 24;
+  ESA = 25;
+  TSR = 26;
+  RPA = 27;
+  ILC = 28;
+  VPA_APA = 100;  // VPA 的APA阶段
+  VPA_MAP_SAVING = 101;  // VPA 的存图阶段
+}
+
+enum FailurePolicy {
+  FAILURE_POLICY_0 = 0; // do nothing
+  FAILURE_POLICY_1 = 1;
+  FAILURE_POLICY_2 = 2;
+  FAILURE_POLICY_3 = 3;
+  FAILURE_POLICY_4 = 4;
+  FAILURE_POLICY_5 = 5;
+  FAILURE_POLICY_6 = 6;
+  FAILURE_POLICY_7 = 7;
+  FAILURE_POLICY_8 = 8;
+  FAILURE_POLICY_9 = 9;
+  FAILURE_POLICY_20 = 20;
+  FAILURE_POLICY_21 = 21;
+  FAILURE_POLICY_30 = 30;
+  FAILURE_POLICY_31 = 31;
+  FAILURE_POLICY_40 = 40;
+  FAILURE_POLICY_50 = 50;
+}
+
+message TaskPolicy {
+  optional TaskType task_type = 1;
+  optional FailurePolicy failure_policy = 2;
+  repeated common.Event event = 3;
+}
+
+message SourceEvent {
+  optional common.Event event = 2;
+  oneof info {
+    string json_info = 5;
+    string serialized_proto_info = 6;
+  }
+  optional string alert_info = 7;
+  optional string suggestion_prompt = 8;
+  optional string fault_type = 9;
+  optional common.Module module = 10;
+  optional string event_uuid = 11;
+}
+
+message SafetyAnalysis {// topic: /safety/analysis
+  repeated SourceEvent source_event = 2;
+  repeated TaskPolicy task_policy = 3;
+}

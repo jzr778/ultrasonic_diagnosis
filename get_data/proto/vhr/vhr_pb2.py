@@ -24,15 +24,15 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rvhr/vhr.proto\x12\x06\x64r.vhr\"x\n\tVhrHeader\x12\x11\n\ttrip_name\x18\x01 \x01(\t\x12\x0e\n\x06\x63\x61r_id\x18\x02 \x01(\t\x12\x16\n\x0e\x64river_version\x18\x03 \x01(\t\x12\x12\n\noem_car_id\x18\x04 \x01(\t\x12\x1c\n\x14\x64river_short_version\x18\x05 \x01(\t* \n\x07VhrType\x12\n\n\x06HEADER\x10\x00\x12\t\n\x05\x45VENT\x10\x01')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rvhr/vhr.proto\x12\x06\x64r.vhr\"Z\n\tVhrHeader\x12\x11\n\ttrip_name\x18\x01 \x01(\t\x12\x0e\n\x06\x63\x61r_id\x18\x02 \x01(\t\x12\x16\n\x0e\x64river_version\x18\x03 \x01(\t\x12\x12\n\noem_car_id\x18\x04 \x01(\t* \n\x07VhrType\x12\n\n\x06HEADER\x10\x00\x12\t\n\x05\x45VENT\x10\x01')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'vhr.vhr_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_VHRTYPE']._serialized_start=147
-  _globals['_VHRTYPE']._serialized_end=179
+  _globals['_VHRTYPE']._serialized_start=117
+  _globals['_VHRTYPE']._serialized_end=149
   _globals['_VHRHEADER']._serialized_start=25
-  _globals['_VHRHEADER']._serialized_end=145
+  _globals['_VHRHEADER']._serialized_end=115
 # @@protoc_insertion_point(module_scope)

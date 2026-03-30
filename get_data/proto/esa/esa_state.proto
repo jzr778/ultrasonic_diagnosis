@@ -1,0 +1,30 @@
+syntax = "proto2";
+
+package deeproute.esa;
+
+import "common/header.proto";
+
+enum ESAState {
+  ESA_OFF = 0;
+  ESA_FAILURE = 1;
+  ESA_PASSIVE = 2;
+  ESA_STANDBY = 3;
+  ESA_ACTIVE = 4;
+}
+enum ESAAvoidanceSide {
+  UNKOWN_SIDE = 0;
+  LEFT_SIDE = 1;
+  RIGHT_SIDE = 2;
+}
+
+message StateInfo {
+  optional ESAState esa_state = 1;
+  optional ESAAvoidanceSide esa_avoidance_side = 2;
+}
+
+// topic: /esa/esa_state
+message StateWrapper {
+  optional deeproute.common.Header header = 1;
+  optional StateInfo state_info = 2;
+  optional int32 blc_msg_id = 3;  // for safety policy
+}

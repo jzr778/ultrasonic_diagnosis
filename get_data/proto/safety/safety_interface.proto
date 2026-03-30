@@ -1,0 +1,73 @@
+syntax = "proto3";
+
+package dr.safety;
+
+import "safety/safety_event.proto";
+
+message BoolValue {
+  bool value = 1;
+}
+
+enum ErrorCode {
+  SUCCESS = 0;
+  // common
+  INTERNEL_ERROR = 1 [ deprecated=true ];
+  METHOD_NOT_FOUND_ERROR = 2; // 功能未支持
+  PARAMETER_ERROR = 3;
+  // GetEvents method
+  EVENTS_NOT_EXIST_ERROR = 4;
+  INTERNAL_ERROR = 5;
+}
+
+message GetEvents {
+  int32 start_tm_sec = 1;
+  int32 end_tm_sec = 2;
+  // type
+  BoolValue dtc = 3; // empty: include dtc; true:only dtc; false: ignore dtc
+  BoolValue trace_log = 4; // empty: include trace_log
+  // modules
+  Modules choosed_modules = 5; // wrapper for 'dr.common.Module'
+  Events choosed_events = 6; // wrapper for 'dr.common.Event'
+}
+
+message GetEventsRp {
+  uint32 total_nums = 1;
+  uint32 start_index = 2;
+  repeated SafetyEvent event_infos = 3;
+}
+
+message SetSafetyPolicy {
+  bool enable_policy = 1;
+}
+
+message SetSafetyPolicyRp {
+  bool policy_enabled = 1;
+}
+
+message Request {  // topic: /safety/request
+  string id = 1; // required
+  int64 timestamp = 2; // ms
+  oneof rq {
+    GetEvents get_events = 3;
+    SetSafetyPolicy set_safety_policy = 4;
+  }
+}
+
+message Response {  // topic: /safety/Response
+  string id = 1;
+  ErrorCode code = 2;
+  oneof rp {
+    GetEventsRp get_events_rp = 3;
+    SetSafetyPolicyRp set_safety_policy_rp = 4;
+  }
+}
+
+message TrackingChain {
+  repeated int32 event_index = 1;
+}
+
+message EventStatus {// topic: /safety/events
+  int64 timestamp = 1;
+  repeated SafetyEvent event_infos = 2;
+  repeated TrackingChain event_chains = 3;
+}

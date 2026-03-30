@@ -24,17 +24,15 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1aprediction/intention.proto\x12\x14\x64\x65\x65proute.prediction\"\xdc\x01\n\tIntention\x12\x35\n\x0blane_change\x18\x01 \x01(\x0b\x32 .deeproute.prediction.LaneChange\x12\x15\n\rabnormal_prob\x18\x02 \x01(\x02\x12\x15\n\rcrossing_prob\x18\x03 \x01(\x02\x12\x17\n\x0f\x61ttention_score\x18\x04 \x01(\x02\x12 \n\x14object_decision_prob\x18\x05 \x01(\x02\x42\x02\x18\x01\x12\x15\n\nyield_prob\x18\x06 \x01(\x02:\x01\x30\x12\x18\n\rovertake_prob\x18\x07 \x01(\x02:\x01\x30\"7\n\nLaneChange\x12\x0c\n\x04keep\x18\x01 \x01(\x02\x12\x0c\n\x04left\x18\x02 \x01(\x02\x12\r\n\x05right\x18\x03 \x01(\x02')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1aprediction/intention.proto\x12\x14\x64\x65\x65proute.prediction\"p\n\tIntention\x12\x35\n\x0blane_change\x18\x01 \x01(\x0b\x32 .deeproute.prediction.LaneChange\x12\x15\n\rabnormal_prob\x18\x02 \x01(\x02\x12\x15\n\rcrossing_prob\x18\x03 \x01(\x02\"7\n\nLaneChange\x12\x0c\n\x04keep\x18\x01 \x01(\x02\x12\x0c\n\x04left\x18\x02 \x01(\x02\x12\r\n\x05right\x18\x03 \x01(\x02')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'prediction.intention_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_INTENTION'].fields_by_name['object_decision_prob']._loaded_options = None
-  _globals['_INTENTION'].fields_by_name['object_decision_prob']._serialized_options = b'\030\001'
-  _globals['_INTENTION']._serialized_start=53
-  _globals['_INTENTION']._serialized_end=273
-  _globals['_LANECHANGE']._serialized_start=275
-  _globals['_LANECHANGE']._serialized_end=330
+  _globals['_INTENTION']._serialized_start=52
+  _globals['_INTENTION']._serialized_end=164
+  _globals['_LANECHANGE']._serialized_start=166
+  _globals['_LANECHANGE']._serialized_end=221
 # @@protoc_insertion_point(module_scope)

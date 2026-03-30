@@ -1,0 +1,116 @@
+syntax = "proto3";
+
+package deeproute.app.base;
+
+enum ErrorCode {
+  SUCCESS = 0;
+  UNKNOWN_ERROR = 1;
+  NOT_READY = 2;
+  REPEATED_REQUEST = 3;
+  NETWORK_ERROR = 4;
+  NOT_ALLOWED = 5;
+  SERVER_ERROR = 6;
+  NOT_REGISTED = 7;
+  PASSWD_ERROR = 8;
+  LOCATION_ERROR = 9;
+  PARAMETER_ERROR = 10;
+  UNKNOWN_AREA = 11;
+  REQUEST_TIMEOUT = 12;
+  UNKNOWN_OPERATOR = 13;
+  PLANNING_FAILURE = 14;
+  CURVATURE_EXCEEDED = 15;  // FittingRoute rsp
+  VEHICLE_BUSY = 16;
+  ALREADY_LOGIN_OTHER_MACHEINE = 17;
+  TASK_NOT_EXIST = 18;
+}
+
+enum Operator {
+  UNKNOWN = 0;
+  DTU = 1;
+  DRRUN = 2;
+  VISUALIZER = 3;
+  SAFETY_APP = 4;
+  CANBUS = 5;
+}
+
+enum Direction {
+  DIRECTION_UNKNOWN = 0;
+  FORWARD = 1;
+  BACKWARD = 2;
+  LEFT = 3;
+  RIGHT = 4;
+}
+
+enum CoorSys {
+  COORSYS_UNKNOWN = 0;
+  COORSYS_HD = 1;
+  COORSYS_WGS84 = 2;
+  COORSYS_GCJ02 = 3;
+}
+
+enum PointType {
+  START = 0;
+  MID = 1;
+  END = 2;
+  LOADING = 3;
+  UNLOADING = 4;
+}
+
+message Position {
+  double x = 1;
+  double y = 2;
+  double z = 3;
+  double lon = 4;
+  double lat = 5;
+}
+
+message Position2D {
+  double x = 1;
+  double y = 2;
+}
+
+message AddressPoint {
+  Position point = 1;
+  string name = 2;
+  string id = 3;
+  int32 max_wait_time = 4;  // unit s,  -1: wait until next task, 0: not wait ,
+                            // other: wait max_wait_time
+  double heading = 5;
+  string name_en = 6;
+  CoorSys point_sys = 7;
+}
+
+message Tag {
+  uint32 id = 1;
+  string content = 2;
+}
+
+message RecommendRoute {
+  string route_id = 1;
+  string route_name = 2;
+  repeated deeproute.app.base.AddressPoint points = 3;
+  string route_name_eng = 4;
+  double duration = 5;
+  double distance = 6;
+  repeated Tag tags = 7;
+  int64 timestamp = 8;  // seconds
+}
+
+message Payload {
+  string type = 1;     // message name
+  bytes data = 2;      // message serialized data
+  string version = 3;  // optional
+}
+
+message PoiPoint {
+  string id = 1;
+  string name = 2;
+  Position point = 3;
+  int64 timestamp = 4;  // seconds
+}
+
+message AreaDescription {
+  string area = 1;
+  string description = 2;
+  string description_eng = 3;
+}

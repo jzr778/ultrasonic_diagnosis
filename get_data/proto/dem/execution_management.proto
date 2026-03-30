@@ -1,0 +1,38 @@
+syntax = "proto2";
+
+package deeproute.dem;
+
+import "dem/function_group_state.proto";
+import "dem/execution_process_state.proto";
+
+enum StateClientRequestType {
+  UNKNOWN = 0;
+  SET_STATE = 1;
+  GET_INIT_MACHINE_STATE = 2;
+  SET_PROCESS_STATE = 3;
+  GET_BUSINESS_FG_INITIAL_STATE = 4;
+}
+
+message StateClientRequest {
+  optional uint32 process_id = 1;
+  optional uint32 request_id = 2;
+  optional StateClientRequestType request_type = 3;
+  optional FunctionGroupState request_state = 4;
+  optional ExecutionProcessState process_state = 5;
+}
+
+message ExecutionClientRequest {
+  optional uint32 process_id = 1;
+  optional uint32 request_id = 2;
+  optional uint32 execution_state = 3;
+  optional uint32 dem_id = 4;
+  optional string execution_name = 5;
+}
+
+message ExecutionManagementResponse {
+  optional uint32 process_id = 1;
+  optional uint32 request_id = 2;
+  optional uint32 error_code = 3;
+  optional ExecutionsStartTime executions_start_time = 4;
+  optional BusinessFunctionGroupsState business_fgs_state = 5;
+}

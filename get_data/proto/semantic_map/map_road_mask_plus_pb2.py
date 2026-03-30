@@ -26,7 +26,7 @@ from common import geometry_pb2 as common_dot_geometry__pb2
 from semantic_map import map_overlap_pb2 as semantic__map_dot_map__overlap__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n%semantic_map/map_road_mask_plus.proto\x12\x0f\x64\x65\x65proute.hdmap\x1a\x15\x63ommon/geometry.proto\x1a\x1esemantic_map/map_overlap.proto\"\xb6\x01\n\x0cRoadMaskPlus\x12\n\n\x02id\x18\x01 \x01(\x05\x12*\n\x07polygon\x18\x02 \x01(\x0b\x32\x19.deeproute.common.Polygon\x12\r\n\x05layer\x18\x03 \x01(\x05\x12*\n\x08overlaps\x18\x04 \x03(\x0b\x32\x18.deeproute.hdmap.Overlap\x12\x15\n\ris_lane_close\x18\x05 \x01(\x08\x12\x1c\n\x14is_lane_construction\x18\x06 \x01(\x08')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n%semantic_map/map_road_mask_plus.proto\x12\x0f\x64\x65\x65proute.hdmap\x1a\x15\x63ommon/geometry.proto\x1a\x1esemantic_map/map_overlap.proto\"\x81\x01\n\x0cRoadMaskPlus\x12\n\n\x02id\x18\x01 \x01(\x05\x12*\n\x07polygon\x18\x02 \x01(\x0b\x32\x19.deeproute.common.Polygon\x12\r\n\x05layer\x18\x03 \x01(\x05\x12*\n\x08overlaps\x18\x04 \x03(\x0b\x32\x18.deeproute.hdmap.Overlap')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -34,5 +34,5 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'semantic_map.map_road_mask_
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
   _globals['_ROADMASKPLUS']._serialized_start=114
-  _globals['_ROADMASKPLUS']._serialized_end=296
+  _globals['_ROADMASKPLUS']._serialized_end=243
 # @@protoc_insertion_point(module_scope)

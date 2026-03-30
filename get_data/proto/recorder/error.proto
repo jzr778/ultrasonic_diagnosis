@@ -1,0 +1,50 @@
+syntax = "proto2";
+
+package deeproute.recorder;
+
+enum ErrorCode {
+  /**
+   @~english indicates there's no error
+   @~chinese 表示没有错误发生
+   **/
+  OK = 0;
+
+  /**
+   @~english requested data is out of OnlineRecorder's cache time range
+   @~chinese 请求的时间范围超过了OnlineRecorder的缓存限制
+   **/
+  RECORDER_ERROR_OUT_OF_RANGE = 15000;
+
+  /**
+   @~english IO error when writing data to file, details will be in msg
+   @~chinese 在向文件写入数据时发生了IO错误，ErrorStatus.msg会包含进一步的详细信息
+   **/
+  RECORDER_ERROR_IO = 15001;
+
+  /**
+   @~english the disk is full
+   @~chinese 磁盘已满
+   **/
+  RECORDER_ERROR_DISK_FULL = 15002;
+
+  /**
+   @~english one or more params in request is invalid
+   @~chinese 传入的一个或多个参数不符合规范
+   **/
+  RECORDER_ERROR_INVALID = 15003;
+}
+
+message ErrorStatus {
+  /**
+   @~english the error code
+   @~chinese 错误码
+   **/
+  optional ErrorCode error_code = 1 [default = OK];
+
+  /**
+   @~english contains further information about the error
+   @~chinese 包含错误的更多信息
+   **/
+  optional string msg = 2;
+}
+

@@ -1,0 +1,373 @@
+syntax = "proto2";
+
+package deeproute.drivers.radar;
+
+import "common/header.proto";
+
+// The following message definitions are based on the Continental Radar ARS408
+// Technical Document. Please refer to the document for more details.
+message RadarState {
+  enum OutputType {
+    OUTPUT_TYPE_NONE = 0;
+    OUTPUT_TYPE_OBJECTS = 1;
+    OUTPUT_TYPE_CLUSTERS = 2;
+    OUTPUT_TYPE_ERROR = 3;
+  }
+
+  enum RcsThreshold {
+    RCS_THRESHOLD_STANDARD = 0;
+    RCS_THRESHOLD_HIGH_SENSITIVITY = 1;
+    RCS_THRESHOLD_ERROR = 2;
+  }
+
+  enum ErrorState {
+    Normal = 0;
+    InnerError = 1;
+    ExternalError = 2;
+    Misalignment = 3;
+    SensorBlindnessDetected = 4;
+    ProductionMode = 5;
+    NotAvailable = 6;
+  }
+
+  enum CalibrationState {
+    NoCalibrated = 0;
+    CalibrationSuccess = 1;
+    CalibrationFailed = 2;
+    CalibrationInProcess = 3;
+  }
+  // radar installation location
+  enum SensorId {
+    SENSORID_UNKNOWN = 0;
+    SENSORID_FRONTRADAR = 1;
+    SENSORID_REARRADAR = 2;
+    SENSORID_FRONTLEFTRADAR = 3;
+    SENSORID_FRONTRIGHTRADAR = 4;
+    SENSORID_REARLEFTRADAR = 5;
+    SENSORID_REARRIGHTRADAR = 6;
+    SENSORID_RESERVE = 7;
+  }
+
+  enum RadarWorkStatus {
+    RADARWORKSTATUS_NOTACTIVE = 0;
+    RADARWORKSTATUS_ON = 1;
+    RADARWORKSTATUS_SYSERR1 = 2;
+    RADARWORKSTATUS_SYSERR2 = 3;
+    RADARWORKSTATUS_RESERVE = 4;
+  }
+
+  enum MotionRxState {
+    INPUT_OK = 0;
+    SPEED_MISSING = 1;
+    YAW_RATE_MISSING = 2;
+    SPEED_AND_YAW_RATE_MISSING = 3;
+  }
+
+  optional uint32 max_distance = 1;
+  optional uint32 radar_power = 2;
+  optional OutputType output_type = 3;
+  optional RcsThreshold rcs_threshold = 4;
+  optional bool send_quality = 5;
+  optional bool send_ext_info = 6;
+  optional uint32 motion_state = 7;
+  optional ErrorState error_state = 8;
+  optional CalibrationState calibration_state = 9;
+
+  // Sensor type and installation location
+  optional SensorId sensor_id = 10;
+  // Radar Blockage status
+  optional bool is_blockage = 11;
+  // Radar work status
+  optional RadarWorkStatus work_status = 12;
+  // The sensor was detected to be out-of-spec due to misalignment in
+  // elevation（Pitch）
+  optional bool alig_pitch_out_of_spec = 13;
+  // The sensor was detected to be out-of-spec due to misalignment in
+  // azimuth(Yaw)
+  optional bool alig_yaw_out_of_spec = 14;
+  // Time Synchronization Status
+  optional uint32 time_stamp_status = 15;
+  // Status of motion input signals
+  optional MotionRxState motion_rx_state = 16;
+}
+
+message ClusterListHeader {
+  optional int32 near = 1 [default = 0];
+  optional int32 far = 2 [default = 0];
+  optional int32 meas_counter = 3 [default = -1];
+  optional int32 interface_version = 4;
+}
+
+message ObjectListHeader {
+  optional int32 nof_objects = 1 [default = 0];
+  optional int32 meas_counter = 2 [default = -1];
+  optional int32 interface_version = 3;
+  optional int32 nof_roads = 4 [default = 0];
+  optional int32 obj_report_cnt = 5;
+  // unit us
+  optional int64 timestamp = 6;
+  // Time stamp used for manual compensate  (unit us)
+  optional int64 obj_time_latency = 7;
+  // the detected number of objects exceeded the number of max objects that can
+  // be transmitted
+  optional bool obj_object_down_sel = 8;
+}
+
+message HwRadarObs {
+  enum DynProp {
+    DYNPROP_STATIONARY = 0;
+    DYNPROP_MOVING = 1;
+    DYNPROP_STOPPED = 2;
+    DYNPROP_CROSSING = 3;
+    DYNPROP_UNKNOWN = 4;
+    DYNPROP_RESERVED = 5;
+  }
+  enum MeasState {
+    MEAS_STATE_INVALID = 0;
+    MEAS_STATE_NEW = 1;
+    MEAS_STATE_MEASURED = 2;
+    MEAS_STATE_PREDICTED = 3;
+  }
+  enum ObstacleClass {
+    OBSTACLE_CLASS_UNKNOWN = 0;
+    OBSTACLE_CLASS_CAR = 1;
+    OBSTACLE_CLASS_RESERVED_1 = 2;
+    OBSTACLE_CLASS_PEDESTRIAN = 3;
+    OBSTACLE_CLASS_MOTORCYCLE = 4;
+    OBSTACLE_CLASS_RESERVED_2 = 5;
+    OBSTACLE_CLASS_CYCLIST = 6;
+  }
+  optional deeproute.common.Header header = 1;
+  optional int32 id = 2;
+  optional int32 age = 3;
+  optional double longitude_dist = 4;
+  optional double lateral_dist = 5;
+  optional double longitude_vel = 6;
+  optional double lateral_vel = 7;
+  optional double longitude_acc = 8;
+  optional double lateral_acc = 9;
+  optional double lon_dist_std = 10;
+  optional double lat_dist_std = 11;
+  optional double lon_vel_std = 12;
+  optional double lat_vel_std = 13;
+  optional double lon_acc_std = 14;
+  optional double lat_acc_std = 15;
+  optional double oritation_angle = 16;
+  optional double length = 17;
+  optional double width = 18;
+  optional double rcs = 19;
+  optional double probexist = 20;
+  optional int32 confidence = 21;
+  optional int32 latency = 22;
+  optional DynProp dynprop = 23;
+  optional MeasState meas_state = 24;
+  optional ObstacleClass obstacle_class = 25;
+}
+
+message ContiRadarObs {
+  //                x axis  ^
+  //                        | longitude_dist
+  //                        |
+  //                        |
+  //                        |
+  //          lateral_dist  |
+  //          y axis        |
+  //        <----------------
+  //        ooooooooooooo   //radar front surface
+
+  optional deeproute.common.Header header = 1;
+  optional bool is_cluster = 2;    // 0 = track, 1 = cluster
+  optional int32 obstacle_id = 3;  // obstacle Id
+  // longitude distance to the radar; (+) = forward; unit = m
+  optional double longitude_dist = 4;
+  // lateral distance to the radar; (+) = left; unit = m
+  optional double lateral_dist = 5;
+  // longitude velocity to the radar; (+) = forward; unit = m/s
+  optional double longitude_vel = 6;
+  // lateral velocity to the radar; (+) = left; unit = m/s
+  optional double lateral_vel = 7;
+  // obstacle Radar Cross-Section; unit = dBsm
+  optional double rcs = 8;
+  enum DynProp {
+    DYNPROP_MOVING = 0;
+    DYNPROP_STATIONARY = 1;
+    DYNPROP_ONCOMING = 2;
+    DYNPROP_STATIONARY_CANDIDATE = 3;
+    DYNPROP_UNKNOWN = 4;
+    DYNPROP_CROSSING_STATIONARY = 5;
+    DYNPROP_CROSSING_MOVING = 6;
+    DYNPROP_STOPPED = 7;
+  }
+  // 0 = moving, 1 = stationary, 2 = oncoming, 3 = stationary candidate
+  // 4 = unknown, 5 = crossing stationary, 6 = crossing moving, 7 = stopped
+  optional DynProp dynprop = 9;
+  // longitude distance standard deviation to the radar; (+) = forward; unit = m
+  optional double longitude_dist_rms = 10;
+  // lateral distance standard deviation to the radar; (+) = left; unit = m
+  optional double lateral_dist_rms = 11;
+  // longitude velocity standard deviation to the radar; (+) = forward; unit =
+  // m/s
+  optional double longitude_vel_rms = 12;
+  // lateral velocity standard deviation to the radar; (+) = left; unit = m/s
+  optional double lateral_vel_rms = 13;
+  // obstacle probability of existence
+  optional double probexist = 14;
+  enum MeasState {
+    MEAS_STATE_DELETED = 0;
+    MEAS_STATE_NEW = 1;
+    MEAS_STATE_MEASURED = 2;
+    MEAS_STATE_PREDICTED = 3;
+    MEAS_STATE_DELETED_FOR_MERGE = 4;
+    MEAS_STATE_NEW_FROM_MERGE = 5;
+  }
+  // The following is only valid for the track object message
+  // 0 = deleted, 1 = new, 2 = measured, 3 = predicted, 4 = deleted for, 5 = new
+  // from merge
+  optional MeasState meas_state = 15;
+  // longitude acceleration to the radar; (+) = forward; unit = m/s2
+  optional double longitude_accel = 16;
+  // lateral acceleration to the radar; (+) = left; unit = m/s2
+  optional double lateral_accel = 17;
+  // orientation angle to the radar; (+) = counterclockwise; unit = degree
+  optional double oritation_angle = 18;
+  // longitude acceleration standard deviation to the radar; (+) = forward; unit
+  // = m/s2
+  optional double longitude_accel_rms = 19;
+  // lateral acceleration standard deviation to the radar; (+) = left; unit =
+  // m/s2
+  optional double lateral_accel_rms = 20;
+  // orientation angle standard deviation to the radar; (+) = counterclockwise;
+  // unit = degree
+  optional double oritation_angle_rms = 21;
+  optional double length = 22;  // obstacle length; unit = m
+  optional double width = 23;   // obstacle width; unit = m
+  enum ObstacleClass {
+    OBSTACLE_CLASS_POINT = 0;
+    OBSTACLE_CLASS_CAR = 1;
+    OBSTACLE_CLASS_TRUCK = 2;
+    OBSTACLE_CLASS_PEDESTRIAN = 3;
+    OBSTACLE_CLASS_MOTORCYCLE = 4;
+    OBSTACLE_CLASS_BICYCLE = 5;
+    OBSTACLE_CLASS_WIDE = 6;
+    OBSTACLE_CLASS_UNKNOWN = 7;
+  }
+  // 0: point; 1: car; 2: truck; 3: pedestrian; 4: motorcycle; 5: bicycle; 6:
+  // wide; 7: unknown
+  optional ObstacleClass obstacle_class = 24;
+}
+
+message HwRadarRoads {
+  optional deeproute.common.Header header = 1;
+  optional int32 id = 2;
+  optional double poly_coef_0 = 3;
+  optional double poly_coef_1 = 4;
+  optional double poly_coef_2 = 5;
+  optional double poly_coef_3 = 6;
+  optional int32 confidence = 7;
+  optional double start_point = 8;
+  optional double end_point = 9;
+}
+
+message RadarObs {
+  enum RadarType {
+    UNKOWN = 0;
+    CONTI_408 = 1;
+    HW_MRR_631 = 2;
+    HW_SRR_621 = 3;
+    DSV_SRR = 4;
+    DSV_MRR = 5;
+    CONTI_308 = 6;
+    CONTI_430 = 7;
+    BYD_SENSETECH_MRR = 8;
+    BYD_SENSETECH_SRR = 9;
+  }
+
+  // The movement type of the object
+  enum DynProp {
+    DYNPROP_STATIONARY = 0;
+    DYNPROP_MOVING = 1;
+    DYNPROP_STOPPED = 2;
+    DYNPROP_CROSSING = 3;
+    DYNPROP_ONCOMING = 4;
+    DYNPROP_UNKNOWN = 5;
+    DYNPROP_INVALID = 6;
+  }
+  // The measurement status of object
+  enum MeasState {
+    MEAS_STATE_NEW = 0;
+    MEAS_STATE_MEASURED = 1;
+    MEAS_STATE_PREDICTED = 2;
+    MEAS_STATE_UNKNOWN = 3;
+    MEAS_STATE_INVALID = 4;
+  }
+  // object type
+  enum ObstacleClass {
+    OBSTACLE_CLASS_PEDESTRIAN = 0;
+    OBSTACLE_CLASS_CYCLIST = 1;
+    OBSTACLE_CLASS_MOTORCYCLE = 2;
+    OBSTACLE_CLASS_CAR = 3;
+    OBSTACLE_CLASS_TRUCK = 4;
+    OBSTACLE_CLASS_UNKNOWN = 5;
+    OBSTACLE_CLASS_INVAILD = 6;
+  }
+
+  optional deeproute.common.Header header = 1;
+  // object id
+  optional int32 id = 2;
+  // object life cycles
+  optional int32 age = 3;
+  // object longitude distance  (+) = forward; (unit m)
+  optional double longitude_dist = 4;
+  // object lateral distance    (+) = left; (unit m)
+  optional double lateral_dist = 5;
+  // object longitude velocity  (+) = forward; (unit m/s)
+  optional double longitude_vel = 6;
+  // object lateral velocity  (+) = left; (unit m/s)
+  optional double lateral_vel = 7;
+  optional double longitude_acc = 8;
+  optional double lateral_acc = 9;
+  optional double lon_dist_std = 10;
+  optional double lat_dist_std = 11;
+  optional double lon_vel_std = 12;
+  optional double lat_vel_std = 13;
+  optional double lon_acc_std = 14;
+  optional double lat_acc_std = 15;
+
+  optional double oritation_angle = 16;
+  optional double oritation_angle_std = 17;
+
+  optional double length = 18;
+  optional double width = 19;
+  optional double height = 20;
+
+  optional double length_std = 21;
+  optional double width_std = 22;
+  optional double height_std = 23;
+
+  optional double rcs = 24;
+  // The probability of an object being an obstacle
+  optional double obstacle_prob = 25;
+  // Existence probability of object
+  optional int32 confidence = 26;
+  optional int32 latency = 27;
+  optional DynProp dynprop = 28;
+  optional MeasState meas_state = 29;
+  optional ObstacleClass obstacle_class = 30;
+  // relative or absolute >> true rel  ||  false abs
+  optional bool is_rel_speed = 31 [default = true];
+  optional RadarType radar_type = 32;
+}
+
+message Radar {
+  optional deeproute.common.Header header = 1;
+  //@C_Mark@1@;
+  repeated ContiRadarObs contiobs = 2;  // conti radar obstacle array
+  optional RadarState radar_state = 3;
+  optional ClusterListHeader cluster_list_status = 4;
+  optional ObjectListHeader object_list_status = 5;
+  //@C_Mark@1@;
+  repeated HwRadarObs hwobs = 6;
+  //@C_Mark@1@;
+  repeated HwRadarRoads hwroads = 7;
+  repeated RadarObs radar_obs = 8;
+}

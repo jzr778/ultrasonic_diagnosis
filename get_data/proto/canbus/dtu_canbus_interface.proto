@@ -1,0 +1,86 @@
+syntax = "proto2";
+
+package deeproute.canbus;
+
+import "common/vehicle_signal.proto";
+import "common/configs/vehicle_config.proto";
+import "canbus/byd_chassis_detail.proto";
+import "canbus/chassis_control_interface_type.proto";
+import "canbus/gwm_chassis_detail.proto";
+
+// topic: /dtu/dtu_to_canbus_request
+message DtuToCanbusRequest {
+  optional sfixed64 time_meas = 1;
+  optional string id = 2;
+  optional EpbRequest epb_request = 3;
+  optional deeproute.common.VehicleSignal signal = 4;
+  optional SeatbeltRequest seatbelt_request = 5;
+  optional WiperRequest wiper_request = 6;
+  optional DoorLockRequest door_lock_request = 7;
+  optional GearRequest gear_request = 8;
+  optional bool ads_sos_request = 9;
+  optional bool camera_timeout = 10;
+  optional bool ignore_control_gear_request = 11;
+  optional ChassisDetailsRequest chassis_details_request = 100;
+}
+
+// topic: /canbus/dtu_to_canbus_request_response
+message DtuToCanbusRequestResponse {
+  optional sfixed64 time_meas = 1;
+  optional string id = 2;
+  optional bool succeeded = 3 [default = false];
+}
+
+message ChassisDetailsRequest {
+  optional deeproute.common.VehicleBrand brand = 1;
+  oneof detail {
+    M5DetailsRequest m5 = 2;
+    MarDetailsRequest mar = 3;
+    M7DetailsRequest m7 = 4;
+    BydDetailsRequest byd = 5;
+    GwmDetailsRequest gwm = 6;
+  }
+}
+
+message M5DetailsRequest {
+}
+
+message M7DetailsRequest {
+}
+
+message MarDetailsRequest {
+}
+
+message BydDetailsRequest {
+  optional deeproute.canbus.byd.ADS_0x11E ads_0x11e = 1;
+}
+
+message GwmDetailsRequest {
+  optional HAP_FD1_15B hap_fd1_15b = 1;
+  optional HAP_FD2_274 hap_fd2_274 = 2;
+  optional HAP_FD6_289 hap_fd6_289 = 3;
+  optional HAP_FD3_298 hap_fd3_298 = 4;
+  optional HAP_FD7_29B hap_fd7_29b = 5;
+
+  optional ACC_FD1_143 acc_fd1_143 = 6;
+  optional ACC_FD2_2AB acc_fd2_2ab = 7;
+  optional ACC_FD3_2B4 acc_fd3_2b4 = 8;
+  optional ACC_FD4_2B8 acc_fd4_2b8 = 9;
+
+  optional IFC_FD1_12B ifc_fd1_12b = 10;
+  optional IFC_FD5_19F ifc_fd5_19f = 11;
+  optional IFC_FD6_222 ifc_fd6_222 = 12;
+  optional IFC_FD2_23D ifc_fd2_23d = 13;
+  optional IFC_FD4_240 ifc_fd4_240 = 14;
+  optional IFC_FD7_2A2 ifc_fd7_2a2 = 15;
+  optional IFC_FD3_2CF ifc_fd3_2cf = 16;
+
+  optional AEB_FD1_18B aeb_fd1_18b = 17;
+  optional AEB_FD2_227 aeb_fd2_227 = 18;
+
+  optional MDC_FD1_312 mdc_fd1_312 = 19;
+  optional CR_FD1_15E cr_fd1_15e = 20;
+  optional ADAS_AD1_470 adas_ad1_470 = 21;
+  optional RSDS_FD1_16F rsds_fd1_16f = 22;
+  optional RSDS_FD2_30A rsds_fd2_30a = 23;
+}

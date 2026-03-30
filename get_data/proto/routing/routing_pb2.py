@@ -22,15 +22,49 @@ _runtime_version.ValidateProtobufRuntimeVersion(
 _sym_db = _symbol_database.Default()
 
 
+from common import header_pb2 as common_dot_header__pb2
+from common import geometry_pb2 as common_dot_geometry__pb2
+from common import error_code_pb2 as common_dot_error__code__pb2
+from semantic_map import map_parking_space_pb2 as semantic__map_dot_map__parking__space__pb2
+from drdtu import dtu_data_pb2 as drdtu_dot_dtu__data__pb2
+from semantic_map import map_standby_area_pb2 as semantic__map_dot_map__standby__area__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x15routing/routing.proto\x12\x11\x64\x65\x65proute.routing*2\n\x0e\x43hangeLaneType\x12\x0b\n\x07\x46ORWARD\x10\x00\x12\x08\n\x04LEFT\x10\x01\x12\t\n\x05RIGHT\x10\x02')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x15routing/routing.proto\x12\x11\x64\x65\x65proute.routing\x1a\x13\x63ommon/header.proto\x1a\x15\x63ommon/geometry.proto\x1a\x17\x63ommon/error_code.proto\x1a$semantic_map/map_parking_space.proto\x1a\x14\x64rdtu/dtu_data.proto\x1a#semantic_map/map_standby_area.proto\"`\n\x0cLaneWaypoint\x12\n\n\x02id\x18\x01 \x01(\x05\x12\t\n\x01s\x18\x02 \x01(\x01\x12(\n\x04pose\x18\x03 \x01(\x0b\x32\x1a.deeproute.common.PointENU\x12\x0f\n\x07heading\x18\x04 \x01(\x01\"O\n\x0bLaneSegment\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x0f\n\x07start_s\x18\x02 \x01(\x02\x12\r\n\x05\x65nd_s\x18\x03 \x01(\x02\x12\x14\n\x0c\x61\x63\x63umulate_s\x18\x04 \x01(\x02\"k\n\rLaneSegmentXY\x12)\n\x05point\x18\x01 \x01(\x0b\x32\x1a.deeproute.common.PointENU\x12\x0f\n\x07heading\x18\x02 \x01(\x01\x12\x0f\n\x07start_s\x18\x03 \x01(\x02\x12\r\n\x05\x65nd_s\x18\x04 \x01(\x02\"\x93\x03\n\x0eRoutingRequest\x12(\n\x06header\x18\x01 \x01(\x0b\x32\x18.deeproute.common.Header\x12\x31\n\x08waypoint\x18\x02 \x03(\x0b\x32\x1f.deeproute.routing.LaneWaypoint\x12\x38\n\x10\x62lacklisted_lane\x18\x03 \x03(\x0b\x32\x1e.deeproute.routing.LaneSegment\x12\x18\n\x10\x62lacklisted_road\x18\x04 \x03(\t\x12\x17\n\tbroadcast\x18\x05 \x01(\x08:\x04true\x12\x34\n\rparking_space\x18\x06 \x01(\x0b\x32\x1d.deeproute.hdmap.ParkingSpace\x12=\n\x13\x62lacklisted_lane_xy\x18\x07 \x03(\x0b\x32 .deeproute.routing.LaneSegmentXY\x12\x0e\n\x06map_id\x18\x08 \x01(\t\x12\x32\n\x0cstandby_area\x18\t \x01(\x0b\x32\x1c.deeproute.hdmap.StandbyArea\"\x1f\n\x0bMeasurement\x12\x10\n\x08\x64istance\x18\x01 \x01(\x01\"\xa4\x01\n\x07Passage\x12/\n\x07segment\x18\x01 \x03(\x0b\x32\x1e.deeproute.routing.LaneSegment\x12\x10\n\x08\x63\x61n_exit\x18\x02 \x01(\x08\x12\x44\n\x10\x63hange_lane_type\x18\x03 \x01(\x0e\x32!.deeproute.routing.ChangeLaneType:\x07\x46ORWARD\x12\x10\n\x08priority\x18\x04 \x01(\x05\"F\n\x0bRoadSegment\x12\n\n\x02id\x18\x01 \x01(\t\x12+\n\x07passage\x18\x02 \x03(\x0b\x32\x1a.deeproute.routing.Passage\"I\n\x0b\x43\x65nterPoint\x12)\n\x05point\x18\x01 \x01(\x0b\x32\x1a.deeproute.common.PointENU\x12\x0f\n\x07lane_id\x18\x02 \x01(\x05\"\xb7\x03\n\x0fRoutingResponse\x12(\n\x06header\x18\x01 \x01(\x0b\x32\x18.deeproute.common.Header\x12,\n\x04road\x18\x02 \x03(\x0b\x32\x1e.deeproute.routing.RoadSegment\x12\x33\n\x0bmeasurement\x18\x03 \x01(\x0b\x32\x1e.deeproute.routing.Measurement\x12:\n\x0frouting_request\x18\x04 \x01(\x0b\x32!.deeproute.routing.RoutingRequest\x12\x13\n\x0bmap_version\x18\x05 \x01(\x0c\x12*\n\x06status\x18\x06 \x01(\x0b\x32\x1a.deeproute.common.StatusPb\x12\x34\n\x0c\x63\x65nterpoints\x18\x07 \x03(\x0b\x32\x1a.deeproute.common.PointENUB\x02\x18\x01\x12\x16\n\x0erouting_length\x18\x08 \x01(\x01\x12\x15\n\rrouting_index\x18\t \x01(\x05\x12\x35\n\rcenter_points\x18\n \x03(\x0b\x32\x1e.deeproute.routing.CenterPoint\"\x82\x01\n\x13RoutingResponseList\x12(\n\x06header\x18\x01 \x01(\x0b\x32\x18.deeproute.common.Header\x12\x41\n\x15routing_response_list\x18\x02 \x03(\x0b\x32\".deeproute.routing.RoutingResponse\"\xd1\x01\n\nRoutingCMD\x12\x0e\n\x06\x63md_id\x18\x01 \x01(\t\x12*\n\x06source\x18\x02 \x01(\x0e\x32\x1a.deeproute.dtu.data.Module\x12<\n\x0frouting_request\x18\x03 \x01(\x0b\x32!.deeproute.routing.RoutingRequestH\x00\x12>\n\x10routing_response\x18\x04 \x01(\x0b\x32\".deeproute.routing.RoutingResponseH\x00\x42\t\n\x07\x43ontent\"\xc2\x01\n\x0cRoutingCMDRP\x12\x0e\n\x06\x63md_id\x18\x01 \x01(\t\x12*\n\x06source\x18\x02 \x01(\x0e\x32\x1a.deeproute.dtu.data.Module\x12\x38\n\x0erouting_status\x18\x03 \x02(\x0e\x32 .deeproute.routing.RoutingStatus\x12<\n\x10routing_response\x18\x04 \x01(\x0b\x32\".deeproute.routing.RoutingResponse*2\n\x0e\x43hangeLaneType\x12\x0b\n\x07\x46ORWARD\x10\x00\x12\x08\n\x04LEFT\x10\x01\x12\t\n\x05RIGHT\x10\x02*k\n\rRoutingStatus\x12\x0b\n\x07SUCCESS\x10\x00\x12\x16\n\x12WAYPOINTS_INVALIED\x10\x01\x12\x1b\n\x17\x44\x45STINATION_UNREACHABLE\x10\x02\x12\x18\n\x14MAP_VERSION_MISMATCH\x10\x03')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'routing.routing_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_CHANGELANETYPE']._serialized_start=44
-  _globals['_CHANGELANETYPE']._serialized_end=94
+  _globals['_ROUTINGRESPONSE'].fields_by_name['centerpoints']._loaded_options = None
+  _globals['_ROUTINGRESPONSE'].fields_by_name['centerpoints']._serialized_options = b'\030\001'
+  _globals['_CHANGELANETYPE']._serialized_start=2235
+  _globals['_CHANGELANETYPE']._serialized_end=2285
+  _globals['_ROUTINGSTATUS']._serialized_start=2287
+  _globals['_ROUTINGSTATUS']._serialized_end=2394
+  _globals['_LANEWAYPOINT']._serialized_start=210
+  _globals['_LANEWAYPOINT']._serialized_end=306
+  _globals['_LANESEGMENT']._serialized_start=308
+  _globals['_LANESEGMENT']._serialized_end=387
+  _globals['_LANESEGMENTXY']._serialized_start=389
+  _globals['_LANESEGMENTXY']._serialized_end=496
+  _globals['_ROUTINGREQUEST']._serialized_start=499
+  _globals['_ROUTINGREQUEST']._serialized_end=902
+  _globals['_MEASUREMENT']._serialized_start=904
+  _globals['_MEASUREMENT']._serialized_end=935
+  _globals['_PASSAGE']._serialized_start=938
+  _globals['_PASSAGE']._serialized_end=1102
+  _globals['_ROADSEGMENT']._serialized_start=1104
+  _globals['_ROADSEGMENT']._serialized_end=1174
+  _globals['_CENTERPOINT']._serialized_start=1176
+  _globals['_CENTERPOINT']._serialized_end=1249
+  _globals['_ROUTINGRESPONSE']._serialized_start=1252
+  _globals['_ROUTINGRESPONSE']._serialized_end=1691
+  _globals['_ROUTINGRESPONSELIST']._serialized_start=1694
+  _globals['_ROUTINGRESPONSELIST']._serialized_end=1824
+  _globals['_ROUTINGCMD']._serialized_start=1827
+  _globals['_ROUTINGCMD']._serialized_end=2036
+  _globals['_ROUTINGCMDRP']._serialized_start=2039
+  _globals['_ROUTINGCMDRP']._serialized_end=2233
 # @@protoc_insertion_point(module_scope)

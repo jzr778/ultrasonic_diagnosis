@@ -1,0 +1,14 @@
+syntax = "proto2";
+
+package deeproute.trip;
+
+message TripStartEvent {
+  optional string trip_name = 1;
+  optional string driver_version = 2;
+  optional string start_timestamp_ns = 3;       // ns
+  optional string mcu_version = 4;
+  optional string switch_version = 5;
+  optional string soc_version = 6;
+  optional string cam_version = 7;
+  optional string package_version = 8;
+}

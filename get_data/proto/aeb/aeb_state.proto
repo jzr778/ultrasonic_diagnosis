@@ -1,0 +1,171 @@
+syntax = "proto2";
+
+package deeproute.aeb;
+import "aeb/visualizer_aeb_command.proto";
+import "esa/esa_state.proto";
+
+enum FCWState {
+  FCW_OFF = 0;
+  FCW_FAILURE = 1;
+  FCW_PASSIVE = 2;
+  FCW_ACTIVE = 3;
+  FCW_STANDBY = 4;
+}
+
+enum AEBState {
+  AEB_OFF = 0;
+  AEB_FAILURE = 1;
+  AEB_AWB_ACTIVE = 2;
+  AEB_ABP_ACTIVE = 3;
+  AEB_PASSIVE = 4;
+  AEB_ACTIVE = 5;
+  EBA_ACTIVE = 6;
+  STAND_STILL = 7;
+  AEB_STANDBY = 8;
+}
+
+enum FCTAState {
+  FCTA_OFF = 0;
+  FCTA_FAILURE = 1;
+  FCTA_PASSIVE = 2;
+  FCTA_ACTIVE = 3;
+  FCTA_STANDBY = 4;
+}
+
+enum FCTBState {
+  FCTB_OFF = 0;
+  FCTB_FAILURE = 1;
+  FCTB_PASSIVE = 2;
+  FCTB_ACTIVE = 3;
+  FCTB_STAND_STILL = 4;
+  FCTB_STANDBY = 5;
+}
+
+enum MEBState {
+  MEB_OFF = 0;
+  MEB_FAILURE = 1;
+  MEB_PASSIVE = 2;
+  MEB_ACTIVE = 3;
+  MEB_STAND_STILL = 4;
+  MEB_STANDBY = 5;
+}
+
+enum RCTBState {
+  RCTB_OFF = 0;
+  RCTB_FAILURE = 1;
+  RCTB_PASSIVE = 2;
+  RCTB_ACTIVE = 3;
+  RCTB_STAND_STILL = 4;
+  RCTB_STANDBY = 5;
+}
+
+enum RAEBState {
+  RAEB_OFF = 0;
+  RAEB_FAILURE = 1;
+  RAEB_PASSIVE = 2;
+  RAEB_ACTIVE = 3;
+  RAEB_STAND_STILL = 4;
+  RAEB_STANDBY = 5;
+}
+
+enum ABPState {
+  ABP_OFF = 0;
+  ABP_FAILURE = 1;
+  ABP_PASSIVE = 2;
+  ABP_ACTIVE = 3;
+  ABP_STANDBY = 4;
+}
+
+enum AWBState {
+  AWB_OFF = 0;
+  AWB_FAILURE = 1;
+  AWB_PASSIVE = 2;
+  AWB_ACTIVE = 3;
+  AWB_STANDBY = 4;
+}
+
+enum ClosestReason {
+  UNKNOWN = 0;
+  FCW = 1;
+  ABP = 2;
+  AWB = 3;
+  AEB = 4;
+  EBA = 5;
+  RAEB = 6;
+  RCTB = 7;
+  FCTB = 8;
+  MEB = 9;
+}
+
+message StateInfo {
+  optional FCWState fcw_state = 1;
+  optional AEBState aeb_state = 2;
+  optional FCTAState fcta_state = 3;
+  optional RAEBState raeb_state = 4;
+  optional RCTBState rctb_state = 5;
+  optional FCTBState fctb_state = 6;
+  optional MEBState meb_state = 7;
+  optional ABPState abp_state = 8;
+  optional AWBState awb_state = 9;
+  optional deeproute.esa.ESAState esa_state = 10;
+}
+
+message StateWrapper {
+  enum CrossingWarningStatus {
+    NONE = 0;
+    LEFT = 1;
+    RIGHT = 2;
+    BOTH = 3;
+  }
+  optional StateInfo state_info = 1;
+  optional string closest_obj_id = 2 [deprecated = true];
+  optional ClosestReason closest_reason = 3 [default = UNKNOWN];
+  optional int32 closest_obj_num_id = 4 [default = -1];
+  optional string fcw_inhibit_reason = 5;
+  optional string fcw_off_reason = 6;
+  optional string fcta_inhibit_reason = 7;
+  optional string fcta_off_reason = 8;
+  optional string awb_inhibit_reason = 9;
+  optional string awb_off_reason = 10;
+  optional string abp_inhibit_reason = 11;
+  optional string abp_off_reason = 12;
+  optional string aeb_inhibit_reason = 13;
+  optional string aeb_off_reason = 14;
+  optional string eba_inhibit_reason = 15;
+  optional string eba_off_reason = 16;
+  optional int32 closest_type = 17;
+  optional double closest_obj_length = 18;
+  optional double closest_obj_width = 19;
+  optional double closest_obj_lat_ttc = 20;
+  optional double closest_obj_speed = 21;
+  optional double closest_obj_rel_heading = 22;
+  optional double ttc_display = 23;
+  optional string closest_aeb_type = 24;
+  optional double closest_obj_accel = 25 [default = 0.0];
+  optional string raeb_off_reason = 26;
+  optional string raeb_inhibit_reason = 27;
+  optional string rctb_inhibit_reason = 28;
+  optional string rctb_off_reason = 29;
+  optional CrossingWarningStatus crossing_warning_status = 30 [default = NONE];
+  optional double closest_obj_lat_ttc_fcw = 31;
+  optional double ttc_fcw_display = 32;
+  optional double ttc_fcta_display = 33;
+  optional double ttc_rcta_display = 34;
+  optional double ttc_rctb_display = 35;
+  optional double closest_obj_dist = 36;
+  optional double closest_obj_confidence_score = 37;
+  optional double closest_obj_tracking_time = 38;
+  optional double closest_obj_overlap = 39;
+  optional int32 blc_msg_id = 40;
+  optional string display_reason = 100;
+  optional bool enable_cruise_speed_mode = 101 [default = false];
+  optional double cruise_speed_cmd = 102 [default = 5.56];
+  optional bool cruise_speed_mode_turn_on = 103 [default = false];
+  optional VisualizerCommand.AebEnableType aeb_enable_type = 104;
+  optional VisualizerCommand.LevelType aeb_level = 105;
+  optional VisualizerCommand.LevelType fcw_level = 106;
+  optional double lon_accel = 107;
+  optional double lat_accel = 108;
+  optional double front_wheel_angle = 109;
+  optional double front_wheel_rate = 110;
+}

@@ -1,0 +1,108 @@
+syntax = "proto2";
+
+package deeproute.drivers.camera.config;
+
+import "common/geometry.proto";
+import "drivers/calibration_type.proto";
+
+enum IOMethod {
+  IO_METHOD_UNKNOWN = 0;
+  IO_METHOD_READ = 1;
+  IO_METHOD_MMAP = 2;
+  IO_METHOD_USERPTR = 3;
+}
+
+enum OutputType {
+  YUYV = 0;
+  RGB = 1;
+}
+
+message Config {
+  optional string camera_dev = 1;
+  optional string frame_id = 2;
+  // v4l pixel format
+  optional string pixel_format = 3 [default = "yuyv"];
+  // mmap, userptr, read
+  optional IOMethod io_method = 4;
+  optional uint32 width = 5;
+  optional uint32 height = 6;
+  optional uint32 frame_rate = 7;
+  optional bool monochrome = 8 [default = false];
+
+  optional int32 brightness = 9 [default = -1];
+  optional int32 contrast = 10 [default = -1];
+  optional int32 saturation = 11 [default = -1];
+  optional int32 sharpness = 12 [default = -1];
+  optional int32 gain = 13 [default = -1];
+
+  optional bool auto_focus = 14 [default = false];
+  optional int32 focus = 15 [default = -1];
+  optional bool auto_exposure = 16 [default = true];
+  optional int32 exposure = 17 [default = 100];
+  optional bool auto_white_balance = 18 [default = true];
+  optional int32 white_balance = 19 [default = 4000];
+  optional uint32 bytes_per_pixel = 20 [default = 3];
+  optional uint32 trigger_internal = 21 [default = 0];
+  optional uint32 trigger_fps = 22 [default = 30];
+  optional string channel_name = 23;
+  // wait time when camera select timeout
+  optional uint32 device_wait_ms = 24 [default = 2000];
+  // camera select spin time
+  optional uint32 spin_rate = 25 [default = 200];
+  optional OutputType output_type = 26;
+
+  message CompressConfig {
+    optional string output_channel = 1;
+    optional uint32 image_pool_size = 2 [default = 20];
+  }
+  optional CompressConfig compress_conf = 27;
+
+  message Parameters {
+    message Extrinsic {
+      // https://confluence.deeproute.ai/pages/viewpage.action?pageId=70684860
+      optional deeproute.common.Transformation3 sensor_to_camera = 1;
+      optional deeproute.common.Transformation3 sensor_to_cam = 2;
+    }
+
+    message Intrinsic {
+      enum ModelType {
+        PINHOLE = 0;
+        KANNALA_BRANDT = 1;
+        MEI = 2;
+      }
+      optional int32 img_width = 1 [default = 1920];
+      optional int32 img_height = 2 [default = 1080];
+
+      // focal length
+      optional float f_x = 3;
+      optional float f_y = 4;
+
+      // origin point
+      optional float o_x = 5;
+      optional float o_y = 6;
+
+      // distortion
+      optional float k_1 = 7;
+      optional float k_2 = 8;
+      optional float k_3 = 9;
+      optional float k_4 = 10;
+      optional float p_1 = 11;
+      optional float p_2 = 12;
+      optional float xi = 13;
+      optional ModelType model_type = 14;
+      optional float rms = 15;
+    }
+    optional Extrinsic extrinsic = 1;
+    optional Intrinsic intrinsic = 2;
+    optional Intrinsic intrinsic_small = 3;
+  }
+
+  optional Parameters parameters = 28;
+  optional string serial_number = 29;
+  optional deeproute.common.Vector3 install_angle_error = 30;
+  optional CalibrationType calib_type = 31;
+}
+
+message Configs {
+  repeated Config config = 1;
+}
