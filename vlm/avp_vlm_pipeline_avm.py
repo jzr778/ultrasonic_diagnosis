@@ -140,11 +140,11 @@ def get_direction_from_position(target_x: int, target_y: int,
         return "左前方"
 
 
-# AVM 八方位 → 与超声主证据最相关的单路鱼眼（前/右/后/左）
+# AVM 八方位 → 单路鱼眼：panoramic_1 / panoramic_3 仅对应严格正前 / 正后；斜向走左右鱼眼。
 _AVM_DIRECTION_TO_YUYAN_CAM = {
     "正前方": "panoramic_1",
-    "左前方": "panoramic_1",
-    "右前方": "panoramic_1",
+    "左前方": "panoramic_4",
+    "右前方": "panoramic_2",
     "正右方": "panoramic_2",
     "右后方": "panoramic_2",
     "正后方": "panoramic_3",
