@@ -792,11 +792,11 @@ def _print_summary(logger, mode, total_tags, stats):
 
 
 if __name__ == "__main__":
-    import sys
-    sys.argv = [
-        "avp_vlm_pipeline_avm.py",
-        "--id-mapping", "/tmp/test_debug.json",
-        # "--mode", "draw",  # 调试鱼眼/绘图时先只跑 draw，避免走 VLM
-        "--model", "gemini-3-pro-preview",
-    ]
+    # import sys
+    # sys.argv = [
+    #     "avp_vlm_pipeline_avm.py",
+    #     "--id-mapping", "/tmp/test_debug.json",
+    #     # "--mode", "draw",  # 调试鱼眼/绘图时先只跑 draw，避免走 VLM
+    #     "--model", "gemini-3-pro-preview",
+    # ]
     main()
