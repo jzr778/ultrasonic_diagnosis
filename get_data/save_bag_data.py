@@ -41,6 +41,7 @@ _REQUIRED_JSON = (
     "pose.json",
     "plan.json",
 )
+_MIRROR_FOLD_CACHE = "mirror_fold_cache.json"
 
 
 def _timestamp_payload_complete(ts_dir, require_fisheye):
@@ -57,7 +58,7 @@ def _timestamp_payload_complete(ts_dir, require_fisheye):
     return True, None
 
 
-def save_data(tag_id, output_root=None, extract_fisheye=True):
+def save_data(tag_id, output_root=None, extract_fisheye=True, reader=None):
     if output_root is None:
         output_root = config.READ_DATA_DIR
 
@@ -65,7 +66,8 @@ def save_data(tag_id, output_root=None, extract_fisheye=True):
     os.makedirs(data_path, exist_ok=True)
 
     # ── 读取 bag ──
-    reader = BagReader(tag_id=tag_id)
+    if reader is None:
+        reader = BagReader(tag_id=tag_id)
 
     with open(os.path.join(data_path, 'meta_data.json'), 'w', encoding='utf-8') as f:
         json.dump(reader.meta_data, f, ensure_ascii=False, indent=2)
@@ -99,6 +101,10 @@ def save_data(tag_id, output_root=None, extract_fisheye=True):
 
     # ── 提取超声波相关 bag 数据 ──
     reader.scan_ultrasonic_events()
+    mirror_summary = reader.get_mirror_fold_summary()
+    with open(os.path.join(data_path, _MIRROR_FOLD_CACHE), 'w', encoding='utf-8') as f:
+        json.dump(mirror_summary, f, ensure_ascii=False, indent=2)
+    print(_MIRROR_FOLD_CACHE)
 
     if not reader.perception_time_list:
         print(f"  tag_id={tag_id} 无超声波事件，跳过 bag 数据提取")

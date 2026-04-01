@@ -161,52 +161,17 @@ def _nearest_mirror_open_sorted(candidates, t_us, max_skew_us):
     return candidates[best_i][1]
 
 
-def _collect_rear_view_mirror_timeline(light_bags, topic, perception_time_list=None):
-    """[(ts_us, mirrors_all_open), ...]，ts_us 升序。自 Light bag 读 ``CAR_STATE_TOPIC``（CarInfo）。
-
-    每条消息用 ``_car_info_timestamp_us`` 作 ``ts_car``，配合 ``misc.rear_view_mirror`` 得到
-    候选 ``(ts_car, open_ok)``。若提供 ``perception_time_list``（超声 ``time_measurement``，
-    纳秒），与 ``ts_car``（微秒）比对时先做 ``per_t // 1000``；输出时间线结点仍为 **原始**
-    ``per_t`` 作 key。否则退化为按 CarInfo 采样时间密排。
-    """
-    if CarInfo is None:
-        if topic:
-            print(
-                "    [INFO] CarInfo（canbus.car_info_pb2）未导入，"
-                "跳过后视镜折叠过滤"
-            )
-        return [], []
-    if not topic:
-        return [], []
-    candidates = []
-    n_msg = n_parse_err = n_no_ts = n_mirror_empty = 0
-    for light_bag in light_bags:
-        try:
-            with DpBag(bag=light_bag) as bag:
-                for _, msg, meta in bag.read_messages(
-                    topics=[topic],
-                    dpbag_name=light_bag,
-                    force_get_data_by_raw=True,
-                ):
-                    n_msg += 1
-                    obj = CarInfo()
-                    raw_msg = strip_header(msg.data)
-                    try:
-                        obj.ParseFromString(raw_msg)
-                    except Exception:
-                        n_parse_err += 1
-                        continue
-                    ts_car = _car_info_timestamp_us(obj, meta)
-                    if ts_car is None:
-                        n_no_ts += 1
-                        continue
-                    open_ok = _misc_rear_view_mirror_all_open(obj)
-                    if open_ok is None:
-                        n_mirror_empty += 1
-                        continue
-                    candidates.append((ts_car, open_ok))
-        except Exception as e:
-            print(f"      [WARN] {topic}（CarInfo）读取跳过 {light_bag}: {e}")
+def _rear_view_mirror_timeline_from_candidates(
+    candidates,
+    topic,
+    perception_time_list=None,
+    *,
+    n_msg=0,
+    n_parse_err=0,
+    n_no_ts=0,
+    n_mirror_empty=0,
+):
+    """将 CarInfo 候选 ``[(ts_us, open_ok), ...]`` 对齐为后视镜时间线。"""
     if not candidates:
         if n_msg == 0:
             print(
@@ -255,44 +220,76 @@ def _collect_rear_view_mirror_timeline(light_bags, topic, perception_time_list=N
     return tss, oks
 
 
+def _collect_rear_view_mirror_timeline(light_bags, topic, perception_time_list=None):
+    """[(ts_us, mirrors_all_open), ...]，ts_us 升序。自 Light bag 读 ``CAR_STATE_TOPIC``（CarInfo）。"""
+    if CarInfo is None:
+        if topic:
+            print(
+                "    [INFO] CarInfo（canbus.car_info_pb2）未导入，"
+                "跳过后视镜折叠过滤"
+            )
+        return [], []
+    if not topic:
+        return [], []
+    candidates = []
+    n_msg = n_parse_err = n_no_ts = n_mirror_empty = 0
+    for light_bag in light_bags:
+        try:
+            with DpBag(bag=light_bag) as bag:
+                for _, msg, meta in bag.read_messages(
+                    topics=[topic],
+                    dpbag_name=light_bag,
+                    force_get_data_by_raw=True,
+                ):
+                    n_msg += 1
+                    obj = CarInfo()
+                    raw_msg = strip_header(msg.data)
+                    try:
+                        obj.ParseFromString(raw_msg)
+                    except Exception:
+                        n_parse_err += 1
+                        continue
+                    ts_car = _car_info_timestamp_us(obj, meta)
+                    if ts_car is None:
+                        n_no_ts += 1
+                        continue
+                    open_ok = _misc_rear_view_mirror_all_open(obj)
+                    if open_ok is None:
+                        n_mirror_empty += 1
+                        continue
+                    candidates.append((ts_car, open_ok))
+        except Exception as e:
+            print(f"      [WARN] {topic}（CarInfo）读取跳过 {light_bag}: {e}")
+    return _rear_view_mirror_timeline_from_candidates(
+        candidates,
+        topic,
+        perception_time_list,
+        n_msg=n_msg,
+        n_parse_err=n_parse_err,
+        n_no_ts=n_no_ts,
+        n_mirror_empty=n_mirror_empty,
+    )
+
+
 def bag_name_to_config_prefix(bag_name):
     """与 offline_avm config 目录名一致：basename 去扩展名段（取首段）。"""
     return os.path.basename(bag_name).split(".")[0]
 
 
 def avm_skip_mirror_fold_info(tag_ids):
-    """用于 Pipeline：哪些 tag 在至少一个超声波事件时刻被 CarInfo（CAR_STATE_TOPIC）判为后视镜折叠。
-
-    与同 CarInfo 逻辑 as extract_nearest_images；无时间线或时刻上为 None 则不拦截。
-
-    Returns:
-        (folded_tag_ids: set[int], folded_heavy_prefixes: set[str])
-    """
-    topic = getattr(config, "CAR_STATE_TOPIC", "") or ""
+    """用于 Pipeline：哪些 tag 在至少一个超声波事件时刻被 CarInfo（CAR_STATE_TOPIC）判为后视镜折叠。"""
     folded_tags = set()
     folded_prefixes = set()
     for tag_id in tag_ids:
         tid = int(tag_id)
         reader = BagReader(tag_id=tid)
         reader.scan_ultrasonic_events()
-        prefixes = {bag_name_to_config_prefix(b) for b in reader.event_heavy_bags}
         if not reader.perception_time_list:
             continue
-        mirror_ts, mirror_open = _collect_rear_view_mirror_timeline(
-            reader.event_light_bags, topic, reader.perception_time_list
-        )
-        if not mirror_ts:
-            continue
-        evt_mirror = {int(t): ok for t, ok in zip(mirror_ts, mirror_open)}
-        skip = False
-        for per_t in reader.perception_time_list:
-            mir = evt_mirror.get(int(per_t))
-            if mir is False:
-                skip = True
-                break
-        if skip:
+        summary = reader.get_mirror_fold_summary()
+        if summary.get("folded"):
             folded_tags.add(tid)
-            folded_prefixes |= prefixes
+            folded_prefixes |= set(summary.get("folded_heavy_prefixes") or [])
     return folded_tags, folded_prefixes
 
 
@@ -319,6 +316,14 @@ class BagReader:
         self.chaosheng_results = {}
         self.event_light_bags = []
         self.event_heavy_bags = []
+        self._ultrasonic_scanned = False
+        self._light_payloads_scanned = False
+        self._nearest_images_cached = None
+        self._obstacle_results_cached = None
+        self._pose_results_cached = None
+        self._planning_results_cached = None
+        self._mirror_timeline_cache = ([], [])
+        self._event_mirror_open_cache = {}
 
     # ──────────────────────────────────────────────────────────
     #  超声波事件扫描（Light bag）
@@ -330,6 +335,8 @@ class BagReader:
         返回 (perception_time_list, chaosheng_results)
         同时填充 self.event_light_bags / self.event_heavy_bags。
         """
+        if self._ultrasonic_scanned:
+            return self.perception_time_list, self.chaosheng_results
         for bag_name in self.all_light_bags:
             if is_p01t_vehicle_bag(bag_name):
                 print(f"    [SKIP] P01T 车型 bag，跳过: {os.path.basename(bag_name)}")
@@ -365,7 +372,155 @@ class BagReader:
         self.event_heavy_bags = sorted(
             b.replace("Light", "Heavy") for b in self.event_light_bags
         )
+        self._ultrasonic_scanned = True
         return self.perception_time_list, self.chaosheng_results
+
+    def _ensure_light_payloads_scanned(self):
+        """对 event_light_bags 做一次多 topic 合并扫描，复用 obstacle/pose/planning/mirror。"""
+        if self._light_payloads_scanned:
+            return
+        self.scan_ultrasonic_events()
+
+        obstacle_results = {t: {} for t in self.perception_time_list}
+        obstacle_min_diffs = {t: float('inf') for t in self.perception_time_list}
+        pose_results = {t: {} for t in self.perception_time_list}
+        pose_min_diffs = {t: float('inf') for t in self.perception_time_list}
+        planning_results = {t: {} for t in self.perception_time_list}
+        planning_min_diffs = {t: float('inf') for t in self.perception_time_list}
+
+        mirror_topic = getattr(config, "CAR_STATE_TOPIC", "") or ""
+        topics = [config.OBSTACLE_TOPIC, config.POSE_TOPIC, config.PLANNING_TOPIC]
+        if CarInfo is not None and mirror_topic:
+            topics.append(mirror_topic)
+        mirror_candidates = []
+        n_msg = n_parse_err = n_no_ts = n_mirror_empty = 0
+
+        for bag_name in self.event_light_bags:
+            try:
+                with DpBag(bag=bag_name) as bag:
+                    for topic, msg, meta in bag.read_messages(
+                        topics=topics,
+                        dpbag_name=bag_name,
+                        force_get_data_by_raw=True,
+                    ):
+                        raw_msg = strip_header(msg.data)
+
+                        if topic == config.OBSTACLE_TOPIC:
+                            obj = PerceptionObstacles()
+                            obj.ParseFromString(raw_msg)
+                            t = obj.time_measurement
+                            data_list = None
+                            for evt_t in self.perception_time_list:
+                                diff = abs(t - evt_t)
+                                if diff < obstacle_min_diffs[evt_t]:
+                                    if data_list is None:
+                                        data_list = [
+                                            MessageToDict(item) if hasattr(item, 'DESCRIPTOR') else item
+                                            for item in obj.perception_obstacle
+                                        ]
+                                    obstacle_min_diffs[evt_t] = diff
+                                    obstacle_results[evt_t] = {
+                                        'obstacle': data_list,
+                                        'time_diff': diff,
+                                    }
+                            continue
+
+                        if topic == config.POSE_TOPIC:
+                            obj = Ins()
+                            obj.ParseFromString(raw_msg)
+                            t = obj.measurement_time
+                            pos = euler = None
+                            for evt_t in self.perception_time_list:
+                                diff = abs(t - evt_t)
+                                if diff < pose_min_diffs[evt_t]:
+                                    if pos is None:
+                                        pos = obj.position
+                                        euler = obj.euler_angles
+                                    pose_min_diffs[evt_t] = diff
+                                    pose_results[evt_t] = {
+                                        'position': [pos.x, pos.y, pos.z],
+                                        'euler_angles': [euler.x, euler.y, euler.z],
+                                        'time_diff': diff,
+                                    }
+                            continue
+
+                        if topic == config.PLANNING_TOPIC:
+                            obj = ADCTrajectory()
+                            obj.ParseFromString(raw_msg)
+                            t = obj.header.timestamp_sec * 1e6
+                            traj_points = None
+                            for evt_t in self.perception_time_list:
+                                diff = abs(t - evt_t)
+                                if diff < planning_min_diffs[evt_t]:
+                                    if traj_points is None:
+                                        traj_points = [
+                                            {
+                                                'relative_time': pt.relative_time,
+                                                'x': pt.path_point.x,
+                                                'y': pt.path_point.y,
+                                            }
+                                            for pt in obj.trajectory_point
+                                        ]
+                                    planning_min_diffs[evt_t] = diff
+                                    planning_results[evt_t] = traj_points
+                            continue
+
+                        if topic == mirror_topic and CarInfo is not None:
+                            n_msg += 1
+                            obj = CarInfo()
+                            try:
+                                obj.ParseFromString(raw_msg)
+                            except Exception:
+                                n_parse_err += 1
+                                continue
+                            ts_car = _car_info_timestamp_us(obj, meta)
+                            if ts_car is None:
+                                n_no_ts += 1
+                                continue
+                            open_ok = _misc_rear_view_mirror_all_open(obj)
+                            if open_ok is None:
+                                n_mirror_empty += 1
+                                continue
+                            mirror_candidates.append((ts_car, open_ok))
+            except Exception as e:
+                print(f"    [WARN] 跳过 {bag_name} (light payloads): {e}")
+
+        mirror_ts, mirror_open = _rear_view_mirror_timeline_from_candidates(
+            mirror_candidates,
+            mirror_topic,
+            self.perception_time_list,
+            n_msg=n_msg,
+            n_parse_err=n_parse_err,
+            n_no_ts=n_no_ts,
+            n_mirror_empty=n_mirror_empty,
+        )
+        self._mirror_timeline_cache = (mirror_ts, mirror_open)
+        self._event_mirror_open_cache = {
+            int(t): ok for t, ok in zip(mirror_ts, mirror_open)
+        }
+        self._obstacle_results_cached = obstacle_results
+        self._pose_results_cached = pose_results
+        self._planning_results_cached = planning_results
+        self._light_payloads_scanned = True
+
+    def get_mirror_fold_summary(self):
+        """返回当前 tag 的后视镜折叠摘要，供落盘缓存 / pipeline 复用。"""
+        self._ensure_light_payloads_scanned()
+        prefixes = sorted({bag_name_to_config_prefix(b) for b in self.event_heavy_bags})
+        aligned = [
+            {"timestamp": int(t), "all_open": bool(ok)}
+            for t, ok in zip(*self._mirror_timeline_cache)
+        ]
+        folded = any(not item["all_open"] for item in aligned)
+        folded_prefixes = prefixes if folded else []
+        return {
+            "car_state_topic": getattr(config, "CAR_STATE_TOPIC", "") or "",
+            "perception_time_list": [int(t) for t in self.perception_time_list],
+            "aligned_event_mirror": aligned,
+            "folded": folded,
+            "folded_heavy_prefixes": folded_prefixes,
+            "event_heavy_prefixes": prefixes,
+        }
 
     # ──────────────────────────────────────────────────────────
     #  鱼眼图最近邻提取（Heavy bag）
@@ -377,70 +532,79 @@ class BagReader:
         返回:
           {per_t: {cam_name: {'image': ndarray, 'timestamp_us': int, 'source_bag': str}}}
         """
+        if self._nearest_images_cached is not None:
+            return self._nearest_images_cached
+        self._ensure_light_payloads_scanned()
         image_results = {t: {} for t in self.perception_time_list}
         min_diffs = {
             t: {cam: float('inf') for cam in config.CAMERA_NAMES}
             for t in self.perception_time_list
         }
 
-        mirror_ts, mirror_open = _collect_rear_view_mirror_timeline(
-            self.event_light_bags,
-            getattr(config, "CAR_STATE_TOPIC", "") or "",
-            self.perception_time_list,
-        )
-        evt_mirror = {int(t): ok for t, ok in zip(mirror_ts, mirror_open)}
-        if mirror_ts:
+        evt_mirror = self._event_mirror_open_cache
+        topic_to_camera = dict(zip(config.CAMERA_TOPICS, config.CAMERA_NAMES))
+        update_counts = {cam: 0 for cam in config.CAMERA_NAMES}
+        mirror_fold_skips = {cam: 0 for cam in config.CAMERA_NAMES}
+
+        print("    提取 4 路相机最近邻帧（每个 Heavy bag 仅打开一次）...")
+        if self._mirror_timeline_cache[0]:
             print(
-                f"    CarInfo 后视镜时间线 {len(mirror_ts)} 点（超声时刻 + Light bag {config.CAR_STATE_TOPIC}），"
+                f"    CarInfo 后视镜时间线 {len(self._mirror_timeline_cache[0])} 点（超声时刻 + Light bag {config.CAR_STATE_TOPIC}），"
                 f"折叠帧不参与鱼眼最近邻匹配"
             )
 
-        for topic, cam_name in zip(config.CAMERA_TOPICS, config.CAMERA_NAMES):
-            print(f"    提取 {cam_name} ...")
-            count = 0
-            mirror_fold_skips = 0
+        for heavy_bag in self.event_heavy_bags:
+            try:
+                with DpBag(bag=heavy_bag) as bag:
+                    for topic, msg, _ in bag.read_messages(
+                        topics=config.CAMERA_TOPICS,
+                        dpbag_name=heavy_bag,
+                        force_get_data_by_raw=True,
+                    ):
+                        cam_name = topic_to_camera.get(topic)
+                        if cam_name is None:
+                            continue
+                        obj = CompressedImage()
+                        raw_msg = strip_header(msg.data)
+                        obj.ParseFromString(raw_msg)
+                        ts_us = int(obj.header.timestamp_sec * 1e6)
 
-            for heavy_bag in self.event_heavy_bags:
-                try:
-                    with DpBag(bag=heavy_bag) as bag:
-                        for _, msg, _ in bag.read_messages(
-                            topics=[topic],
-                            dpbag_name=heavy_bag,
-                            force_get_data_by_raw=True,
-                        ):
-                            obj = CompressedImage()
-                            raw_msg = strip_header(msg.data)
-                            obj.ParseFromString(raw_msg)
-                            ts_us = int(obj.header.timestamp_sec * 1e6)
+                        update_targets = []
+                        for evt_t in self.perception_time_list:
+                            diff = abs(ts_us - evt_t)
+                            if diff < min_diffs[evt_t][cam_name]:
+                                mir = evt_mirror.get(int(evt_t))
+                                if mir is False:
+                                    mirror_fold_skips[cam_name] += 1
+                                    continue
+                                update_targets.append((evt_t, diff))
+                        if not update_targets:
+                            continue
 
-                            for evt_t in self.perception_time_list:
-                                diff = abs(ts_us - evt_t)
-                                if diff < min_diffs[evt_t][cam_name]:
-                                    mir = evt_mirror.get(int(evt_t))
-                                    if mir is False:
-                                        mirror_fold_skips += 1
-                                        continue
-                                    min_diffs[evt_t][cam_name] = diff
-                                    img = cv2.imdecode(
-                                        np.frombuffer(obj.data, np.uint8),
-                                        cv2.IMREAD_COLOR,
-                                    )
-                                    image_results[evt_t][cam_name] = {
-                                        'image': img,
-                                        'timestamp_us': ts_us,
-                                        'source_bag': heavy_bag,
-                                    }
-                                    count += 1
-                except Exception as e:
-                    print(f"      [WARN] 跳过 {heavy_bag}: {e}")
+                        img = cv2.imdecode(
+                            np.frombuffer(obj.data, np.uint8),
+                            cv2.IMREAD_COLOR,
+                        )
+                        for evt_t, diff in update_targets:
+                            min_diffs[evt_t][cam_name] = diff
+                            image_results[evt_t][cam_name] = {
+                                'image': img,
+                                'timestamp_us': ts_us,
+                                'source_bag': heavy_bag,
+                            }
+                            update_counts[cam_name] += 1
+            except Exception as e:
+                print(f"      [WARN] 跳过 {heavy_bag}: {e}")
 
-            print(f"      -> 更新 {count} 次匹配")
-            if mirror_fold_skips:
+        for cam_name in config.CAMERA_NAMES:
+            print(f"      -> {cam_name} 更新 {update_counts[cam_name]} 次匹配")
+            if mirror_fold_skips[cam_name]:
                 print(
-                    f"      -> 后视镜折叠: 跳过 {mirror_fold_skips} 个鱼眼候选帧"
+                    f"      -> {cam_name} 后视镜折叠: 跳过 {mirror_fold_skips[cam_name]} 个鱼眼候选帧"
                     f"（不参与该路最近邻；topic={config.CAR_STATE_TOPIC}）"
                 )
 
+        self._nearest_images_cached = image_results
         return image_results
 
     # ──────────────────────────────────────────────────────────
@@ -452,35 +616,8 @@ class BagReader:
 
         返回: {per_t: {'obstacle': [...], 'time_diff': float}}
         """
-        results = {t: {} for t in self.perception_time_list}
-        min_diffs = {t: float('inf') for t in self.perception_time_list}
-
-        for bag_name in self.event_light_bags:
-            try:
-                with DpBag(bag=bag_name) as bag:
-                    for _, msg, _ in bag.read_messages(
-                        topics=[config.OBSTACLE_TOPIC],
-                        dpbag_name=bag_name,
-                        force_get_data_by_raw=True,
-                    ):
-                        obj = PerceptionObstacles()
-                        raw_msg = strip_header(msg.data)
-                        obj.ParseFromString(raw_msg)
-                        t = obj.time_measurement
-
-                        for evt_t in self.perception_time_list:
-                            diff = abs(t - evt_t)
-                            if diff < min_diffs[evt_t]:
-                                min_diffs[evt_t] = diff
-                                data_list = [
-                                    MessageToDict(item) if hasattr(item, 'DESCRIPTOR') else item
-                                    for item in obj.perception_obstacle
-                                ]
-                                results[evt_t] = {'obstacle': data_list, 'time_diff': diff}
-            except Exception as e:
-                print(f"    [WARN] 跳过 {bag_name} (obstacle): {e}")
-
-        return results
+        self._ensure_light_payloads_scanned()
+        return self._obstacle_results_cached
 
     # ──────────────────────────────────────────────────────────
     #  位姿提取（Light bag）
@@ -491,37 +628,8 @@ class BagReader:
 
         返回: {per_t: {'position': [x,y,z], 'euler_angles': [x,y,z], 'time_diff': float}}
         """
-        results = {t: {} for t in self.perception_time_list}
-        min_diffs = {t: float('inf') for t in self.perception_time_list}
-
-        for bag_name in self.event_light_bags:
-            try:
-                with DpBag(bag=bag_name) as bag:
-                    for _, msg, _ in bag.read_messages(
-                        topics=[config.POSE_TOPIC],
-                        dpbag_name=bag_name,
-                        force_get_data_by_raw=True,
-                    ):
-                        obj = Ins()
-                        raw_msg = strip_header(msg.data)
-                        obj.ParseFromString(raw_msg)
-                        t = obj.measurement_time
-
-                        for evt_t in self.perception_time_list:
-                            diff = abs(t - evt_t)
-                            if diff < min_diffs[evt_t]:
-                                min_diffs[evt_t] = diff
-                                pos = obj.position
-                                euler = obj.euler_angles
-                                results[evt_t] = {
-                                    'position': [pos.x, pos.y, pos.z],
-                                    'euler_angles': [euler.x, euler.y, euler.z],
-                                    'time_diff': diff,
-                                }
-            except Exception as e:
-                print(f"    [WARN] 跳过 {bag_name} (pose): {e}")
-
-        return results
+        self._ensure_light_payloads_scanned()
+        return self._pose_results_cached
 
     # ──────────────────────────────────────────────────────────
     #  规划轨迹提取（Light bag）
@@ -532,35 +640,5 @@ class BagReader:
 
         返回: {per_t: [{'relative_time': ..., 'x': ..., 'y': ...}, ...]}
         """
-        results = {t: {} for t in self.perception_time_list}
-        min_diffs = {t: float('inf') for t in self.perception_time_list}
-
-        for bag_name in self.event_light_bags:
-            try:
-                with DpBag(bag=bag_name) as bag:
-                    for _, msg, _ in bag.read_messages(
-                        topics=[config.PLANNING_TOPIC],
-                        dpbag_name=bag_name,
-                        force_get_data_by_raw=True,
-                    ):
-                        obj = ADCTrajectory()
-                        raw_msg = strip_header(msg.data)
-                        obj.ParseFromString(raw_msg)
-                        t = obj.header.timestamp_sec * 1e6
-
-                        for evt_t in self.perception_time_list:
-                            diff = abs(t - evt_t)
-                            if diff < min_diffs[evt_t]:
-                                min_diffs[evt_t] = diff
-                                results[evt_t] = [
-                                    {
-                                        'relative_time': pt.relative_time,
-                                        'x': pt.path_point.x,
-                                        'y': pt.path_point.y,
-                                    }
-                                    for pt in obj.trajectory_point
-                                ]
-            except Exception as e:
-                print(f"    [WARN] 跳过 {bag_name} (planning): {e}")
-
-        return results
+        self._ensure_light_payloads_scanned()
+        return self._planning_results_cached

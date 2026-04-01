@@ -146,7 +146,7 @@ def save_data_index(config_dir, camera_frames, bag_prefix):
 
 # ============ 核心入口 ============
 
-def unpack_tag(tag_id, output_root=None):
+def unpack_tag(tag_id, output_root=None, reader=None, return_reader=False):
     """根据 tag_id 扫描超声波事件并解包对应的最近邻图像帧。"""
     if output_root is None:
         output_root = config.SAMPLES_DIR
@@ -155,7 +155,8 @@ def unpack_tag(tag_id, output_root=None):
     print(f"Tag ID: {tag_id}")
     print(f"{'=' * 60}")
 
-    reader = BagReader(tag_id=tag_id)
+    if reader is None:
+        reader = BagReader(tag_id=tag_id)
     print(f"Trip ID: {reader.trip_id}")
 
     # 第一步：扫描超声波停车事件
@@ -220,6 +221,8 @@ def unpack_tag(tag_id, output_root=None):
         save_data_index(cfg_dir, per_bag_frames[heavy_bag], bag_prefix)
 
     print(f"\n完成! 输出目录: {output_root}")
+    if return_reader:
+        return reader
 
 
 if __name__ == "__main__":
