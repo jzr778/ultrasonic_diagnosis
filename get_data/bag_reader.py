@@ -220,57 +220,6 @@ def _rear_view_mirror_timeline_from_candidates(
     return tss, oks
 
 
-def _collect_rear_view_mirror_timeline(light_bags, topic, perception_time_list=None):
-    """[(ts_us, mirrors_all_open), ...]，ts_us 升序。自 Light bag 读 ``CAR_STATE_TOPIC``（CarInfo）。"""
-    if CarInfo is None:
-        if topic:
-            print(
-                "    [INFO] CarInfo（canbus.car_info_pb2）未导入，"
-                "跳过后视镜折叠过滤"
-            )
-        return [], []
-    if not topic:
-        return [], []
-    candidates = []
-    n_msg = n_parse_err = n_no_ts = n_mirror_empty = 0
-    for light_bag in light_bags:
-        try:
-            with DpBag(bag=light_bag) as bag:
-                for _, msg, meta in bag.read_messages(
-                    topics=[topic],
-                    dpbag_name=light_bag,
-                    force_get_data_by_raw=True,
-                ):
-                    n_msg += 1
-                    obj = CarInfo()
-                    raw_msg = strip_header(msg.data)
-                    try:
-                        obj.ParseFromString(raw_msg)
-                    except Exception:
-                        n_parse_err += 1
-                        continue
-                    ts_car = _car_info_timestamp_us(obj, meta)
-                    if ts_car is None:
-                        n_no_ts += 1
-                        continue
-                    open_ok = _misc_rear_view_mirror_all_open(obj)
-                    if open_ok is None:
-                        n_mirror_empty += 1
-                        continue
-                    candidates.append((ts_car, open_ok))
-        except Exception as e:
-            print(f"      [WARN] {topic}（CarInfo）读取跳过 {light_bag}: {e}")
-    return _rear_view_mirror_timeline_from_candidates(
-        candidates,
-        topic,
-        perception_time_list,
-        n_msg=n_msg,
-        n_parse_err=n_parse_err,
-        n_no_ts=n_no_ts,
-        n_mirror_empty=n_mirror_empty,
-    )
-
-
 def bag_name_to_config_prefix(bag_name):
     """与 offline_avm config 目录名一致：basename 去扩展名段（取首段）。"""
     return os.path.basename(bag_name).split(".")[0]
