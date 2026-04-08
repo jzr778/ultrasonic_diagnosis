@@ -140,6 +140,14 @@ def get_direction_from_position(target_x: int, target_y: int,
         return "左前方"
 
 
+def _copy_diagnosis_images_only(item_save_path, dest_dir):
+    """misdetected/normal 落盘：只复制 BEV 与 yuyan_draw，不复制四路 panoramic_*.jpg。"""
+    for name in ("avm.jpg", "avm_fs_car.jpg", "yuyan_draw.jpg"):
+        src = os.path.join(item_save_path, name)
+        if os.path.isfile(src):
+            shutil.copy2(src, dest_dir)
+
+
 # AVM 八方位 → 单路鱼眼：panoramic_1 / panoramic_3 仅对应严格正前 / 正后；斜向走左右鱼眼。
 _AVM_DIRECTION_TO_YUYAN_CAM = {
     "正前方": "panoramic_1",
@@ -412,8 +420,7 @@ def diagnose_single_tag(tag_id, feishu_id, args):
             - api_error:      [(tag_id, ts)]     （API 调用失败的时间戳）
     """
     stats = {"misdetected": [], "normal": [], "api_error": []}
-    pre_comment_record = '大模型诊断结果：\n'
-    comment_record = ''
+    comment_lines = []
     debug_thinking = getattr(args, 'debug_thinking', False)
     debug_thinking_path = getattr(args, 'debug_thinking_path', None)
     image_save_path = os.path.join(config.DRAW_IMAGE_DIR, str(tag_id))
@@ -505,36 +512,34 @@ def diagnose_single_tag(tag_id, feishu_id, args):
             analysis_json_path = os.path.join(save_path, "analysis_result.json")
             with open(analysis_json_path, 'w', encoding='utf-8') as f:
                 json.dump(result, f, ensure_ascii=False, indent=2)
-            for jpg in os.listdir(item_save_path):
-                if jpg.endswith(".jpg"):
-                    shutil.copy2(os.path.join(item_save_path, jpg), save_path)
+            _copy_diagnosis_images_only(item_save_path, save_path)
             logger.info(f"[诊断] tag={tag_id}, ts={item} 结果已保存 → {save_path}")
 
-            direction_text = ""
-            direction = []
+            dirs_merged = []
             for coor in result_fs_car:
-                d = get_direction_from_position(int(coor[0]), int(coor[1]))
-                direction.append(d)
-            if direction:
-                direction_text = direction_text + 'FS_CAR误检点相对于车的位置：' + ', '.join(direction) + " "
-
-            direction = []
-            for coor in analysis_result['positions']:
-                d = get_direction_from_position(int(coor[0]), int(coor[1]))
-                direction.append(d)
-            if direction:
-                direction_text = direction_text + 'FS_OTHERS误检点相对于车的位置：' + ', '.join(direction)
-
-            comment_record = comment_record + '时间戳' + str(item) + ': ' + direction_text + "\n"
+                dirs_merged.append(
+                    get_direction_from_position(int(coor[0]), int(coor[1]))
+                )
+            for coor in analysis_result["positions"]:
+                dirs_merged.append(
+                    get_direction_from_position(int(coor[0]), int(coor[1]))
+                )
+            seen = set()
+            dirs_short = []
+            for d in dirs_merged:
+                if d not in seen:
+                    seen.add(d)
+                    dirs_short.append(d)
+            pos_txt = "、".join(dirs_short) if dirs_short else "—"
+            comment_lines.append(f"时间戳{item}：误检 {pos_txt}")
         else:
             stats["normal"].append((tag_id, item))
             save_path = os.path.join(args.output_dir, "normal", str(tag_id), item)
             os.makedirs(save_path, exist_ok=True)
-            for jpg in os.listdir(item_save_path):
-                if jpg.endswith(".jpg"):
-                    shutil.copy2(os.path.join(item_save_path, jpg), save_path)
-    if comment_record:
-        comment_record = pre_comment_record + comment_record
+            _copy_diagnosis_images_only(item_save_path, save_path)
+            comment_lines.append(f"时间戳{item}：超声感知正确")
+    if comment_lines:
+        comment_record = "诊断：\n" + "\n".join(comment_lines)
         logger.info(f"[诊断] tag={tag_id} 飞书评论:\n{comment_record}")
         tester = FeishuCommentTester()
         test_url = f"https://project.feishu.cn/{config.FEISHU_PROJECT_KEY}/case/detail/{feishu_id}"
