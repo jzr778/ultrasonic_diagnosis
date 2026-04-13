@@ -128,6 +128,13 @@ def bresenham_line(x0: int, y0: int, x1: int, y1: int) -> List[List[int]]:
     return points
 
 
+def _has_any_valid_box(boxes: List[List[List[float]]]) -> bool:
+    """是否存在至少一个非空的多边形框。"""
+    if not boxes:
+        return False
+    return any(bool(box) for box in boxes)
+
+
 def calculate_segment_center(segment_points: List[List[int]]) -> List[float]:
     """
     计算线段中心点坐标
@@ -146,12 +153,15 @@ def calculate_segment_center(segment_points: List[List[int]]) -> List[float]:
 def is_segment_misdetected(segment_points: List[List[int]], boxes: List[List[List[float]]],
                            threshold: float = 8.0, max_threshold: float = 20.0) -> bool:
     """判断超声 FS_CAR 线段是否为误检。
+    规则0: 若相机侧没有任何可比对的车框，但超声仍给出 FS_CAR 线段，则视为误检。
     规则1: 如果 >= 一半的顶点到最近相机框的距离 <= threshold，则认为不是误检。
     规则2: 即使满足规则1，若任意顶点距离 > max_threshold，仍算误检。
     多边形闭合时首尾顶点相同，去重后再判断。
     """
     if len(segment_points) == 0:
         return False
+    if not _has_any_valid_box(boxes):
+        return True
     seen = set()
     unique_pts = []
     for pt in segment_points:
