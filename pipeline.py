@@ -26,6 +26,7 @@ import argparse
 import json
 import logging
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -501,6 +502,13 @@ def main():
 
     # Step 6
     if 6 not in skip:
+        result_dir = config.RESULT_DIR
+        if os.path.isdir(result_dir):
+            log.info(f"[Step 6 前] 删除旧诊断结果目录: {result_dir}")
+            shutil.rmtree(result_dir)
+        elif os.path.lexists(result_dir):
+            log.info(f"[Step 6 前] 删除路径: {result_dir}")
+            os.remove(result_dir)
         step6_run_vlm(vlm_id_mapping, args.read_data_dir, model=args.model,
                       ignore_fs_types=args.ignore_fs_types,
                       debug_thinking=args.debug_thinking,
