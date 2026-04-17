@@ -1,24 +1,29 @@
 #!/usr/bin/env python3
 """
-从 read_data 读取给定 tag 列表下的各 case（时间戳目录），计算超声障碍在 AVM 上的质心像素坐标，
+从 read_data 读取 case：每项为 **tag_id** 或 **tag_id_时间戳_us**（或从 jsonl / 目录 / 映射 json 收集），计算超声障碍在 AVM 上的质心像素坐标，
 将「crop_{tag}_{时间戳}: 坐标」写入清单文件（默认 ``<crop-dir>/chaosheng_centroids.txt``，与裁剪图同目录），并按质心裁剪固定尺寸（默认 150×150）保存到 ``crop-dir``。
 **优先**使用已有 ``draw_image/<tag>/<ts>/avm.jpg``（Step5 结果）；**若无**，则从 ``generate`` 取原始 AVM，按与 Step5 相同的 ``draw_obstacles_on_bev`` 现场叠绘后再裁剪，保证输出为「已绘制」的局部图。
 
 输出图片文件名：``crop_{tag_id}_{timestamp_us}.jpg``（同一帧多个超声质心时仅按**第一个**质心裁剪并写该名，其余在 stderr 提示）。
 
+每项输入可为 **纯数字 tag_id**，或 **``{tag_id}_{时间戳_us}``**（与训练 jsonl 里 ``images/xxx.jpg`` 的 stem 一致）。
+
 用法示例::
 
-  # tag 列表 JSON：对象形如 ``{"129678972": 0, ...}`` 时取键为 tag_id；或 JSON 数组 ``[129678972, ...]``
+  # 训练用 jsonl：从每行 ``images[0]`` 解析 ``tag_ts``
+  python tool/crop_read_data_chaosheng.py --tag-root /mnt/public-data/user/ziroujiang/datasets/train_ultrasonic_diagnosis/geometry_relation.jsonl
+
+  # tag 映射 JSON：对象键为 tag，处理该 tag 下**全部**时间戳目录
   python tool/crop_read_data_chaosheng.py --tag-root /home/jiangzirou/avp_promptkit/get_data/test.json
 
-  # tag 列表目录：其下每个子目录名为 tag_id（纯数字）
+  # 文本或命令行：混合 tag 与 tag_ts
+  python tool/crop_read_data_chaosheng.py --cases 130072435 130072435_1774936937600000
+
+  # tag 列表目录：其下纯数字子目录名为 tag，处理各 tag 下全部时间戳
   python tool/crop_read_data_chaosheng.py --tag-root /path/to/folder_with_tag_subdirs
 
-  # 或直接指定多个 tag
-  python tool/crop_read_data_chaosheng.py --tags 130072435 130072425
-
-  # 指定清单文件名与裁剪输出目录
-  python tool/crop_read_data_chaosheng.py --tags 130072435 --manifest my_centroids.txt --crop-dir /tmp/crops
+  # 指定清单与输出目录
+  python tool/crop_read_data_chaosheng.py --cases 130072435 --manifest my_centroids.txt --crop-dir /tmp/crops
 
 依赖：需能访问 DR 元数据接口以解析 Heavy bag 与 AVM 路径（与 vlm 绘图一致）；失败时可加 ``--scan-generate-dir`` 在 generate 下全局扫描时间戳匹配。
 """
@@ -29,7 +34,8 @@ import argparse
 import json
 import os
 import sys
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from collections import defaultdict
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 import cv2
 import numpy as np
@@ -88,14 +94,61 @@ def _load_tags_from_json(path: str) -> List[int]:
     return out
 
 
-def _load_tags_file(path: str) -> List[int]:
-    out: List[int] = []
+def _parse_case_token(token: str) -> Optional[Tuple[int, Optional[str]]]:
+    """解析 ``tag`` 或 ``tag_timestamp_us``（时间戳为纯数字）。"""
+    token = token.strip()
+    if not token or token.startswith("#"):
+        return None
+    if "_" in token:
+        left, sep, right = token.partition("_")
+        if sep and left.isdigit() and right.isdigit():
+            return int(left), right
+        return None
+    if token.isdigit():
+        return int(token), None
+    return None
+
+
+def _load_cases_from_text_lines(path: str) -> List[Tuple[int, Optional[str]]]:
+    out: List[Tuple[int, Optional[str]]] = []
     with open(path, "r", encoding="utf-8") as f:
         for line in f:
-            line = line.strip()
-            if not line or line.startswith("#"):
+            raw = line.split("#", 1)[0].strip()
+            if not raw:
                 continue
-            out.append(int(line.split()[0]))
+            token = raw.split()[0]
+            p = _parse_case_token(token)
+            if p:
+                out.append(p)
+    return out
+
+
+def _load_cases_from_jsonl_images(path: str) -> List[Tuple[int, str]]:
+    """从每行 JSON 的 ``images[0]`` 路径 basename（如 ``129678972_1774923586500000.jpg``）解析 ``(tag, ts)``。"""
+    out: List[Tuple[int, str]] = []
+    with open(path, "r", encoding="utf-8") as f:
+        for lineno, line in enumerate(f, 1):
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                obj = json.loads(line)
+            except json.JSONDecodeError as e:
+                print(f"[WARN] jsonl 第 {lineno} 行 JSON 解析失败: {e}", file=sys.stderr)
+                continue
+            images = obj.get("images") or []
+            if not images:
+                continue
+            base = os.path.basename(images[0])
+            stem, _ext = os.path.splitext(base)
+            p = _parse_case_token(stem)
+            if p and p[1] is not None:
+                out.append((p[0], p[1]))
+            else:
+                print(
+                    f"[WARN] jsonl 第 {lineno} 行 images[0]={images[0]!r} 无法解析为 tag_ts",
+                    file=sys.stderr,
+                )
     return out
 
 
@@ -274,36 +327,77 @@ def _crop_centered(
 
 
 def run(args: argparse.Namespace) -> int:
-    tags: List[int] = []
+    tags_full: Set[int] = set()
+    specific_pairs: List[Tuple[int, str]] = []
+
+    def _add_case_token(tok: str) -> None:
+        p = _parse_case_token(tok)
+        if not p:
+            print(f"[WARN] 无法解析输入项，已忽略: {tok!r}", file=sys.stderr)
+            return
+        tag_id, ts_opt = p
+        if ts_opt is None:
+            tags_full.add(tag_id)
+        else:
+            specific_pairs.append((tag_id, ts_opt))
+
     if args.tag_root:
         tr = os.path.abspath(os.path.expanduser(args.tag_root))
-        if os.path.isfile(tr) and tr.lower().endswith(".json"):
+        if os.path.isfile(tr) and tr.lower().endswith(".jsonl"):
+            specific_pairs.extend(_load_cases_from_jsonl_images(tr))
+        elif os.path.isfile(tr) and tr.lower().endswith(".json"):
             try:
-                tags.extend(_load_tags_from_json(tr))
+                tags_full.update(_load_tags_from_json(tr))
             except (ValueError, OSError, json.JSONDecodeError) as e:
                 print(f"错误: 读取 tag JSON 失败 {tr}: {e}", file=sys.stderr)
                 return 1
         elif os.path.isdir(tr):
-            tags.extend(_discover_tags_from_dir(tr))
+            tags_full.update(_discover_tags_from_dir(tr))
         else:
             print(
-                f"错误: --tag-root 既不是 .json 文件也不是目录: {args.tag_root}",
+                f"错误: --tag-root 既不是 .json/.jsonl 也不是目录: {args.tag_root}",
                 file=sys.stderr,
             )
             return 1
     if args.tags_file:
-        tags.extend(_load_tags_file(args.tags_file))
-    if args.tags:
-        tags.extend(args.tags)
-    tags = sorted(set(tags))
-    if not tags:
+        try:
+            for tag_id, ts_opt in _load_cases_from_text_lines(
+                os.path.abspath(os.path.expanduser(args.tags_file))
+            ):
+                if ts_opt is None:
+                    tags_full.add(tag_id)
+                else:
+                    specific_pairs.append((tag_id, ts_opt))
+        except OSError as e:
+            print(f"错误: 读取 --tags-file 失败: {e}", file=sys.stderr)
+            return 1
+    for tok in list(args.cases) + list(args.tags):
+        if tok is None or str(tok).strip() == "":
+            continue
+        _add_case_token(str(tok).strip())
+
+    by_tag_ts: Dict[int, Set[str]] = defaultdict(set)
+    read_data = os.path.abspath(args.read_data)
+    for tid in tags_full:
+        data_path = os.path.join(read_data, str(tid))
+        if not os.path.isdir(data_path):
+            print(f"[WARN] tag={tid} read_data 目录不存在，跳过该 tag 的全量时间戳", file=sys.stderr)
+            continue
+        for d in os.listdir(data_path):
+            if d.isdigit() and os.path.isdir(os.path.join(data_path, d)):
+                by_tag_ts[tid].add(d)
+    for tid, ts in specific_pairs:
+        if tid in tags_full:
+            continue
+        by_tag_ts[tid].add(ts)
+
+    if not by_tag_ts:
         print(
-            "错误: 未指定任何 tag（使用 --tag-root 目录或 .json / --tags-file / --tags）",
+            "错误: 未解析到任何 case（--tag-root / --tags-file / --cases / --tags）",
             file=sys.stderr,
         )
         return 1
 
-    read_data = os.path.abspath(args.read_data)
     generate_dir = os.path.abspath(args.generate_dir)
     draw_image_dir = os.path.abspath(args.draw_image_dir)
     crop_root = os.path.abspath(args.crop_dir)
@@ -319,7 +413,7 @@ def run(args: argparse.Namespace) -> int:
     lines_out: List[str] = []
     n_crop = 0
 
-    for tag_id in tags:
+    for tag_id in sorted(by_tag_ts.keys()):
         data_path = os.path.join(read_data, str(tag_id))
         required = [
             "vehicle2sensing.json",
@@ -351,13 +445,14 @@ def run(args: argparse.Namespace) -> int:
                         file=sys.stderr,
                     )
 
-        subdirs = [
-            d
-            for d in os.listdir(data_path)
-            if os.path.isdir(os.path.join(data_path, d)) and d.isdigit()
-        ]
-        for ts in sorted(subdirs, key=int):
+        for ts in sorted(by_tag_ts[tag_id], key=int):
             item_path = os.path.join(data_path, ts)
+            if not os.path.isdir(item_path):
+                print(
+                    f"[WARN] tag={tag_id} ts={ts} read_data 下无该时间戳目录，跳过",
+                    file=sys.stderr,
+                )
+                continue
             cs_path = os.path.join(item_path, "chaosheng.json")
             if not os.path.isfile(cs_path):
                 continue
@@ -474,20 +569,27 @@ def main() -> int:
         "--tag-root",
         type=str,
         default="",
-        help="tag 来源：若为目录则其下纯数字子目录名为 tag；若为 .json 文件则解析键或数组为 tag 列表",
+        help="case 来源：.jsonl 则从每行 images[0] 解析 tag_ts；.json 则键/数组为 tag（处理该 tag 下全部时间戳）；目录则子目录名为 tag",
     )
     p.add_argument(
         "--tags-file",
         type=str,
         default="",
-        help="每行一个 tag_id 的文本文件",
+        help="每行一项：纯数字 tag，或 tag_时间戳_us（# 后为注释）",
+    )
+    p.add_argument(
+        "--cases",
+        type=str,
+        nargs="*",
+        default=[],
+        help="命令行 case：每项为 tag_id 或 tag_id_时间戳_us",
     )
     p.add_argument(
         "--tags",
-        type=int,
+        type=str,
         nargs="*",
         default=[],
-        help="命令行直接列出 tag_id",
+        help="与 --cases 相同，每项为 tag 或 tag_ts（兼容旧用法）",
     )
     p.add_argument(
         "--read-data",
