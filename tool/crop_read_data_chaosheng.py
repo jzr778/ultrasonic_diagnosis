@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
 从 read_data 读取 case：每项为 **tag_id** 或 **tag_id_时间戳_us**（或从 jsonl / 目录 / 映射 json 收集），计算超声障碍在 AVM 上的质心像素坐标，
-将「crop_{tag}_{时间戳}: 坐标」写入清单文件（默认 ``<crop-dir>/chaosheng_centroids.txt``，与裁剪图同目录），并按质心裁剪固定尺寸（默认 150×150）保存到 ``crop-dir``。
+将「{tag}_{时间戳}: 坐标」写入清单文件（默认 ``<crop-dir>/chaosheng_centroids.txt``，与裁剪图同目录），并按质心裁剪固定尺寸（默认 150×150）保存到 ``crop-dir``。
 **优先**使用已有 ``draw_image/<tag>/<ts>/avm.jpg``（Step5 结果）；**若无**，则从 ``generate`` 取原始 AVM，按与 Step5 相同的 ``draw_obstacles_on_bev`` 现场叠绘后再裁剪，保证输出为「已绘制」的局部图。
 
-输出图片文件名：``crop_{tag_id}_{timestamp_us}.jpg``（同一帧多个超声质心时仅按**第一个**质心裁剪并写该名，其余在 stderr 提示）。
+输出图片文件名：``{tag_id}_{timestamp_us}.jpg``（与 images/yuyan 一致；同一帧多个超声质心时仅按**第一个**质心裁剪并写该名，其余在 stderr 提示）。
 
 每项输入可为 **纯数字 tag_id**，或 **``{tag_id}_{时间戳_us}``**（与训练 jsonl 里 ``images/xxx.jpg`` 的 stem 一致）。
 
@@ -538,11 +538,11 @@ def run(args: argparse.Namespace) -> int:
             if len(centroids) > 1:
                 print(
                     f"[WARN] tag={tag_id} ts={ts} 共 {len(centroids)} 个超声质心，"
-                    f"仅按第一个裁剪 → crop_{tag_id}_{ts}.jpg",
+                    f"仅按第一个裁剪 → {tag_id}_{ts}.jpg",
                     file=sys.stderr,
                 )
             cx, cy = centroids[0]
-            stem = f"crop_{tag_id}_{ts}"
+            stem = f"{tag_id}_{ts}"
             lines_out.append(f"{stem}: {cx},{cy}")
             patch = _crop_centered(img, cx, cy, args.size)
             if patch.size == 0:

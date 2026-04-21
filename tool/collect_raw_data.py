@@ -9,7 +9,7 @@
 
   <dst>/images/{tag}_{ts}.jpg   ← draw_image/<tag>/<ts>/avm.jpg
   <dst>/yuyan/{tag}_{ts}.jpg    ← draw_image/<tag>/<ts>/yuyan_draw.jpg（缺失则跳过）
-  <dst>/crop/crop_{tag}_{ts}.jpg ← 在 AVM 上按超声质心裁剪（默认 150×150）
+  <dst>/crop/{tag}_{ts}.jpg      ← 在 AVM 上按超声质心裁剪（默认 150×150，与 images/yuyan 同名）
 
 默认**过滤 FS_CAR**（给 pipeline 传入 ``--ignore-fs-types FS_CAR``），可通过 ``--no-filter-fs-car`` 关闭；
 也可用 ``--extra-ignore-fs-types`` 追加其他 freespaceType。
@@ -17,7 +17,8 @@
 用法::
 
     # 标准：id_mapping.json 与 logs 写到 tool/output，Step1–5，复制到 raw_data
-    python tool/collect_raw_data.py -p iffcom -v MMJ5lo2vg
+    # 1-3月数据
+    python tool/collect_raw_data.py -p iffcom -v A9umFAhvg 
 
     # 只重绘 Step5 并复制（需 tool/output/id_mapping.json 已存在，或显式 --id-mapping）
     python tool/collect_raw_data.py --skip-steps 1 2 3 4

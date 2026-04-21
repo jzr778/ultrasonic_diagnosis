@@ -5,7 +5,7 @@ AVP 全流程 Pipeline
 步骤:
   1. get_id_mapping.py         → get_data/id_mapping.json  ({tag_id: feishu_id})
   2. bag.py                    → offline_avm_generate_release/bag_list.txt
-  3. unpack_bag_for_avm + save_bag_data   解包 samples 并准备 read_data（同一 BagReader，不重复扫 bag）
+  3. unpack_bag_for_avm + save_bag_data   解包 samples 并准备 read_data（每 tag 独立 BagReader；默认多 tag 并行，--unpack-workers 可调）
   4. run_standalone.sh          拼接鱼眼图（若车身 CarInfo 在超声事件时刻判后视镜折叠则跳过对应 bag）
   5. avp_vlm_pipeline_avm.py   绘制 AVM 标注图像（折叠 tag 从映射中剔除）
   6. avp_vlm_pipeline_avm.py   大模型诊断（同上）
@@ -18,6 +18,7 @@ AVP 全流程 Pipeline
   python pipeline.py -p iffcom -v U9zPLpFvR --log-dir my_logs
   python pipeline.py ... --no-yuyan   # 关闭鱼眼抽帧与双图 VLM
   python pipeline.py ... --chaosheng-pixel-radius 40   # Step5 BEV 超声-相机关联半径（默认 30）
+  python pipeline.py ... --unpack-workers 1   # Step3 强制串行（默认按 CPU 并行，上限 4）
 
 原 7 步中曾单独跳过 Step 3 或 4 的场景，现合并为 Step 3（跳过 3 即不解包也不写 read_data）。
 """
@@ -30,6 +31,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from datetime import datetime
 
 import config
@@ -37,6 +39,8 @@ import config
 PROJECT_ROOT = str(config.PROJECT_ROOT)
 PYTHON = sys.executable
 TOTAL_STEPS = 6
+# Step3 默认并行度：上限 4 减轻远端限流风险；单核机器为 1。
+DEFAULT_UNPACK_WORKERS = max(1, min(4, (os.cpu_count() or 4)))
 _MIRROR_FOLD_CACHE = "mirror_fold_cache.json"
 
 
@@ -161,17 +165,23 @@ def _read_data_has_ultrasonic_timestamps(data_path):
 
 
 def step3_unpack_and_save_bag_data(
-    tag_ids, samples_dir, read_data_dir, extract_fisheye=True
+    tag_ids,
+    samples_dir,
+    read_data_dir,
+    extract_fisheye=True,
+    unpack_workers=DEFAULT_UNPACK_WORKERS,
 ):
     banner(
         3,
-        "解包 samples 并准备 read_data（unpack_bag_for_avm + save_bag_data，共享 BagReader）",
+        "解包 samples 并准备 read_data（unpack_bag_for_avm + save_bag_data；多 tag 可并行）",
     )
 
     from get_data.save_bag_data import save_data
+    from get_data.step3_unpack_worker import unpack_one_tag
     from get_data.unpack_bag_for_avm import unpack_tag
 
     success = 0
+    pending = []
     for tag_id in tag_ids:
         data_path = os.path.join(read_data_dir, str(tag_id))
         v2s = os.path.join(data_path, "vehicle2sensing.json")
@@ -184,21 +194,49 @@ def step3_unpack_and_save_bag_data(
                 f"  tag_id={tag_id} 仅有配置无时间戳数据（如历史 proto 导致未写入 chaosheng），"
                 "重新解包并 save_data ..."
             )
-        log.info(f"  tag_id={tag_id} 解包 + save_data ...")
-        try:
-            reader = unpack_tag(
-                tag_id, output_root=samples_dir, return_reader=True
-            )
-            save_data(
-                tag_id,
-                output_root=read_data_dir,
-                extract_fisheye=extract_fisheye,
-                reader=reader,
-            )
-            success += 1
-            log.info(f"  tag_id={tag_id} ✅")
-        except Exception as e:
-            log.warning(f"  tag_id={tag_id} 失败: {e}")
+        pending.append(tag_id)
+
+    workers = max(1, int(unpack_workers or 1))
+    if not pending:
+        log.info(f"  ✅ Step 3 完成（解包 + read_data）({success}/{len(tag_ids)})")
+        return
+
+    if workers == 1 or len(pending) == 1:
+        for tag_id in pending:
+            log.info(f"  tag_id={tag_id} 解包 + save_data ...")
+            try:
+                reader = unpack_tag(
+                    tag_id, output_root=samples_dir, return_reader=True
+                )
+                save_data(
+                    tag_id,
+                    output_root=read_data_dir,
+                    extract_fisheye=extract_fisheye,
+                    reader=reader,
+                )
+                success += 1
+                log.info(f"  tag_id={tag_id} ✅")
+            except Exception as e:
+                log.warning(f"  tag_id={tag_id} 失败: {e}")
+    else:
+        n = min(workers, len(pending))
+        log.info(
+            f"  Step3 并行解包: {len(pending)} 个 tag，进程数={n}（--unpack-workers={workers}）"
+        )
+        payloads = [
+            (tid, samples_dir, read_data_dir, extract_fisheye) for tid in pending
+        ]
+        with ProcessPoolExecutor(max_workers=n) as ex:
+            futures = {
+                ex.submit(unpack_one_tag, p): p[0] for p in payloads
+            }
+            for fut in as_completed(futures):
+                tag_id, ok, err = fut.result()
+                if ok:
+                    success += 1
+                    log.info(f"  tag_id={tag_id} ✅")
+                else:
+                    log.warning(f"  tag_id={tag_id} 失败: {err}")
 
     log.info(f"  ✅ Step 3 完成（解包 + read_data）({success}/{len(tag_ids)})")
 
@@ -373,6 +411,16 @@ def main():
         default=30,
         help="Step5 BEV 超声与相机障碍关联像素半径（默认 30）",
     )
+    parser.add_argument(
+        "--unpack-workers",
+        type=int,
+        default=DEFAULT_UNPACK_WORKERS,
+        metavar="N",
+        help=(
+            "Step3 并行解包进程数（默认 min(CPU 核数, 4)；多 tag 并行；远端易限流可改小，"
+            "强制串行用 1）"
+        ),
+    )
     args = parser.parse_args()
 
     if args.list_models:
@@ -394,6 +442,7 @@ def main():
     log.info(f"项目根目录: {PROJECT_ROOT}")
     log.info(f"参数: project={args.project_key}, view={args.view_id}, "
              f"yuyan={args.yuyan}, chaosheng_pixel_radius={args.chaosheng_pixel_radius}, "
+             f"unpack_workers={args.unpack_workers}, "
              f"skip={args.skip_steps or '无'}")
 
     # Step 1
@@ -421,6 +470,7 @@ def main():
             args.samples_dir,
             args.read_data_dir,
             extract_fisheye=args.yuyan,
+            unpack_workers=args.unpack_workers,
         )
     else:
         log.info(f"[跳过 Step 3]")
