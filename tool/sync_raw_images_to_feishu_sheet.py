@@ -6,12 +6,11 @@
   https://rqk9rsooi4.feishu.cn/sheets/<spreadsheetToken>
 若链接为「多维表格」Base（/base/...），本脚本不适用，需改用 bitable 记录 + 附件字段 API。
 
-表格约定（不修改第 1 行表头）：
-  从第 start_row 行（默认 2）起：
-    A 列：文件名（仅 basename）
-    B 列：images 目录对应原图
-    C 列：crop 图
-    D 列：yuyan 图
+表格约定（默认第 1 行为表头，不修改）：
+  A 列 case_id：与图片主文件名一致但**不含** .jpg 等后缀。
+    新 case_id → 在表尾追加一行并写 A；表中已有 case_id → 复用该行。
+  B（AVM 原图）/ C（crop）/ D（鱼眼 yuyan）：**按格判断**，该格已有图或文本则**跳过该格**，
+    仅对空格写图（可补全历史上只写了部分列的行）。
 
 凭证（优先级从高到低）：
   环境变量 FEISHU_APP_ID / FEISHU_APP_SECRET 或 LARK_APP_ID / LARK_APP_SECRET
@@ -32,7 +31,6 @@
 from __future__ import annotations
 
 import argparse
-import base64
 import os
 import re
 import sys
@@ -57,6 +55,8 @@ DEFAULT_CROP_DIR = "/mnt/public-data/user/ziroujiang/raw_data_01-03/crop"
 DEFAULT_YUYAN_DIR = "/mnt/public-data/user/ziroujiang/raw_data_01-03/yuyan"
 
 IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".heic", ".tif", ".tiff"}
+# values_batch_update 单次 valueRanges 条数上限（保守分块，避免触顶）
+_MAX_RANGES_PER_BATCH = 200
 
 
 def _project_root() -> str:
@@ -236,27 +236,34 @@ def write_image_cell(
     image_path: str,
     timeout: float = IMAGE_UPLOAD_TIMEOUT,
 ) -> None:
-    """向单个单元格写入图片（二进制经 base64，与开放平台示例一致）。"""
+    """向单个单元格写入图片。
+
+    飞书文档中 ``image`` 类型为 **array（字节 0–255 的 JSON 数组）**；仅用 base64 字符串时
+    部分租户会返回 HTTP 400，故优先传 ``list(raw)``。超大图若遇网关体积限制再自行压缩。
+    """
     with open(image_path, "rb") as f:
         raw = f.read()
-    b64 = base64.b64encode(raw).decode("ascii")
+    if not raw:
+        raise RuntimeError(f"空图片文件: {image_path!r}")
     name = os.path.basename(image_path)
     if "." not in name:
         name += ".png"
-    r = requests.post(
-        f"{OPEN_API}/sheets/v2/spreadsheets/{spreadsheet_token}/values_image",
-        headers=headers,
-        json={
-            "range": f"{sheet_id}!{cell}:{cell}",
-            "image": b64,
-            "name": name,
-        },
-        timeout=timeout,
-    )
-    r.raise_for_status()
-    data = r.json()
+    rng = f"{sheet_id}!{cell}:{cell}"
+    url = f"{OPEN_API}/sheets/v2/spreadsheets/{spreadsheet_token}/values_image"
+    body = {"range": rng, "image": list(raw), "name": name}
+    r = requests.post(url, headers=headers, json=body, timeout=timeout)
+    try:
+        data = r.json()
+    except Exception:
+        data = {"_parse_error": True, "text": r.text[:4000]}
+    if r.status_code != 200:
+        raise RuntimeError(
+            f"values_image HTTP {r.status_code} range={rng!r} file={image_path!r}: {data}"
+        )
     if data.get("code") != 0:
-        raise RuntimeError(f"values_image 失败 {cell} {image_path!r}: {data}")
+        raise RuntimeError(
+            f"values_image 业务失败 range={rng!r} file={image_path!r}: {data}"
+        )
 
 
 def list_image_files(images_dir: str) -> List[str]:
@@ -293,12 +300,201 @@ def col_row_to_a1(col: int, row: int) -> str:
     return f"{chr(ord('A') + col)}{row}"
 
 
+def _cell_to_plain_text(cell: Any) -> str:
+    if cell is None:
+        return ""
+    if isinstance(cell, str):
+        return cell.strip()
+    if isinstance(cell, dict):
+        for k in ("text", "cellText", "stringValue"):
+            v = cell.get(k)
+            if isinstance(v, str) and v.strip():
+                return v.strip()
+        return ""
+    return str(cell).strip()
+
+
+def normalize_case_id(raw: Any) -> str:
+    """A 列 case_id：去掉首尾空白与常见图片后缀（与 images 主文件名 stem 对齐）。"""
+    s = _cell_to_plain_text(raw)
+    if not s:
+        return ""
+    lower = s.lower()
+    for ext in (".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".heic", ".tif", ".tiff"):
+        if lower.endswith(ext):
+            return s[: -len(ext)].strip()
+    return s
+
+
+def _grid_row_count(sheets: List[dict[str, Any]], sheet_id: str) -> int:
+    for s in sheets:
+        if str(s.get("sheet_id")) == str(sheet_id):
+            gp = s.get("grid_properties") or {}
+            rc = gp.get("row_count")
+            if rc is not None:
+                return max(int(rc), 2)
+    return 20000
+
+
+def read_column_a_existing_cases(
+    spreadsheet_token: str,
+    sheet_id: str,
+    headers: dict,
+    header_rows: int,
+    max_row: int,
+    timeout: float,
+) -> Tuple[Dict[str, int], int]:
+    """读 A 列已存在的 case_id。
+
+    返回 (case_id -> 首次出现的 1-based 行号, A 列最后一处非空行的行号；若全空则为 header_rows)。
+    """
+    start = header_rows + 1
+    if max_row < start:
+        return {}, header_rows
+    rng = f"{sheet_id}!A{start}:A{max_row}"
+    r = requests.get(
+        f"{OPEN_API}/sheets/v2/spreadsheets/{spreadsheet_token}/values_batch_get",
+        headers=headers,
+        params={"ranges": rng},
+        timeout=timeout,
+    )
+    r.raise_for_status()
+    data = r.json()
+    if data.get("code") != 0:
+        raise RuntimeError(f"values_batch_get A 列失败: {data}")
+    vrs = (data.get("data") or {}).get("valueRanges") or []
+    if not vrs:
+        return {}, header_rows
+    values = vrs[0].get("values") or []
+    row_by_case: Dict[str, int] = {}
+    last_content = header_rows
+    for i, row in enumerate(values):
+        row_1based = start + i
+        if not row:
+            continue
+        cell = row[0]
+        cid = normalize_case_id(cell)
+        if not cid:
+            continue
+        last_content = max(last_content, row_1based)
+        if cid not in row_by_case:
+            row_by_case[cid] = row_1based
+    return row_by_case, last_content
+
+
+def cell_has_image_or_content(cell: Any) -> bool:
+    """单元格是否已有内容（文本或嵌入图，用于 B/C/D 是否跳过写入）。"""
+    if cell is None:
+        return False
+    if isinstance(cell, str):
+        return bool(cell.strip())
+    if isinstance(cell, dict):
+        if cell.get("type") == "embed-image" and cell.get("fileToken"):
+            return True
+        return bool(_cell_to_plain_text(cell))
+    return True
+
+
+def read_columns_bcd(
+    spreadsheet_token: str,
+    sheet_id: str,
+    headers: dict,
+    start_row: int,
+    end_row: int,
+    timeout: float,
+) -> List[List[Any]]:
+    """读取 B:D 列，行 start_row..end_row（含）；与 values 下标 i 对应行号 start_row+i。"""
+    if end_row < start_row:
+        return []
+    rng = f"{sheet_id}!B{start_row}:D{end_row}"
+    r = requests.get(
+        f"{OPEN_API}/sheets/v2/spreadsheets/{spreadsheet_token}/values_batch_get",
+        headers=headers,
+        params={"ranges": rng},
+        timeout=timeout,
+    )
+    r.raise_for_status()
+    data = r.json()
+    if data.get("code") != 0:
+        raise RuntimeError(f"values_batch_get B:D 失败: {data}")
+    vrs = (data.get("data") or {}).get("valueRanges") or []
+    if not vrs:
+        return []
+    return vrs[0].get("values") or []
+
+
+def bcd_cell_at(
+    bcd_values: List[List[Any]], start_row: int, row_1based: int, col_idx: int
+) -> Any:
+    """col_idx: 0=B, 1=C, 2=D。"""
+    i = row_1based - start_row
+    if i < 0 or i >= len(bcd_values):
+        return None
+    row = bcd_values[i]
+    if col_idx >= len(row):
+        return None
+    return row[col_idx]
+
+
+def assign_rows_for_all_files(
+    files: List[str],
+    row_by_case_sheet: Dict[str, int],
+    last_content_row: int,
+    min_append_row: int,
+) -> Tuple[List[Tuple[str, str, int]], set[int]]:
+    """每个文件对应一行：已有 case_id 用表中行号，否则表尾新行。
+
+    返回 ( (文件名, case_id, 行号)... , 需要写入 A 列的新行行号集合 )。
+    """
+    sheet_rows = dict(row_by_case_sheet)
+    next_new = max(last_content_row + 1, min_append_row)
+    out: List[Tuple[str, str, int]] = []
+    new_rows_for_a: set[int] = set()
+
+    for fn in files:
+        case_id = os.path.splitext(fn)[0]
+        if case_id in sheet_rows:
+            row = sheet_rows[case_id]
+        else:
+            row = next_new
+            next_new += 1
+            sheet_rows[case_id] = row
+            new_rows_for_a.add(row)
+        out.append((fn, case_id, row))
+    return out, new_rows_for_a
+
+
+def write_column_a_scattered(
+    spreadsheet_token: str,
+    sheet_id: str,
+    headers: dict,
+    row_case_pairs: List[Tuple[int, str]],
+    timeout: float,
+) -> None:
+    """按行写入 A 列 case_id（无后缀），多分块 values_batch_update。"""
+    if not row_case_pairs:
+        return
+    for i in range(0, len(row_case_pairs), _MAX_RANGES_PER_BATCH):
+        chunk = row_case_pairs[i : i + _MAX_RANGES_PER_BATCH]
+        vrs = [
+            {
+                "range": f"{sheet_id}!A{r}:A{r}",
+                "values": [[cid]],
+            }
+            for r, cid in chunk
+        ]
+        values_batch_update(spreadsheet_token, headers, vrs, timeout=timeout)
+
+
 def main() -> int:
     if _project_root() not in sys.path:
         sys.path.insert(0, _project_root())
 
     parser = argparse.ArgumentParser(
-        description="将 images/crop/yuyan 批量写入飞书电子表格 A–D 列（从第 2 行起，保留第 1 行表头）"
+        description=(
+            "将 images/crop/yuyan 写入飞书电子表格：A 列为无后缀 case_id；"
+            "新 case 表尾追加；B/C/D 按格跳过已有内容。"
+        )
     )
     parser.add_argument(
         "--spreadsheet-url",
@@ -352,10 +548,19 @@ def main() -> int:
         help="若指定则按工作表标题匹配，优先级高于 --sheet-index",
     )
     parser.add_argument(
+        "--header-rows",
+        type=int,
+        default=1,
+        help="表头行数（默认 1；A 列从第 header_rows+1 行起读已有 case_id）",
+    )
+    parser.add_argument(
         "--start-row",
         type=int,
         default=2,
-        help="数据起始行号（默认 2，即保留第 1 行表头）",
+        help=(
+            "新 case 追加时的最小行号下界（默认 2）；"
+            "实际追加行 = max(表内 A 列最后非空行的下一行, start-row)"
+        ),
     )
     parser.add_argument(
         "--image-delay",
@@ -371,11 +576,21 @@ def main() -> int:
     parser.add_argument(
         "--limit",
         type=int,
-        default=10,
+        default=None,
         metavar="N",
         help="只处理排序后的前 N 张图（调试用；默认不限制）",
     )
     args = parser.parse_args()
+
+    if args.header_rows < 1:
+        print("--header-rows 须 >= 1", file=sys.stderr)
+        return 1
+    if args.start_row <= args.header_rows:
+        print(
+            f"--start-row（{args.start_row}）须大于 --header-rows（{args.header_rows}）",
+            file=sys.stderr,
+        )
+        return 1
 
     app_id, app_secret = load_app_credentials()
     wiki = (args.wiki_token or "").strip() or os.environ.get(
@@ -420,23 +635,39 @@ def main() -> int:
     else:
         token_str = spreadsheet_token_from_url(args.spreadsheet_url)
 
-    start = args.start_row
-    end_row = start + len(files) - 1
+    header_rows = args.header_rows
+    min_append_row = args.start_row
 
     print(f"spreadsheet_token={token_str}")
-    print(f"共 {len(files)} 个原图，写入行 {start}–{end_row}（列 A–D）")
+    print(
+        f"共 {len(files)} 张图 → A 列 case_id 无后缀；"
+        f"表头 {header_rows} 行，新行下界 start-row={min_append_row}"
+    )
 
     if args.dry_run:
-        preview = min(len(files), args.limit if args.limit is not None else 5)
-        for i, fn in enumerate(files[:preview]):
-            row = start + i
+        assignments, new_a = assign_rows_for_all_files(
+            files, {}, header_rows, min_append_row
+        )
+        preview = min(
+            len(assignments),
+            args.limit if args.limit is not None else 5,
+        )
+        print(
+            "  （dry-run 未读表：假定无已有 case；实际会读 A/B:D，"
+            "仅对空单元格写图、仅对新行写 A）"
+        )
+        print(f"  共 {len(assignments)} 条文件；其中需新写 A 的行约 {len(new_a)} 行（无表时=全部新行）")
+        for fn, case_id, row in assignments[:preview]:
+            mark = " [新行写A]" if row in new_a else " [已有行]"
             print(
-                f"  行{row}: A={fn} B={os.path.join(args.images_dir, fn)} "
+                f"  行{row}{mark}: A={case_id!r}  B={os.path.join(args.images_dir, fn)} "
                 f"C={resolve_same_stem(args.crop_dir, fn)} "
                 f"D={resolve_same_stem(args.yuyan_dir, fn)}"
             )
-        if len(files) > preview:
-            print(f"  ... 其余 {len(files) - preview} 行略（dry-run 仅展示前 {preview} 行）")
+        if len(assignments) > preview:
+            print(
+                f"  ... 其余 {len(assignments) - preview} 条略（dry-run 仅展示前 {preview} 条）"
+            )
         return 0
 
     if tenant is None:
@@ -450,52 +681,112 @@ def main() -> int:
     sheet_id = pick_sheet_id(sheets, args.sheet_index, args.sheet_title)
     print(f"使用工作表 sheet_id={sheet_id!r}")
 
-    # A 列：文件名
-    col_a = [[fn] for fn in files]
-    a1_start = col_row_to_a1(0, start)
-    a1_end = col_row_to_a1(0, end_row)
-    values_batch_update(
+    max_scan = _grid_row_count(sheets, sheet_id)
+    row_by_case, last_content = read_column_a_existing_cases(
         token_str,
+        sheet_id,
         headers,
-        [
-            {
-                "range": f"{sheet_id}!{a1_start}:{a1_end}",
-                "values": col_a,
-            }
-        ],
-        timeout=max(req_to, IMAGE_UPLOAD_TIMEOUT),
+        header_rows,
+        max_scan,
+        req_to,
     )
-    print("已写入 A 列文件名")
+    print(
+        f"已读 A 列：已有 {len(row_by_case)} 个不同 case_id，"
+        f"A 列最后非空行={last_content}，扫描上界 A{max_scan}"
+    )
 
-    # B / C / D 列：逐格写图（每格一次 values_image）
-    for i, fn in enumerate(files):
-        row = start + i
-        paths: List[Tuple[str, str, str]] = [
-            ("B", os.path.join(args.images_dir, fn), "原图"),
-            ("C", resolve_same_stem(args.crop_dir, fn) or "", "crop"),
-            ("D", resolve_same_stem(args.yuyan_dir, fn) or "", "yuyan"),
+    assignments, new_rows_for_a = assign_rows_for_all_files(
+        files, row_by_case, last_content, min_append_row
+    )
+    a_start = header_rows + 1
+    max_touch_row = max((r for _, _, r in assignments), default=a_start)
+    end_read = min(max_scan, max(max_touch_row, last_content))
+    bcd_values = read_columns_bcd(
+        token_str, sheet_id, headers, a_start, end_read, req_to
+    )
+    print(
+        f"已读 B:D 行 {a_start}–{end_read}，共 {len(bcd_values)} 行返回值；"
+        f"待处理文件 {len(assignments)} 条，新行需写 A 的共 {len(new_rows_for_a)} 行"
+    )
+
+    row_to_case_for_a: Dict[int, str] = {}
+    for fn, cid, row in assignments:
+        if row in new_rows_for_a and row not in row_to_case_for_a:
+            row_to_case_for_a[row] = cid
+    row_case_pairs = sorted(
+        ((r, row_to_case_for_a[r]) for r in new_rows_for_a if r in row_to_case_for_a),
+        key=lambda x: x[0],
+    )
+    if row_case_pairs:
+        write_column_a_scattered(
+            token_str,
+            sheet_id,
+            headers,
+            list(row_case_pairs),
+            timeout=max(req_to, IMAGE_UPLOAD_TIMEOUT),
+        )
+        print(f"已写入 A 列 case_id（{len(row_case_pairs)} 个新行）")
+    else:
+        print("无需写 A 列（无新增 case 行）")
+
+    skip_b = skip_c = skip_d = wrote_b = wrote_c = wrote_d = 0
+    filled_this_run: set[Tuple[int, str]] = set()
+
+    for idx, (fn, case_id, row) in enumerate(assignments):
+        paths: List[Tuple[str, int, str, str]] = [
+            ("B", 0, os.path.join(args.images_dir, fn), "原图"),
+            ("C", 1, resolve_same_stem(args.crop_dir, fn) or "", "crop"),
+            ("D", 2, resolve_same_stem(args.yuyan_dir, fn) or "", "鱼眼"),
         ]
-        for col_letter, path, label in paths:
-            cell = f"{col_letter}{row}"
+        for col_letter, col_idx, path, label in paths:
+            key = (row, col_letter)
+            if key in filled_this_run:
+                continue
+            cell_val = bcd_cell_at(bcd_values, a_start, row, col_idx)
+            if cell_has_image_or_content(cell_val):
+                if col_letter == "B":
+                    skip_b += 1
+                elif col_letter == "C":
+                    skip_c += 1
+                else:
+                    skip_d += 1
+                continue
             if not path or not os.path.isfile(path):
                 if col_letter == "B":
-                    print(f"  [WARN] 行{row} 缺少原图 {fn}，跳过 B 列", file=sys.stderr)
+                    print(
+                        f"  [WARN] 行{row} case={case_id!r} 缺少原图 {fn}，跳过 B 列",
+                        file=sys.stderr,
+                    )
                 else:
-                    print(f"  [WARN] 行{row} 缺 {label}，跳过 {col_letter} 列", file=sys.stderr)
+                    print(
+                        f"  [WARN] 行{row} case={case_id!r} 缺 {label} 文件，跳过 {col_letter} 列",
+                        file=sys.stderr,
+                    )
                 continue
             write_image_cell(
                 token_str,
                 headers,
                 sheet_id,
-                cell,
+                f"{col_letter}{row}",
                 path,
                 timeout=max(req_to, IMAGE_UPLOAD_TIMEOUT),
             )
+            filled_this_run.add(key)
+            if col_letter == "B":
+                wrote_b += 1
+            elif col_letter == "C":
+                wrote_c += 1
+            else:
+                wrote_d += 1
             if args.image_delay > 0:
                 time.sleep(args.image_delay)
-        if (i + 1) % 20 == 0:
-            print(f"  已处理 {i + 1}/{len(files)} 行 ...")
+        if (idx + 1) % 50 == 0:
+            print(f"  已扫描 {idx + 1}/{len(assignments)} 条文件 ...")
 
+    print(
+        f"图片写入：B 新写×{wrote_b} 跳过已有×{skip_b}；"
+        f"C 新写×{wrote_c} 跳过×{skip_c}；D 新写×{wrote_d} 跳过×{skip_d}"
+    )
     print("全部完成")
     return 0
 
