@@ -18,7 +18,7 @@ import shutil
 import sys
 
 # ========= 手动配置（与命令行 --run-name 二选一，CLI 优先）=========
-RUN_NAME = "run_0422_v5"
+RUN_NAME = "run_0423_v5"
 
 AVP_BASE = "/mnt/public-data/user/ziroujiang/avp"
 RESULT_SRC = os.path.join(AVP_BASE, "result_avm")

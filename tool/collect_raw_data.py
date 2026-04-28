@@ -1,11 +1,6 @@
 #!/usr/bin/env python3
 """
-跑 pipeline.py 的 Step1–5（默认跳过 Step6 VLM 诊断）。仅把 ``id_mapping.json`` 与 pipeline
-``logs/`` 写入 ``tool/output/``；其余中间产物（``samples`` / ``generate`` / ``read_data`` /
-``draw_image``）仍落在 ``config.DATA_BASE``（默认 ``/mnt/public-data/user/ziroujiang/avp``）。
-最后把 ``draw_image`` 下已绘制的 AVM 与单路鱼眼图按 ``{tag_id}_{timestamp_us}.jpg`` 命名复制到
-目标根目录（默认 ``/mnt/public-data/user/ziroujiang/raw_data``）。同时对每张 AVM 按超声质心裁
-剪到同级 ``crop/`` 子目录（复用 ``tool/crop_read_data_chaosheng.py``）：
+  收集微调数据
 
   <dst>/images/{tag}_{ts}.jpg   ← draw_image/<tag>/<ts>/avm.jpg
   <dst>/yuyan/{tag}_{ts}.jpg    ← draw_image/<tag>/<ts>/yuyan_draw.jpg（缺失则跳过）
