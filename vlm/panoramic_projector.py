@@ -683,7 +683,9 @@ class PanoramicProjector:
 
 
     def draw_obstacles_on_bev(self, image, obstacles, chaosheng, ground_param, virtual_camera_focal_length, virtual_camera_height,
-                              planning_point, chaosheng_pixel_radius=None, ignore_camera_freespace_types=None):
+                              planning_point, chaosheng_pixel_radius=None, ignore_camera_freespace_types=None,
+                              draw_ultrasonic_red: bool = True,
+                              chaosheng_pixel_anchor_chaosheng=None):
         """
         在BEV图像上绘制障碍物的polygon
 
@@ -695,8 +697,11 @@ class PanoramicProjector:
             virtual_camera_height: 虚拟相机高度
             chaosheng_pixel_radius: 若非 None，仅保留「相机障碍多边形任一顶点到任一超声障碍多边形顶点」的
                 欧氏像素距离最小值 <= 该阈值的条目后再绘制；超声侧点为各 chaosheng 多边形全部顶点（非质心）。
+            chaosheng_pixel_anchor_chaosheng: 若提供，邻近筛选的超声顶点来自该列表（已处于与 obstacles 相同的
+                sensing 坐标系），而非 ``chaosheng``；红色超声绘制仍用 ``chaosheng``。
             ignore_camera_freespace_types: 若为 set/list，规范化后的枚举名（如 FS_CURB）命中的条目不绘制、不写入 yellow 元数据。
                 freespaceType 缺省、无法解析或整型不在 proto 表内时规范为 FS_OTHERS_STATIC。
+            draw_ultrasonic_red: 若为 False，不绘制超声障碍的红色线段/点（仍可用超声多边形做 chaosheng_pixel_radius 邻近筛选）。
 
         Returns:
             tuple: (绘制后的图像, 红色超声质心列表, 黄色 PARK_FREESPACE 元数据列表)
@@ -767,8 +772,13 @@ class PanoramicProjector:
 
         chaosheng_img_pts = np.empty((0, 2), dtype=np.float32)
         if chaosheng_pixel_radius is not None:
+            anchor_ch = (
+                chaosheng
+                if chaosheng_pixel_anchor_chaosheng is None
+                else chaosheng_pixel_anchor_chaosheng
+            )
             chaosheng_img_pts = self._precompute_chaosheng_img_points(
-                chaosheng, ground_param, virtual_camera_focal_length,
+                anchor_ch, ground_param, virtual_camera_focal_length,
                 virtual_camera_height, image_height, image_width)
 
         for obstacle in obstacles:
@@ -879,54 +889,55 @@ class PanoramicProjector:
                     })
 
         pos = []
-        for obstacle in chaosheng:
-            if obstacle.get("freespaceType", "") == "FS_CAR":
-                continue
-            color = (0, 0, 255)
-            polygon_area = obstacle.get("polygonArea", {}).get("point", [])
-            if polygon_area is None or len(polygon_area) == 0:
-                continue
+        if draw_ultrasonic_red:
+            for obstacle in chaosheng:
+                if obstacle.get("freespaceType", "") == "FS_CAR":
+                    continue
+                color = (0, 0, 255)
+                polygon_area = obstacle.get("polygonArea", {}).get("point", [])
+                if polygon_area is None or len(polygon_area) == 0:
+                    continue
 
-            points_3d = []
-            for point in polygon_area:
-                x = point.get('x', 0)
-                y = point.get('y', 0)
-                z = point.get('z', 0)
-                points_3d.append([x, y, z])
+                points_3d = []
+                for point in polygon_area:
+                    x = point.get('x', 0)
+                    y = point.get('y', 0)
+                    z = point.get('z', 0)
+                    points_3d.append([x, y, z])
 
-            points_3d = np.array(points_3d, dtype=np.float32)
-            if len(points_3d) == 0:
-                continue
+                points_3d = np.array(points_3d, dtype=np.float32)
+                if len(points_3d) == 0:
+                    continue
 
-            try:
-                points_2d = self.transform_sensor_to_avm_image(
-                    points_3d,
-                    ground_param,
-                    virtual_camera_focal_length=virtual_camera_focal_length,
-                    virtual_camera_height=virtual_camera_height,
-                    image_height=image_height,
-                    image_width=image_width
-                )
-            except Exception as e:
-                print(f"Warning: Failed to transform points for obstacle {obstacle.get('id', 'unknown')}: {e}")
-                continue
-            points_2d_int = points_2d.astype(np.int32)
-            valid_points = points_2d_int[:-1] if len(points_2d_int) > 1 and np.array_equal(points_2d_int[0], points_2d_int[-1]) else points_2d_int
+                try:
+                    points_2d = self.transform_sensor_to_avm_image(
+                        points_3d,
+                        ground_param,
+                        virtual_camera_focal_length=virtual_camera_focal_length,
+                        virtual_camera_height=virtual_camera_height,
+                        image_height=image_height,
+                        image_width=image_width
+                    )
+                except Exception as e:
+                    print(f"Warning: Failed to transform points for obstacle {obstacle.get('id', 'unknown')}: {e}")
+                    continue
+                points_2d_int = points_2d.astype(np.int32)
+                valid_points = points_2d_int[:-1] if len(points_2d_int) > 1 and np.array_equal(points_2d_int[0], points_2d_int[-1]) else points_2d_int
 
-            if len(valid_points) >= 2:
-                for i in range(len(valid_points) - 1):
-                    pt1 = tuple(valid_points[i])
-                    pt2 = tuple(valid_points[i + 1])
-                    u1, v1 = int(pt1[0]), int(pt1[1])
-                    u2, v2 = int(pt2[0]), int(pt2[1])
-                    if 0 <= u1 < image_width and 0 <= v1 < image_height:
-                        cv2.circle(image_out, (u1, v1), 2, color, -1)
-                    if 0 <= u2 < image_width and 0 <= v2 < image_height:
-                        cv2.circle(image_out, (u2, v2), 2, color, -1)
-                    cv2.line(image_out, (u1, v1), (u2, v2), color, 2)
+                if len(valid_points) >= 2:
+                    for i in range(len(valid_points) - 1):
+                        pt1 = tuple(valid_points[i])
+                        pt2 = tuple(valid_points[i + 1])
+                        u1, v1 = int(pt1[0]), int(pt1[1])
+                        u2, v2 = int(pt2[0]), int(pt2[1])
+                        if 0 <= u1 < image_width and 0 <= v1 < image_height:
+                            cv2.circle(image_out, (u1, v1), 2, color, -1)
+                        if 0 <= u2 < image_width and 0 <= v2 < image_height:
+                            cv2.circle(image_out, (u2, v2), 2, color, -1)
+                        cv2.line(image_out, (u1, v1), (u2, v2), color, 2)
 
-                center = np.mean(valid_points, axis=0)
-                pos.append([int(center[0]), int(center[1])])
+                    center = np.mean(valid_points, axis=0)
+                    pos.append([int(center[0]), int(center[1])])
 
         return image_out, pos, yellow_freespace_meta
 
