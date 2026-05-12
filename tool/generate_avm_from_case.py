@@ -13,6 +13,8 @@
 
 批量：使用 ``--case-list /path/to/case_id.txt``（每行一个 ``{tag}_{timestamp_us}``，支持 ``#`` 注释）。
 
+python tool/generate_avm_from_case.py --case-list /mnt/public-data/user/ziroujiang/generate_data/case_id.txt --mark-avm 
+
 成功生成后会写入 ``<case_out>/.generate_avm_manifest.json``（记录 ``ref_ts``、``frames``、``frame_step``、``main_camera`` 等）。下次若 manifest 与当前 CLI 一致且对应 **每帧** ``avm/*.jpg`` 与主路鱼眼均已存在且非空，则 **整 case 跳过**：**不打开 Heavy bag、不调 get_meta_data**（加 ``--force-regenerate`` 强制重做）。尚无 manifest 的旧目录仍会走 bag 流程。
 """
 

@@ -12,8 +12,8 @@
 用法::
 
     # 标准：id_mapping.json 与 logs 写到 tool/output，Step1–5，复制到 raw_data
-    # 1-3月数据
-    python tool/collect_raw_data.py -p iffcom -v A9umFAhvg 
+    # 1-4月数据
+    python tool/collect_raw_data.py -p iffcom -v QNS4gZ0DR
 
     # 只重绘 Step5 并复制（需 tool/output/id_mapping.json 已存在，或显式 --id-mapping）
     python tool/collect_raw_data.py --skip-steps 1 2 3 4

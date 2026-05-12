@@ -164,6 +164,32 @@ def _read_data_has_ultrasonic_timestamps(data_path):
     return False
 
 
+def _collect_bag_prefixes_for_tags(tag_ids, samples_dir):
+    """根据 tag_ids 反查 meta_data，收集本批 tag 涉及的所有 Heavy bag_prefix + YYYYMM。"""
+    from get_data.unpack_bag_for_avm import extract_bag_prefix, extract_yyyymm
+
+    result = {}
+    try:
+        from get_data.get_meta_data import get_meta_data
+    except ImportError:
+        return result
+    for tag_id in tag_ids:
+        try:
+            meta = get_meta_data(tag_id=tag_id)
+        except Exception:
+            continue
+        if not meta or not meta.get("body"):
+            continue
+        for bag_name in meta["body"][0].get("bagsName") or []:
+            if "Heavy" not in bag_name:
+                continue
+            prefix = extract_bag_prefix(bag_name)
+            yyyymm = extract_yyyymm(prefix)
+            if prefix and yyyymm:
+                result[prefix] = yyyymm
+    return result
+
+
 def step3_unpack_and_save_bag_data(
     tag_ids,
     samples_dir,
@@ -171,6 +197,7 @@ def step3_unpack_and_save_bag_data(
     extract_fisheye=True,
     unpack_workers=DEFAULT_UNPACK_WORKERS,
 ):
+    """返回本次涉及的 bag_prefix → yyyymm 映射（含已跳过和新解包的），供 Step 4 过滤。"""
     banner(
         3,
         "解包 samples 并准备 read_data（unpack_bag_for_avm + save_bag_data；多 tag 可并行）",
@@ -186,20 +213,16 @@ def step3_unpack_and_save_bag_data(
         data_path = os.path.join(read_data_dir, str(tag_id))
         v2s = os.path.join(data_path, "vehicle2sensing.json")
         if os.path.isdir(data_path) and os.path.isfile(v2s):
-            if _read_data_has_ultrasonic_timestamps(data_path):
-                log.info(f"  tag_id={tag_id} read_data 已完整，跳过解包与 save_data")
-                success += 1
-                continue
-            log.info(
-                f"  tag_id={tag_id} 仅有配置无时间戳数据（如历史 proto 导致未写入 chaosheng），"
-                "重新解包并 save_data ..."
-            )
+            log.info(f"  tag_id={tag_id} read_data 已存在，跳过解包与 save_data")
+            success += 1
+            continue
         pending.append(tag_id)
 
     workers = max(1, int(unpack_workers or 1))
     if not pending:
         log.info(f"  ✅ Step 3 完成（解包 + read_data）({success}/{len(tag_ids)})")
-        return
+        bag_prefixes = _collect_bag_prefixes_for_tags(tag_ids, samples_dir)
+        return bag_prefixes
 
     if workers == 1 or len(pending) == 1:
         for tag_id in pending:
@@ -239,6 +262,8 @@ def step3_unpack_and_save_bag_data(
                     log.warning(f"  tag_id={tag_id} 失败: {err}")
 
     log.info(f"  ✅ Step 3 完成（解包 + read_data）({success}/{len(tag_ids)})")
+    bag_prefixes = _collect_bag_prefixes_for_tags(tag_ids, samples_dir)
+    return bag_prefixes
 
 
 # ── Step 4 ──────────────────────────────────────────────────
@@ -259,7 +284,17 @@ def _find_unpacked_bags(samples_dir):
     return result
 
 
-def step4_generate_avm(samples_dir, generate_dir, skip_bag_prefixes=None):
+def step4_generate_avm(
+    samples_dir,
+    generate_dir,
+    skip_bag_prefixes=None,
+    only_bag_prefixes=None,
+):
+    """拼接鱼眼图。
+
+    only_bag_prefixes: 若非空，只处理该集合内的 bag（来自 Step 3 的返回值），
+                       不再全量扫描 samples/config/。
+    """
     banner(4, "拼接鱼眼图 (offline_avm_generate_release)")
 
     skip_bag_prefixes = skip_bag_prefixes or set()
@@ -270,19 +305,21 @@ def step4_generate_avm(samples_dir, generate_dir, skip_bag_prefixes=None):
         log.error(f"  ❌ 未找到 {run_sh}，跳过")
         return
 
-    unpacked = _find_unpacked_bags(samples_dir)
-    if not unpacked:
-        log.warning(f"  ⚠️  config 目录下未找到已解包的 bag，跳过")
-        return
+    if only_bag_prefixes is not None:
+        targets = {k: v for k, v in only_bag_prefixes.items() if k not in skip_bag_prefixes}
+        if not targets:
+            log.info("  本次 tag 无需拼接的 bag（全部被跳过或无 Heavy bag），结束")
+            return
+        log.info(f"  本次 tag 涉及 {len(only_bag_prefixes)} 个 bag，过滤后待处理 {len(targets)} 个")
+    else:
+        unpacked = _find_unpacked_bags(samples_dir)
+        if not unpacked:
+            log.warning(f"  ⚠️  config 目录下未找到已解包的 bag，跳过")
+            return
+        targets = {k: v for k, v in unpacked.items() if k not in skip_bag_prefixes}
+        log.info(f"  发现 {len(unpacked)} 个已解包 bag，过滤后待处理 {len(targets)} 个")
 
-    log.info(f"  发现 {len(unpacked)} 个已解包 bag，开始拼接")
-    for bag_name, yyyymm in sorted(unpacked.items()):
-        if bag_name in skip_bag_prefixes:
-            log.info(
-                f"  {bag_name} 已在超声波事件时刻判定后视镜折叠（{config.CAR_STATE_TOPIC}），"
-                f"跳过 AVM 拼接"
-            )
-            continue
+    for bag_name, yyyymm in sorted(targets.items()):
         out_path = os.path.join(generate_dir, bag_name)
         if os.path.isdir(out_path) and os.listdir(out_path):
             log.info(f"  {bag_name} 已生成，跳过")
@@ -464,8 +501,9 @@ def main():
         log.info(f"[跳过 Step 2]")
 
     # Step 3
+    tag_bag_prefixes = None
     if 3 not in skip:
-        step3_unpack_and_save_bag_data(
+        tag_bag_prefixes = step3_unpack_and_save_bag_data(
             tag_ids,
             args.samples_dir,
             args.read_data_dir,
@@ -534,6 +572,7 @@ def main():
             args.samples_dir,
             args.generate_dir,
             skip_bag_prefixes=mirror_skip_prefixes,
+            only_bag_prefixes=tag_bag_prefixes,
         )
     else:
         log.info(f"[跳过 Step 4]")
@@ -583,9 +622,9 @@ if __name__ == "__main__":
     # import sys
     # sys.argv = [
     #     "avp_vlm_pipeline_avm.py",
-    #     "--id-mapping", "/tmp/test_debug.json",
+    #     "--id-mapping", "/home/jiangzirou/avp_promptkit/get_data/test.json",
     #     # "--mode", "draw",  # 调试鱼眼/绘图时先只跑 draw，避免走 VLM
-    #     "--model", "gemini-3-pro-preview",
-    #     "--skip-steps", "1"
+    #     # "--model", "gemini-3-pro-preview",
+    #     "--skip-steps", "1","2","6"
     # ]
     main()

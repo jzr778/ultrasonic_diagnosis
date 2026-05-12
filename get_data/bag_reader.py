@@ -248,6 +248,18 @@ def is_p01t_vehicle_bag(bag_name):
     return re.search(r"-P01T-", base, re.IGNORECASE) is not None
 
 
+def _is_remote_read_timeout_error(exc: BaseException) -> bool:
+    """DpBag / TOS 读超时、STORAGE_ACCESS_ERROR 等（便于日志里关联 tag_id）。"""
+    s = (str(exc) + " " + repr(exc)).lower()
+    if "timed out" in s or "timeout" in s:
+        return True
+    if "storage_access" in s or "30201" in s:
+        return True
+    if "network error occurred while reading" in s:
+        return True
+    return False
+
+
 class BagReader:
     """对一个 tag_id 对应的所有 bag 进行统一读取。"""
 
@@ -256,6 +268,9 @@ class BagReader:
             meta_data = get_meta_data(tag_id=tag_id)
         self.meta_data = meta_data
         self.trip_id = meta_data['body'][0]['tripId']
+
+        # 与 id_mapping 的键一致，由调用方传入（unpack_tag / save_data / BagReader(tag_id=...)）
+        self.tag_id = tag_id
 
         bags = meta_data['body'][0]['bagsName']
         self.all_light_bags = sorted(b for b in bags if 'Light' in b)
@@ -273,6 +288,16 @@ class BagReader:
         self._planning_results_cached = None
         self._mirror_timeline_cache = ([], [])
         self._event_mirror_open_cache = {}
+
+    def _warn_bag_read_failed(self, bag_name: str, exc: BaseException, *, phase: str = "") -> None:
+        label = f" ({phase})" if phase else ""
+        tid = self.tag_id
+        if tid is not None and _is_remote_read_timeout_error(exc):
+            print(
+                f"    [WARN] 远端存储/网络超时 tag_id={tid} bag={bag_name}{label}: {exc}"
+            )
+        else:
+            print(f"    [WARN] 跳过 {bag_name}{label}: {exc}")
 
     # ──────────────────────────────────────────────────────────
     #  超声波事件扫描（Light bag）
@@ -316,7 +341,7 @@ class BagReader:
                             self.perception_time_list.append(per_t)
                             self.chaosheng_results[per_t] = data_list
             except Exception as e:
-                print(f"    [WARN] 跳过 {bag_name}: {e}")
+                self._warn_bag_read_failed(bag_name, e)
 
         self.event_heavy_bags = sorted(
             b.replace("Light", "Heavy") for b in self.event_light_bags
@@ -432,7 +457,7 @@ class BagReader:
                                 continue
                             mirror_candidates.append((ts_car, open_ok))
             except Exception as e:
-                print(f"    [WARN] 跳过 {bag_name} (light payloads): {e}")
+                self._warn_bag_read_failed(bag_name, e, phase="light payloads")
 
         mirror_ts, mirror_open = _rear_view_mirror_timeline_from_candidates(
             mirror_candidates,
@@ -543,7 +568,7 @@ class BagReader:
                             }
                             update_counts[cam_name] += 1
             except Exception as e:
-                print(f"      [WARN] 跳过 {heavy_bag}: {e}")
+                self._warn_bag_read_failed(heavy_bag, e, phase="heavy fisheye")
 
         for cam_name in config.CAMERA_NAMES:
             print(f"      -> {cam_name} 更新 {update_counts[cam_name]} 次匹配")

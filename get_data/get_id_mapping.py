@@ -60,7 +60,7 @@ def get_plugin_token(plugin_id, plugin_secret):
     return token
 
 
-def fetch_fix_view_ids(headers, project_key, view_id, page_size=200, max_pages=50):
+def fetch_fix_view_ids(headers, project_key, view_id, page_size=200, max_pages=500):
     ids = []
     page_num = 1
     while page_num <= max_pages:
