@@ -12,9 +12,11 @@
 """
 
 import bisect
+import logging
 import os
 import re
 import sys
+from datetime import datetime
 
 import cv2
 import numpy as np
@@ -260,6 +262,30 @@ def _is_remote_read_timeout_error(exc: BaseException) -> bool:
     return False
 
 
+def _emit_pipeline_log(message: str, level: int = logging.WARNING) -> None:
+    """写入 pipeline 日志：主进程走 logging；子进程无 handler 时追加 PIPELINE_LOG_FILE。"""
+    logger = logging.getLogger("pipeline")
+    if logger.handlers:
+        logger.log(level, message)
+        return
+    log_path = os.environ.get("PIPELINE_LOG_FILE")
+    if log_path:
+        try:
+            ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            with open(log_path, "a", encoding="utf-8") as f:
+                f.write(f"[{ts}]   {message}\n")
+            # 子进程无 pipeline logger：dpbag 的 E 行只打 stderr；这里补一行带 tag_id 便于终端与日志对齐
+            if "tag_id=" in message:
+                one = message.replace("\n", " ").strip()
+                if len(one) > 400:
+                    one = one[:397] + "..."
+                print(one, file=sys.stderr, flush=True)
+        except OSError:
+            print(message, file=sys.stderr, flush=True)
+    else:
+        print(message, file=sys.stderr, flush=True)
+
+
 class BagReader:
     """对一个 tag_id 对应的所有 bag 进行统一读取。"""
 
@@ -292,12 +318,13 @@ class BagReader:
     def _warn_bag_read_failed(self, bag_name: str, exc: BaseException, *, phase: str = "") -> None:
         label = f" ({phase})" if phase else ""
         tid = self.tag_id
+        prefix = f"tag_id={tid} " if tid is not None else ""
         if tid is not None and _is_remote_read_timeout_error(exc):
-            print(
-                f"    [WARN] 远端存储/网络超时 tag_id={tid} bag={bag_name}{label}: {exc}"
+            _emit_pipeline_log(
+                f"[WARN] {prefix}远端存储/网络超时 bag={bag_name}{label}: {exc}"
             )
         else:
-            print(f"    [WARN] 跳过 {bag_name}{label}: {exc}")
+            _emit_pipeline_log(f"[WARN] {prefix}跳过 bag={bag_name}{label}: {exc}")
 
     # ──────────────────────────────────────────────────────────
     #  超声波事件扫描（Light bag）
@@ -313,7 +340,11 @@ class BagReader:
             return self.perception_time_list, self.chaosheng_results
         for bag_name in self.all_light_bags:
             if is_p01t_vehicle_bag(bag_name):
-                print(f"    [SKIP] P01T 车型 bag，跳过: {os.path.basename(bag_name)}")
+                tid = self.tag_id
+                prefix = f"tag_id={tid} " if tid is not None else ""
+                _emit_pipeline_log(
+                    f"[WARN] {prefix}[SKIP] P01T 车型 bag，跳过: {os.path.basename(bag_name)}"
+                )
                 continue
             try:
                 with DpBag(bag=bag_name) as bag:

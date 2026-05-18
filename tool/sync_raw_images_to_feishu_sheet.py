@@ -50,9 +50,9 @@ _DEFAULT_FEISHU_APP_SECRET = "8W1Art9TRWrV50C7QgITwbYbMMqLKI5x"
 DEFAULT_SPREADSHEET_URL = (
     "https://rqk9rsooi4.feishu.cn/sheets/RX35sNkX7hjj4ntsDH2cipV1njd"
 )
-DEFAULT_IMAGES_DIR = "/mnt/public-data/user/ziroujiang/raw_data_01-03/images"
-DEFAULT_CROP_DIR = "/mnt/public-data/user/ziroujiang/raw_data_01-03/crop"
-DEFAULT_YUYAN_DIR = "/mnt/public-data/user/ziroujiang/raw_data_01-03/yuyan"
+DEFAULT_IMAGES_DIR = "/mnt/public-data/user/ziroujiang/trigger50000/images"
+DEFAULT_CROP_DIR = "/mnt/public-data/user/ziroujiang/trigger50000/crop"
+DEFAULT_YUYAN_DIR = "/mnt/public-data/user/ziroujiang/trigger50000/yuyan"
 
 IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".heic", ".tif", ".tiff"}
 # values_batch_update 单次 valueRanges 条数上限（保守分块，避免触顶）

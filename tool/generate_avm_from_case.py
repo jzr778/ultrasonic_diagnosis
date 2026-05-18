@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 """
+选「主相机帧离 target_ts 最近」的 Heavy bag 
+→ 在主相机时间线上以 target 为中心、每隔 5 帧采 1 帧、共取 10 帧参考时间戳 
+→ 对 4 路鱼眼各做最近邻时间匹配 
+→ 从 bag 中解码对应帧图像 
+→ 4 路拼 AVM + 主方位单路落盘
+
+
 给定 case_id={tag_id}_{timestamp_us}：
 1) 在该 tag 对应 Heavy bag 中定位目标时间戳附近 N 帧（默认 10 帧）；
 2) 抽取每帧 4 路鱼眼并按 offline_avm_generate 输入结构落盘；
@@ -9,11 +16,11 @@
 5) 可选 ``--mark-avm``：**所有** case 的 AVM 均生成并落盘结束后，再统一打开 OpenCV 逐张标注（多 case 不会中途打断批量生成）。
 
 默认输出目录:
-  /mnt/public-data/user/ziroujiang/generate_data
+  /mnt/public-data/user/ziroujiang/generate_raw_data
 
 批量：使用 ``--case-list /path/to/case_id.txt``（每行一个 ``{tag}_{timestamp_us}``，支持 ``#`` 注释）。
 
-python tool/generate_avm_from_case.py --case-list /mnt/public-data/user/ziroujiang/generate_data/case_id.txt --mark-avm 
+python tool/generate_avm_from_case.py --case-list /mnt/public-data/user/ziroujiang/generate_raw_data/case_id.txt --mark-avm 
 
 成功生成后会写入 ``<case_out>/.generate_avm_manifest.json``（记录 ``ref_ts``、``frames``、``frame_step``、``main_camera`` 等）。下次若 manifest 与当前 CLI 一致且对应 **每帧** ``avm/*.jpg`` 与主路鱼眼均已存在且非空，则 **整 case 跳过**：**不打开 Heavy bag、不调 get_meta_data**（加 ``--force-regenerate`` 强制重做）。尚无 manifest 的旧目录仍会走 bag 流程。
 """
@@ -93,10 +100,9 @@ except Exception:
     MessageToDict = None  # type: ignore[assignment]
 
 
-DEFAULT_OUTPUT_ROOT = "/mnt/public-data/user/ziroujiang/generate_data"
+DEFAULT_OUTPUT_ROOT = "/mnt/public-data/user/ziroujiang/generate_raw_data"
 DEFAULT_FRAMES = 10
 DEFAULT_FRAME_STEP = 5
-DEFAULT_MAIN_CAMERA = "panoramic_1"
 # 与 crop_read_data_chaosheng / pipeline Step5 AVM 匹配 read_data 时间戳目录一致
 READ_DATA_TS_TOLERANCE_US = 50_000
 # 落盘于 ``<case_out>/``，用于下次在无 manifest 校验下也能跳过打开 bag（须与 CLI 参数一致）
@@ -963,16 +969,17 @@ def _manifest_path(case_out: str) -> str:
 def _output_files_complete_for_refs(
     case_out: str, tag_id: int, main_camera: str, ref_ts_list: Sequence[int]
 ) -> bool:
-    """``case_out/avm`` 与 ``case_out/<main_camera>`` 下各 ``ref_ts`` 对应 jpg 均存在且非空。"""
+    """``case_out/avm`` 下各 ``ref_ts`` 对应 jpg 均存在且非空；若有主方位相机也检查鱼眼目录。"""
     avm_dir = os.path.join(case_out, "avm")
-    y_dir = os.path.join(case_out, main_camera)
+    y_dir = os.path.join(case_out, main_camera) if main_camera else ""
     for rts in ref_ts_list:
         avm_p = os.path.join(avm_dir, f"{tag_id}_{int(rts)}.jpg")
-        y_p = os.path.join(y_dir, f"{tag_id}_{int(rts)}.jpg")
         if not (os.path.isfile(avm_p) and os.path.getsize(avm_p) > 0):
             return False
-        if not (os.path.isfile(y_p) and os.path.getsize(y_p) > 0):
-            return False
+        if y_dir:
+            y_p = os.path.join(y_dir, f"{tag_id}_{int(rts)}.jpg")
+            if not (os.path.isfile(y_p) and os.path.getsize(y_p) > 0):
+                return False
     return True
 
 
@@ -1049,16 +1056,22 @@ def _write_generate_avm_manifest(
 def run_case_generation(case_id: str, args: argparse.Namespace) -> List[str]:
     tag_id, target_ts = parse_case_id(case_id)
     if args.main_camera == "auto":
-        inferred = infer_main_camera_from_pipeline(tag_id, target_ts)
-        main_camera = inferred or DEFAULT_MAIN_CAMERA
+        main_camera = infer_main_camera_from_pipeline(tag_id, target_ts)
+        if not main_camera:
+            print(
+                f"[yuyan] 未从 draw_image/{tag_id}/{target_ts}/index_avm.json 推断出主方位相机，"
+                "跳过单路鱼眼输出",
+                file=sys.stderr,
+            )
     else:
         main_camera = args.main_camera
 
-    skip_paths = _try_skip_without_opening_bag(
-        case_id, args, tag_id, target_ts, main_camera
-    )
-    if skip_paths is not None:
-        return skip_paths
+    if main_camera:
+        skip_paths = _try_skip_without_opening_bag(
+            case_id, args, tag_id, target_ts, main_camera
+        )
+        if skip_paths is not None:
+            return skip_paths
 
     meta = get_meta_data(tag_id=tag_id)
     if not meta or not meta.get("body"):
@@ -1106,9 +1119,11 @@ def run_case_generation(case_id: str, args: argparse.Namespace) -> List[str]:
 
         case_out = os.path.join(args.output_root, f"{tag_id}_{target_ts}")
         avm_out_dir = os.path.join(case_out, "avm")
-        yuyan_out_dir = os.path.join(case_out, main_camera)
         os.makedirs(avm_out_dir, exist_ok=True)
-        os.makedirs(yuyan_out_dir, exist_ok=True)
+        yuyan_out_dir: Optional[str] = None
+        if main_camera:
+            yuyan_out_dir = os.path.join(case_out, main_camera)
+            os.makedirs(yuyan_out_dir, exist_ok=True)
 
         pipeline_projector: Optional[Any] = None
         chaosheng_radius_eff: Optional[int] = None
@@ -1216,11 +1231,11 @@ def run_case_generation(case_id: str, args: argparse.Namespace) -> List[str]:
                     file=sys.stderr,
                 )
 
-        # 输出单路主方位鱼眼（与 ref_ts 对齐命名）
-        for pf in planned:
-            img = images_by_cam_ts[main_camera][pf.per_cam_ts[main_camera]]
-            out_name = f"{tag_id}_{pf.ref_ts}.jpg"
-            cv2.imwrite(os.path.join(yuyan_out_dir, out_name), img)
+        if main_camera and yuyan_out_dir:
+            for pf in planned:
+                img = images_by_cam_ts[main_camera][pf.per_cam_ts[main_camera]]
+                out_name = f"{tag_id}_{pf.ref_ts}.jpg"
+                cv2.imwrite(os.path.join(yuyan_out_dir, out_name), img)
 
         # AVM 输出：优先按文件名时间戳对齐，否则回退按排序顺序。
         # 注意这里使用的是“本次四路鱼眼拼接生成”的结果，不复用历史 AVM。
@@ -1325,7 +1340,7 @@ def run_case_generation(case_id: str, args: argparse.Namespace) -> List[str]:
         print("=" * 70)
         print(f"case_id: {case_id}")
         print(f"选中 Heavy bag: {best_heavy}")
-        print(f"主方位相机: {main_camera}")
+        print(f"主方位相机: {main_camera or '（未推断到，已跳过单路鱼眼）'}")
         if eff_step != args.frame_step:
             print(
                 f"抽帧步长: 请求 {args.frame_step}，可用帧不足已自动回退为 {eff_step}"
@@ -1334,7 +1349,10 @@ def run_case_generation(case_id: str, args: argparse.Namespace) -> List[str]:
             print(f"抽帧步长: {eff_step}")
         print(f"计划帧数: {len(planned)}")
         print(f"AVM 拼接落盘: {stitched_avm} 张")
-        print(f"单路鱼眼输出({main_camera}): {len(planned)} 张")
+        if main_camera:
+            print(f"单路鱼眼输出({main_camera}): {len(planned)} 张")
+        else:
+            print("单路鱼眼输出: 跳过（无主方位相机）")
         if not args.skip_pipeline_overlay and pipeline_projector is not None:
             mode_label = "Light bag 现场抽取" if per_frame_extract_used else "read_data 目录最近邻"
             print(
@@ -1374,7 +1392,7 @@ def run_case_generation(case_id: str, args: argparse.Namespace) -> List[str]:
                 frames_requested=args.frames,
                 frame_step_requested=args.frame_step,
                 frame_step_effective=eff_step,
-                main_camera=main_camera,
+                main_camera=main_camera or "",
                 ref_ts_list=[pf.ref_ts for pf in planned],
             )
         return written_avm_paths
@@ -1401,7 +1419,7 @@ def main() -> int:
         default=None,
         help=(
             "从文本文件批量读取 case_id，每行一条；空行与 # 注释忽略。"
-            "示例: /mnt/public-data/user/ziroujiang/generate_data/case_id.txt"
+            "示例: /mnt/public-data/user/ziroujiang/generate_raw_data/case_id.txt"
         ),
     )
     parser.add_argument(
@@ -1427,7 +1445,8 @@ def main() -> int:
         choices=["auto"] + list(config.CAMERA_NAMES),
         help=(
             "与 AVM 主方位一致的单路鱼眼相机；默认 auto：读 "
-            "draw_image/<tag>/<ts>/index_avm.json 中 yuyan_camera（与大模型诊断一致），缺失时回退 panoramic_1"
+            "draw_image/<tag>/<ts>/index_avm.json 中 yuyan_camera（与大模型诊断一致），"
+            "推断不到则跳过单路鱼眼输出"
         ),
     )
     parser.add_argument(
@@ -1539,6 +1558,14 @@ def main() -> int:
         default=2,
         help="线宽像素",
     )
+    parser.add_argument(
+        "--crop-id-json",
+        default="/mnt/public-data/user/ziroujiang/generate_raw_data/crop_id.json",
+        help=(
+            "标注时记录笔划质心坐标的 JSON 路径（格式 {case_id: \"[x,y]\"}）；"
+            "默认 /mnt/public-data/user/ziroujiang/generate_raw_data/crop_id.json"
+        ),
+    )
     args = parser.parse_args()
     if args.mark_avm:
         warn_if_mark_avm_no_gui()
@@ -1575,14 +1602,16 @@ def main() -> int:
                 f"共 {len(all_avm_paths_for_mark)} 张 AVM，开始统一逐张标注 …"
             )
             print(
-                "[mark-avm] 左键拖动红色 | s 保存覆盖 | z/r 撤销/清空 | "
-                "n 下一张 | q/ESC 结束"
+                "[mark-avm] 左键拖动红色 | s 保存覆盖并记录质心 | z/r 撤销/清空 | "
+                "n 下一张（自动记录质心） | q/ESC 结束"
             )
+            crop_id_path = args.crop_id_json
             for i, p in enumerate(all_avm_paths_for_mark, start=1):
                 again = cv2.imread(p)
                 if again is None or again.size == 0:
                     print(f"[mark-avm] 跳过（无法读取）: {p}", file=sys.stderr)
                     continue
+                stem = os.path.splitext(os.path.basename(p))[0]
                 title = f"mark AVM [{i}/{len(all_avm_paths_for_mark)}]: {p}"
                 r = interactive_red_mark_session(
                     again,
@@ -1590,6 +1619,8 @@ def main() -> int:
                     window_title=title,
                     thickness=args.mark_thickness,
                     allow_next=True,
+                    case_id=stem,
+                    crop_id_path=crop_id_path,
                 )
                 if r == "quit":
                     break

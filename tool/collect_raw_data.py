@@ -41,7 +41,7 @@ if _project_root not in sys.path:
 
 import config
 
-DEFAULT_DST_ROOT = "/mnt/public-data/user/ziroujiang/raw_data"
+DEFAULT_DST_ROOT = "/mnt/public-data/user/ziroujiang/trigger50000"
 DEFAULT_WORK_ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "output")
 
 

@@ -6,7 +6,7 @@ AVP 全流程 Pipeline
   1. get_id_mapping.py         → get_data/id_mapping.json  ({tag_id: feishu_id})
   2. bag.py                    → offline_avm_generate_release/bag_list.txt
   3. unpack_bag_for_avm + save_bag_data   解包 samples 并准备 read_data（每 tag 独立 BagReader；默认多 tag 并行，--unpack-workers 可调）
-  4. run_standalone.sh          拼接鱼眼图（若车身 CarInfo 在超声事件时刻判后视镜折叠则跳过对应 bag）
+  4. run_standalone.sh          拼接鱼眼图（若 read_data 内后视镜折叠缓存判折叠则跳过对应 bag；无缓存 tag 不再远端补读）
   5. avp_vlm_pipeline_avm.py   绘制 AVM 标注图像（折叠 tag 从映射中剔除）
   6. avp_vlm_pipeline_avm.py   大模型诊断（同上）
 
@@ -81,17 +81,35 @@ def banner(step_num, desc):
     log.info("=" * 60)
 
 
-def run(cmd, cwd=None, check=True, **kwargs):
-    """运行子进程，stdout/stderr 实时输出并写入日志"""
+def run(cmd, cwd=None, check=True, quiet=False, **kwargs):
+    """运行子进程。quiet=True 时不捕获输出（不写日志、不打终端），用于 Step4 等刷屏二进制。"""
     cmd_str = " ".join(cmd)
-    log.info(f"  $ {cmd_str}")
+    cwd = cwd or PROJECT_ROOT
+    stdin = kwargs.pop("stdin", None)
 
+    if quiet:
+        proc = subprocess.Popen(
+            cmd,
+            cwd=cwd,
+            stdin=stdin,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            **kwargs,
+        )
+        proc.wait()
+        if check and proc.returncode != 0:
+            log.error(f"  命令失败 (exit code: {proc.returncode}): {cmd_str}")
+            sys.exit(proc.returncode)
+        return proc
+
+    log.info(f"  $ {cmd_str}")
     proc = subprocess.Popen(
         cmd,
-        cwd=cwd or PROJECT_ROOT,
+        cwd=cwd,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
+        stdin=stdin,
         **kwargs,
     )
     for line in proc.stdout:
@@ -319,13 +337,12 @@ def step4_generate_avm(
         targets = {k: v for k, v in unpacked.items() if k not in skip_bag_prefixes}
         log.info(f"  发现 {len(unpacked)} 个已解包 bag，过滤后待处理 {len(targets)} 个")
 
-    for bag_name, yyyymm in sorted(targets.items()):
+    for bag_name, _yyyymm in sorted(targets.items()):
         out_path = os.path.join(generate_dir, bag_name)
         if os.path.isdir(out_path) and os.listdir(out_path):
-            log.info(f"  {bag_name} 已生成，跳过")
+            log.info(f"  case_id={bag_name} 已拼接，跳过")
             continue
-        log.info(f"  ===== Processing: {bag_name} (YYYYMM={yyyymm}) =====")
-        run(
+        proc = run(
             ["bash", run_sh,
              "--interval", "1",
              "-i", samples_dir,
@@ -333,8 +350,15 @@ def step4_generate_avm(
              "-b", bag_name],
             cwd=avm_dir,
             check=False,
+            quiet=True,
             stdin=subprocess.DEVNULL,
         )
+        if proc.returncode == 0:
+            log.info(f"  拼接完成 case_id={bag_name}")
+        else:
+            log.warning(
+                f"  拼接失败 case_id={bag_name} exit_code={proc.returncode}"
+            )
     log.info(f"  ✅ 鱼眼图拼接完成")
 
 
@@ -470,6 +494,8 @@ def main():
         sys.exit(0)
 
     _, log_file = setup_logging(args.log_dir)
+    # 供 Step3 子进程内 BagReader 追加写入同一 pipeline 日志（print 不会进 FileHandler）
+    os.environ["PIPELINE_LOG_FILE"] = os.path.abspath(log_file)
 
     id_mapping_path = args.id_mapping
     bag_list_path = os.path.join(PROJECT_ROOT, "offline_avm_generate_release", "bag_list.txt")
@@ -513,7 +539,8 @@ def main():
     else:
         log.info(f"[跳过 Step 3]")
 
-    # 与 bag_reader 一致：Light bag CAR_STATE_TOPIC（CarInfo）在超声事件时刻若判后视镜折叠 → 不跑 Step4–6。
+    # 与 bag_reader 一致：Light bag CarInfo（CAR_STATE_TOPIC）在超声事件时刻若判后视镜折叠 → 不跑 Step4–6。
+    # 仅使用 read_data 内已写入的后视镜折叠缓存；无缓存的 tag 不再远端补读 Light bag。
     # 若 Step 3–4 均已跳过，则不再访问远端 bag（仅跑 5/6 时使用已有 read_data，跳过后视镜预检）。
     mirror_skip_tags = set()
     mirror_skip_prefixes = set()
@@ -539,14 +566,12 @@ def main():
             "Step 5/6 仅按已有缓存剔除，未命中缓存的 tag 保留"
         )
     if need_mirror_check:
-        from get_data.bag_reader import avm_skip_mirror_fold_info
-
         if missing_cache_tags:
-            remote_skip_tags, remote_skip_prefixes = avm_skip_mirror_fold_info(
-                missing_cache_tags
+            log.info(
+                f"  无后视镜折叠缓存文件的 tag 共 {len(missing_cache_tags)} 个，"
+                f"已跳过远端补读（不再为这些 tag 读 Light bag）；"
+                f"Step4–6 仅使用 read_data 内已有缓存做折叠剔除，无缓存 tag 不据此剔除"
             )
-            mirror_skip_tags |= remote_skip_tags
-            mirror_skip_prefixes |= remote_skip_prefixes
         if mirror_skip_tags:
             log.info(
                 f"  CarInfo（{config.CAR_STATE_TOPIC}）在至少一个超声事件时刻为后视镜折叠，"
