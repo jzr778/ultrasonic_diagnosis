@@ -74,6 +74,11 @@ except ImportError:
     PanoramicProjector = None  # type: ignore[misc,assignment]
 
 try:
+    from vlm.avp_vlm_pipeline_avm import avm_positions_to_yuyan_camera
+except ImportError:
+    avm_positions_to_yuyan_camera = None  # type: ignore[misc,assignment]
+
+try:
     from dpbag import strip_header
     from dpbag.bag.bag import DpBag
 except ImportError:
@@ -577,7 +582,7 @@ def overlay_avm_like_pipeline_step5(
     case_anchor_chaosheng_raw: Optional[List[Any]] = None,
     case_anchor_obstacle_raw: Optional[List[Any]] = None,
     case_anchor_pixel_radius: Optional[int] = None,
-) -> Tuple[np.ndarray, Optional[str], Optional[str], Optional[int]]:
+) -> Tuple[np.ndarray, Optional[str], Optional[str], Optional[int], List]:
     """与 pipeline Step5 同源：按**本帧** ``ref_ts_us`` 取障碍/位姿/规划/超声后再叠绘。
 
     数据来源优先级（每一帧独立，不会复用 case_id 时刻的坐标）：
@@ -594,15 +599,16 @@ def overlay_avm_like_pipeline_step5(
     仅绘制与其像素距离 ≤ 该半径的相机障碍；规划线仍全量绘制；超声红仍用本帧 ``chaosheng``。
 
     Returns:
-        ``(bgr, 警告文本, 数据来源标签, |Δts|μs)``；未叠绘（数据缺失/超限）时第 3、4 位可能为 None。
+        ``(bgr, 警告文本, 数据来源标签, |Δts|μs, chaosheng_positions)``；
+        未叠绘（数据缺失/超限）时第 3、4 位可能为 None，第 5 位为空列表。
     """
     if render_bev_from_raw_avm is None or PanoramicProjector is None:
-        return avm_bgr.copy(), "缺少 crop_read_data_chaosheng 或 PanoramicProjector", None, None
+        return avm_bgr.copy(), "缺少 crop_read_data_chaosheng 或 PanoramicProjector", None, None, []
 
     if static_payload is None:
         static_payload, err = _load_static_payload_from_read_data(read_data_root, tag_id)
         if err or static_payload is None:
-            return avm_bgr.copy(), err or "缺少静态资源", None, None
+            return avm_bgr.copy(), err or "缺少静态资源", None, None, []
     vehicle2sensing = static_payload["vehicle2sensing"]
     ground = static_payload["ground"]
     car_config = static_payload["car_config"]
@@ -614,7 +620,7 @@ def overlay_avm_like_pipeline_step5(
     if frame_payload is None:
         tag_root = os.path.join(read_data_root, str(tag_id))
         if not os.path.isdir(tag_root):
-            return avm_bgr.copy(), f"read_data/{tag_id} 不存在", None, None
+            return avm_bgr.copy(), f"read_data/{tag_id} 不存在", None, None, []
         ts_name, diff_us, pick_hint = pick_read_data_snapshot_for_frame(
             tag_root,
             ref_ts_us,
@@ -623,10 +629,10 @@ def overlay_avm_like_pipeline_step5(
             require_exact_dir_name=require_exact_dir_name,
         )
         if not ts_name:
-            return avm_bgr.copy(), pick_hint or "无法选取 read_data 快照目录", None, diff_us
+            return avm_bgr.copy(), pick_hint or "无法选取 read_data 快照目录", None, diff_us, []
         loaded, err = _load_frame_payload_from_disk(tag_root, ts_name)
         if err or loaded is None:
-            return avm_bgr.copy(), err or "本帧负载缺失", ts_name, diff_us
+            return avm_bgr.copy(), err or "本帧负载缺失", ts_name, diff_us, []
         frame_payload = loaded
         if src_label is None:
             src_label = f"disk:{ts_name}"
@@ -645,6 +651,7 @@ def overlay_avm_like_pipeline_step5(
             f"本帧 ref_ts={ref_ts_us} 缺 pose，跳过叠绘以免错位",
             src_label,
             diff_us,
+            [],
         )
 
     ignore_fs = set(ignore_fs_types or [])
@@ -694,7 +701,7 @@ def overlay_avm_like_pipeline_step5(
     )
 
     try:
-        painted = render_bev_from_raw_avm(
+        painted, bev_pos, _yellow = render_bev_from_raw_avm(
             projector,
             avm_bgr,
             obstacle,
@@ -711,9 +718,9 @@ def overlay_avm_like_pipeline_step5(
             chaosheng_pixel_anchor_chaosheng=anchor_for_pixels,
         )
     except Exception as e:
-        return avm_bgr.copy(), f"render_bev_from_raw_avm 失败: {e}", src_label, diff_us
+        return avm_bgr.copy(), f"render_bev_from_raw_avm 失败: {e}", src_label, diff_us, []
 
-    return painted, pick_hint, src_label, diff_us
+    return painted, pick_hint, src_label, diff_us, bev_pos
 
 
 def pick_nearby_window(
@@ -1057,12 +1064,6 @@ def run_case_generation(case_id: str, args: argparse.Namespace) -> List[str]:
     tag_id, target_ts = parse_case_id(case_id)
     if args.main_camera == "auto":
         main_camera = infer_main_camera_from_pipeline(tag_id, target_ts)
-        if not main_camera:
-            print(
-                f"[yuyan] 未从 draw_image/{tag_id}/{target_ts}/index_avm.json 推断出主方位相机，"
-                "跳过单路鱼眼输出",
-                file=sys.stderr,
-            )
     else:
         main_camera = args.main_camera
 
@@ -1120,10 +1121,6 @@ def run_case_generation(case_id: str, args: argparse.Namespace) -> List[str]:
         case_out = os.path.join(args.output_root, f"{tag_id}_{target_ts}")
         avm_out_dir = os.path.join(case_out, "avm")
         os.makedirs(avm_out_dir, exist_ok=True)
-        yuyan_out_dir: Optional[str] = None
-        if main_camera:
-            yuyan_out_dir = os.path.join(case_out, main_camera)
-            os.makedirs(yuyan_out_dir, exist_ok=True)
 
         pipeline_projector: Optional[Any] = None
         chaosheng_radius_eff: Optional[int] = None
@@ -1231,18 +1228,13 @@ def run_case_generation(case_id: str, args: argparse.Namespace) -> List[str]:
                     file=sys.stderr,
                 )
 
-        if main_camera and yuyan_out_dir:
-            for pf in planned:
-                img = images_by_cam_ts[main_camera][pf.per_cam_ts[main_camera]]
-                out_name = f"{tag_id}_{pf.ref_ts}.jpg"
-                cv2.imwrite(os.path.join(yuyan_out_dir, out_name), img)
-
         # AVM 输出：优先按文件名时间戳对齐，否则回退按排序顺序。
         # 注意这里使用的是“本次四路鱼眼拼接生成”的结果，不复用历史 AVM。
         avm_map = map_generated_avm_to_ref_ts(avm_imgs, planned)
         stitched_avm = 0
         overlay_painted = 0
         overlay_skipped = 0
+        all_bev_chaosheng_pos: List = []
         per_frame_pick_log: List[
             Tuple[int, Optional[str], Optional[int], Optional[Dict[str, int]], Optional[str]]
         ] = []
@@ -1273,7 +1265,7 @@ def run_case_generation(case_id: str, args: argparse.Namespace) -> List[str]:
                 else:
                     src_lbl = None
 
-                out_img, ov_warn, picked_src, picked_diff = overlay_avm_like_pipeline_step5(
+                out_img, ov_warn, picked_src, picked_diff, bev_pos = overlay_avm_like_pipeline_step5(
                     pipeline_projector,
                     avm_img,
                     tag_id,
@@ -1292,6 +1284,7 @@ def run_case_generation(case_id: str, args: argparse.Namespace) -> List[str]:
                     case_anchor_obstacle_raw=case_anchor_obs_raw,
                     case_anchor_pixel_radius=case_anchor_px,
                 )
+                all_bev_chaosheng_pos.extend(bev_pos)
 
                 if (
                     picked_src is None
@@ -1299,7 +1292,7 @@ def run_case_generation(case_id: str, args: argparse.Namespace) -> List[str]:
                     and not args.no_per_frame_payload_fallback
                     and snapshot_ts_for_fallback
                 ):
-                    out_img2, ov_warn2, picked_src2, picked_diff2 = overlay_avm_like_pipeline_step5(
+                    out_img2, ov_warn2, picked_src2, picked_diff2, bev_pos2 = overlay_avm_like_pipeline_step5(
                         pipeline_projector,
                         avm_img,
                         tag_id,
@@ -1322,6 +1315,7 @@ def run_case_generation(case_id: str, args: argparse.Namespace) -> List[str]:
                         ov_warn = ov_warn2
                         picked_src = picked_src2
                         picked_diff = picked_diff2
+                        all_bev_chaosheng_pos.extend(bev_pos2)
 
                 per_frame_pick_log.append((ref_ts, picked_src, picked_diff, fd, ov_warn))
                 if picked_src is not None:
@@ -1336,6 +1330,24 @@ def run_case_generation(case_id: str, args: argparse.Namespace) -> List[str]:
             cv2.imwrite(dst, out_img)
             stitched_avm += 1
             written_avm_paths.append(dst)
+
+        if not main_camera and all_bev_chaosheng_pos and avm_positions_to_yuyan_camera is not None:
+            inferred_cam, inferred_dir = avm_positions_to_yuyan_camera(all_bev_chaosheng_pos)
+            if inferred_cam:
+                main_camera = inferred_cam
+                print(
+                    f"[yuyan] 从叠绘超声质心推断主方位相机: {main_camera}（方位: {inferred_dir}）"
+                )
+
+        if main_camera:
+            yuyan_out_dir = os.path.join(case_out, main_camera)
+            os.makedirs(yuyan_out_dir, exist_ok=True)
+            for pf in planned:
+                cam_ts = pf.per_cam_ts.get(main_camera)
+                if cam_ts is not None and cam_ts in images_by_cam_ts.get(main_camera, {}):
+                    img = images_by_cam_ts[main_camera][cam_ts]
+                    out_name = f"{tag_id}_{pf.ref_ts}.jpg"
+                    cv2.imwrite(os.path.join(yuyan_out_dir, out_name), img)
 
         print("=" * 70)
         print(f"case_id: {case_id}")

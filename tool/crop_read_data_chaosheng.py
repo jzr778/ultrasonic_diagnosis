@@ -276,7 +276,7 @@ def render_bev_from_raw_avm(
     draw_ultrasonic_red: bool = True,
     skip_chaosheng_draw_gate: bool = False,
     chaosheng_pixel_anchor_chaosheng=None,
-) -> np.ndarray:
+) -> Tuple[np.ndarray, List, List]:
     """与 avp_vlm_pipeline_avm Step5 中 ``draw_obstacles_on_bev`` 分支一致（仅 BEV 叠绘，不含鱼眼）。
 
     ``draw_ultrasonic_red=False`` 时仍走同一套相机黄/绿与规划线逻辑，仅不画超声红色（与 ``generate_avm_from_case`` 默认一致）。
@@ -285,6 +285,9 @@ def render_bev_from_raw_avm(
     （与 Step5 默认 gate 不同；用于 ``generate_avm_from_case`` 等超声列表可为空的帧）。
 
     ``chaosheng_pixel_anchor_chaosheng``：与 ``PanoramicProjector.draw_obstacles_on_bev`` 同名参数一致。
+
+    Returns:
+        ``(bev_img, chaosheng_positions, yellow_freespace_meta)``：与 ``draw_obstacles_on_bev`` 返回值一致。
     """
     planning_point = projector.world2vehicle2sensing_planning(
         planning_point, pose, vehicle2sensing
@@ -300,8 +303,8 @@ def render_bev_from_raw_avm(
     if not skip_chaosheng_draw_gate:
         has_non_fs_car = any(o.get("freespaceType", "") != "FS_CAR" for o in chaosheng)
         if not has_non_fs_car:
-            return avm_bgr.copy()
-    bev_img, _pos, _yellow = projector.draw_obstacles_on_bev(
+            return avm_bgr.copy(), [], []
+    bev_img, pos, yellow = projector.draw_obstacles_on_bev(
         avm_bgr,
         obstacle,
         chaosheng,
@@ -314,7 +317,7 @@ def render_bev_from_raw_avm(
         draw_ultrasonic_red=draw_ultrasonic_red,
         chaosheng_pixel_anchor_chaosheng=chaosheng_pixel_anchor_chaosheng,
     )
-    return bev_img
+    return bev_img, pos, yellow
 
 
 def _crop_centered(
@@ -520,7 +523,7 @@ def run(args: argparse.Namespace) -> int:
                         file=sys.stderr,
                     )
                     continue
-                img = render_bev_from_raw_avm(
+                img, _pos, _yellow = render_bev_from_raw_avm(
                     projector,
                     raw,
                     obstacle,

@@ -2,11 +2,11 @@
 """
 从飞书电子表格提取 A/E/F/G 列并导出标签 CSV。
 
-默认输出:
-  /mnt/public-data/user/ziroujiang/raw_data_01-03/label.csv
-
-标签映射依据:
-  /mnt/public-data/user/ziroujiang/raw_data_01-03/README.md
+python tool/export_feishu_labels_csv.py --generate-jsonl
+python tool/export_feishu_labels_csv.py \
+  --generate-jsonl \
+  --from-csv /mnt/public-data/user/ziroujiang/raw_data_01-04/label.csv \
+  --jsonl-dir /mnt/public-data/user/ziroujiang/raw_data_01-04/
 
 README 规则摘要:
   1) entity_existence ∈ {yes, no}
@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import json
 import os
 import re
 import sys
@@ -35,7 +36,7 @@ _DEFAULT_FEISHU_APP_SECRET = "8W1Art9TRWrV50C7QgITwbYbMMqLKI5x"
 DEFAULT_SPREADSHEET_URL = (
     "https://rqk9rsooi4.feishu.cn/sheets/RX35sNkX7hjj4ntsDH2cipV1njd"
 )
-DEFAULT_OUTPUT_CSV = "/mnt/public-data/user/ziroujiang/raw_data_01-03/label.csv"
+DEFAULT_OUTPUT_CSV = "/mnt/public-data/user/ziroujiang/raw_data_01-04/label.csv"
 
 # README 约定的 object_type 顺序（用于 id 映射）
 OBJECT_TYPE_ORDER = [
@@ -309,6 +310,135 @@ def write_csv(path: str, rows: List[Dict[str, Any]]) -> None:
         w.writerows(rows)
 
 
+# ---------------------------------------------------------------------------
+# JSONL 训练数据生成
+# ---------------------------------------------------------------------------
+
+SYSTEM_PROMPT = (
+    "你是泊车环视场景的超声/视觉联合诊断模型，须结合多图作答。"
+    "图例：红标=超声地面障碍物（点、短线或闭合多边形），为分析对象，表示超声在地面上的感知结果。"
+    "绿线=邻车检测框投影到地面的多边形，表示邻车可能占用的地面区域。"
+    "黄线=相机障碍在AVM上的投影轮廓，用于在鸟瞰中对齐真实可见障碍；"
+    "判断时对齐黄线与真实障碍本体，比较红标与真实障碍的关系，"
+    "勿将红标与黄线本身当作一对匹配目标。"
+    "中心黑矩形=自车（上为车头、下为车尾），正在倒车入库。"
+    "车位中心白箭头=预计倒车方向；若无箭头，默认沿车位中轴线直线倒车。"
+    "白矩形框=仅遮挡车牌，与障碍物/标线无关，分析时完全忽略。"
+    "AVM由鱼眼展开拼接：红标仅有地面投影、无高度语义；"
+    "离地越高常渐淡/半透明或与背景融合，属成像与拼接特性，不等于该处无实物。"
+    "须结合鱼眼透视理解障碍远近、立面与地面接触，"
+    "区分竖直方向透视表现与地面接触位置，避免仅凭AVM上半部发虚误判空间关系。"
+    "输入按顺序三张："
+    "①AVM鸟瞰：以红标为准；高处虚化不得单独作为无实体依据。"
+    "②以超声障碍质心为中心的局部crop，用于聚焦红标。"
+    "③与AVM主方位一致的单路鱼眼：绿/黄与AVM语义一致，图中不画红标，"
+    "红标仍以AVM为准；作透视与尺度参考，减轻仅凭鸟瞰在远近、实体尺度与类型上的不确定；"
+    "禁止在鱼眼与AVM之间做像素级距离换算或强行点配对。"
+    "回答必须严格遵守用户给出的任务与可选项；只输出要求的标签或词，不要解释。"
+)
+
+TASK_ENTITY_EXISTENCE = (
+    "<image>任务：实体存在性判定。"
+    "请判断红色超声高亮附近是否存在真实障碍。可选项：yes, no。"
+)
+
+TASK_GEOMETRY_RELATION = (
+    "<image>任务：几何一致性判定。"
+    "请判断红色超声高亮与附近真实障碍之间的几何关系。可选项：aligned, misaligned。"
+)
+
+TASK_OBJECT_TYPE = (
+    "<image>任务：障碍物类型判定。"
+    "请根据红色超声高亮附近所对应的真实障碍，只输出一个英文标签。"
+    "类别含义（帮助理解，回答仍只输出标签本身）："
+    "curb_like=路沿/台阶；wheel_stop=轮挡；speed_bump=减速带；"
+    "ground_irregularity=地面异常（井盖/轻微凹凸/小坑/纹理突起/地面轨道等）；"
+    "other_obstacle=其余障碍（墙/车/柱子/纸箱/人等）。"
+    "可选项：curb_like, wheel_stop, speed_bump, ground_irregularity, other_obstacle。"
+)
+
+
+def _make_sample(case_id: str, task_prompt: str, answer: str) -> Dict[str, Any]:
+    return {
+        "messages": [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": task_prompt},
+            {"role": "assistant", "content": answer},
+        ],
+        "images": [
+            f"images/{case_id}.jpg",
+            f"crop/{case_id}.jpg",
+            f"yuyan/{case_id}.jpg",
+        ],
+    }
+
+
+def _write_jsonl(path: str, samples: List[Dict[str, Any]]) -> None:
+    os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        for s in samples:
+            f.write(json.dumps(s, ensure_ascii=False) + "\n")
+
+
+def read_label_csv(path: str) -> List[Dict[str, str]]:
+    """从已有的 label.csv 读取标注行。"""
+    rows: List[Dict[str, str]] = []
+    with open(path, encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for r in reader:
+            rows.append(dict(r))
+    return rows
+
+
+def generate_training_jsonl(
+    rows: List[Dict[str, Any]], out_dir: str
+) -> Dict[str, int]:
+    """根据标注行生成三个任务 JSONL 和混合 dataset.jsonl。
+
+    Returns:
+        各文件的行数 dict。
+    """
+    entity_samples: List[Dict[str, Any]] = []
+    geom_samples: List[Dict[str, Any]] = []
+    objtype_samples: List[Dict[str, Any]] = []
+
+    for row in rows:
+        cid = str(row.get("case_id", "")).strip()
+        entity = str(row.get("entity_existence", "")).strip()
+        geom = str(row.get("geometry_relation", "")).strip()
+        obj = str(row.get("object_type", "")).strip()
+        if not cid or not entity:
+            continue
+
+        entity_samples.append(
+            _make_sample(cid, TASK_ENTITY_EXISTENCE, entity)
+        )
+
+        if entity == "yes" and geom:
+            geom_samples.append(
+                _make_sample(cid, TASK_GEOMETRY_RELATION, geom)
+            )
+        if entity == "yes" and obj:
+            objtype_samples.append(
+                _make_sample(cid, TASK_OBJECT_TYPE, obj)
+            )
+
+    _write_jsonl(os.path.join(out_dir, "entity_existence.jsonl"), entity_samples)
+    _write_jsonl(os.path.join(out_dir, "geometry_relation.jsonl"), geom_samples)
+    _write_jsonl(os.path.join(out_dir, "object_type.jsonl"), objtype_samples)
+
+    dataset = entity_samples + geom_samples + objtype_samples
+    _write_jsonl(os.path.join(out_dir, "dataset.jsonl"), dataset)
+
+    counts = {
+        "entity_existence": len(entity_samples),
+        "geometry_relation": len(geom_samples),
+        "object_type": len(objtype_samples),
+        "dataset": len(dataset),
+    }
+    return counts
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="提取飞书表格 A/E/F/G 列并按 README 规则映射，导出 label.csv"
@@ -332,7 +462,39 @@ def main() -> int:
         action="store_true",
         help="默认同 case_id 仅保留最后一条；加此参数则保留重复行",
     )
+    parser.add_argument(
+        "--generate-jsonl",
+        action="store_true",
+        help="同时生成 entity_existence / geometry_relation / object_type / dataset 四个 JSONL 训练数据文件",
+    )
+    parser.add_argument(
+        "--jsonl-dir",
+        default="",
+        help="JSONL 输出目录（默认与 --output-csv 同目录）",
+    )
+    parser.add_argument(
+        "--from-csv",
+        default="",
+        help="跳过飞书 API，直接从已有 label.csv 生成 JSONL（需配合 --generate-jsonl）",
+    )
     args = parser.parse_args()
+
+    from_csv = (args.from_csv or "").strip()
+    if from_csv:
+        if not args.generate_jsonl:
+            print("--from-csv 需配合 --generate-jsonl 使用", file=sys.stderr)
+            return 1
+        if not os.path.isfile(from_csv):
+            print(f"文件不存在: {from_csv}", file=sys.stderr)
+            return 1
+        rows = read_label_csv(from_csv)
+        print(f"从 CSV 读取: {from_csv}, 共 {len(rows)} 行")
+        jsonl_dir = (args.jsonl_dir or "").strip() or os.path.dirname(os.path.abspath(from_csv))
+        counts = generate_training_jsonl(rows, jsonl_dir)
+        for name, cnt in counts.items():
+            print(f"  {name}.jsonl: {cnt} 条")
+        print(f"JSONL 已写入: {jsonl_dir}/")
+        return 0
 
     if args.header_rows < 1:
         print("--header-rows 需 >= 1", file=sys.stderr)
@@ -346,7 +508,6 @@ def main() -> int:
     headers = {
         "Authorization": f"Bearer {tenant}",
         "Content-Type": "application/json; charset=utf-8",
-        # 避免部分 Python/urllib3 环境对 br 解压不稳定导致 ContentDecodingError
         "Accept-Encoding": "gzip, deflate",
     }
 
@@ -376,7 +537,6 @@ def main() -> int:
     unknown_entity = unknown_geom = unknown_obj = 0
 
     for i, row in enumerate(values):
-        sheet_row = start_row + i
         case_id = normalize_case_id(row[0] if len(row) > 0 else "")
         if not case_id:
             continue
@@ -423,6 +583,16 @@ def main() -> int:
         f"未知标签计数: entity={unknown_entity}, geometry={unknown_geom}, object_type={unknown_obj}"
     )
     print(f"已写入: {args.output_csv}")
+
+    if args.generate_jsonl:
+        jsonl_dir = (args.jsonl_dir or "").strip() or os.path.dirname(
+            os.path.abspath(args.output_csv)
+        )
+        counts = generate_training_jsonl(rows, jsonl_dir)
+        for name, cnt in counts.items():
+            print(f"  {name}.jsonl: {cnt} 条")
+        print(f"JSONL 已写入: {jsonl_dir}/")
+
     return 0
 
 
