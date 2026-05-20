@@ -24,10 +24,10 @@ CSV 格式（有表头）::
 
 用法::
 
-    python tool/upload_predictions_to_feishu.py \\
-        --csv /path/to/predictions.csv \\
-        --data-dir /mnt/public-data/user/ziroujiang/raw_data_01-04 \\
-        --spreadsheet-url "https://rqk9rsooi4.feishu.cn/sheets/XXXX"
+    python tool/upload_predictions_to_feishu.py \
+        --csv /home/jiangzirou/avp_promptkit/tool/v1.csv \
+        --data-dir /mnt/public-data/user/ziroujiang/trigger60000 \
+        --spreadsheet-url "https://rqk9rsooi4.feishu.cn/sheets/ROlMszSSphJZ6MtaIQcc70vxnaf"
 """
 
 from __future__ import annotations
@@ -130,16 +130,22 @@ def fetch_sheets(
 ) -> List[Dict[str, Any]]:
     url_v3 = f"{OPEN_API}/sheets/v3/spreadsheets/{spreadsheet_token}/sheets/query"
     rv3 = requests.get(url_v3, headers=headers, timeout=timeout)
+    v3_json: Optional[dict] = None
     if rv3.status_code == 200:
-        j = rv3.json()
-        if j.get("code") in (None, 0):
-            sheets = (j.get("data") or {}).get("sheets") or []
+        v3_json = rv3.json()
+        if v3_json.get("code") in (None, 0):
+            sheets = (v3_json.get("data") or {}).get("sheets") or []
             if sheets:
                 return sheets
-    url_v2 = f"{OPEN_API}/sheets/v2/spreadsheets/{spreadsheet_token}"
+    url_v2 = f"{OPEN_API}/sheets/v2/spreadsheets/{spreadsheet_token}/metainfo"
     rv2 = requests.get(url_v2, headers=headers, timeout=timeout)
     if rv2.status_code != 200:
-        raise RuntimeError(f"sheets v3/v2 均失败")
+        v3_detail = f"v3 HTTP {rv3.status_code}"
+        if v3_json:
+            v3_detail += f" code={v3_json.get('code')} msg={v3_json.get('msg', '')}"
+        raise RuntimeError(
+            f"sheets v3/v2 均失败: {v3_detail}; v2 HTTP {rv2.status_code}: {rv2.text[:1500]}"
+        )
     j2 = rv2.json()
     if j2.get("code") not in (None, 0):
         raise RuntimeError(f"sheets v2 业务错误: {j2}")

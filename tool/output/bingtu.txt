@@ -1,2 +1,5 @@
-超声命中,1328
-超声偏移,353
+other_obstacle, 2370
+wheel_stop, 907
+curb_like, 763
+speed_bump, 125
+ground_irregularity, 105
