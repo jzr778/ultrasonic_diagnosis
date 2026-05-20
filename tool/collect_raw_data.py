@@ -12,11 +12,9 @@
 用法::
 
     # 标准：id_mapping.json 与 logs 写到 tool/output，Step1–5，复制到 raw_data
-    # 1-4月数据
-    python tool/collect_raw_data.py -p iffcom -v QNS4gZ0DR
+    python tool/collect_raw_data.py -p iffcom -v a8N1EG1vg
 
-    # 只重绘 Step5 并复制（需 tool/output/id_mapping.json 已存在，或显式 --id-mapping）
-    python tool/collect_raw_data.py --skip-steps 1 2 3 4
+    python tool/collect_raw_data.py -p iffcom -v a8N1EG1vg --skip-steps 2
 
     # 另存最终图片到其它目录；不过滤 FS_CAR
     python tool/collect_raw_data.py --dst-root /path/to/out --no-filter-fs-car
@@ -41,7 +39,7 @@ if _project_root not in sys.path:
 
 import config
 
-DEFAULT_DST_ROOT = "/mnt/public-data/user/ziroujiang/trigger50000"
+DEFAULT_DST_ROOT = "/mnt/public-data/user/ziroujiang/data_202605_part"
 DEFAULT_WORK_ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "output")
 
 

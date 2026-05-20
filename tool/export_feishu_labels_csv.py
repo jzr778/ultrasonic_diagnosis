@@ -5,8 +5,8 @@
 python tool/export_feishu_labels_csv.py --generate-jsonl
 python tool/export_feishu_labels_csv.py \
   --generate-jsonl \
-  --from-csv /mnt/public-data/user/ziroujiang/raw_data_01-04/label.csv \
-  --jsonl-dir /mnt/public-data/user/ziroujiang/raw_data_01-04/
+  --from-csv /mnt/public-data/user/ziroujiang/generate_ground_irregularity/label.csv \
+  --jsonl-dir /mnt/public-data/user/ziroujiang/generate_ground_irregularity/
 
 README 规则摘要:
   1) entity_existence ∈ {yes, no}
@@ -34,9 +34,9 @@ DEFAULT_REQUEST_TIMEOUT = 15.0
 _DEFAULT_FEISHU_APP_ID = "cli_a6e0444aedfbd00b"
 _DEFAULT_FEISHU_APP_SECRET = "8W1Art9TRWrV50C7QgITwbYbMMqLKI5x"
 DEFAULT_SPREADSHEET_URL = (
-    "https://rqk9rsooi4.feishu.cn/sheets/RX35sNkX7hjj4ntsDH2cipV1njd"
+    "https://rqk9rsooi4.feishu.cn/sheets/FyQXsnoiWh13rbtkxWjcRFTYnqf"
 )
-DEFAULT_OUTPUT_CSV = "/mnt/public-data/user/ziroujiang/raw_data_01-04/label.csv"
+DEFAULT_OUTPUT_CSV = "/mnt/public-data/user/ziroujiang/generate_ground_irregularity/label.csv"
 
 # README 约定的 object_type 顺序（用于 id 映射）
 OBJECT_TYPE_ORDER = [

@@ -22,6 +22,7 @@
 
 PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python python tool/generate_avm_from_case.py --case-list /mnt/public-data/user/ziroujiang/generate_raw_data/case_id.txt --mark-avm 
 
+PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python python tool/generate_avm_from_case.py --mark-avm
 成功生成后会写入 ``<case_out>/.generate_avm_manifest.json``（记录 ``ref_ts``、``frames``、``frame_step``、``main_camera`` 等）。下次若 manifest 与当前 CLI 一致且对应 **每帧** ``avm/*.jpg`` 与主路鱼眼均已存在且非空，则 **整 case 跳过**：**不打开 Heavy bag、不调 get_meta_data**（加 ``--force-regenerate`` 强制重做）。尚无 manifest 的旧目录仍会走 bag 流程。
 """
 
@@ -111,7 +112,7 @@ except Exception:
 
 
 DEFAULT_OUTPUT_ROOT = "/mnt/public-data/user/ziroujiang/generate_raw_data"
-DEFAULT_FRAMES = 3
+DEFAULT_FRAMES = 10
 DEFAULT_FRAME_STEP = 5
 # 与 crop_read_data_chaosheng / pipeline Step5 AVM 匹配 read_data 时间戳目录一致
 READ_DATA_TS_TOLERANCE_US = 50_000
@@ -120,6 +121,23 @@ GENERATE_AVM_MANIFEST_BASENAME = ".generate_avm_manifest.json"
 GENERATE_AVM_MANIFEST_VERSION = 1
 # 以 case_id 对应 read_data 子目录中的原始 chaosheng 为锚，只绘制其投影周边（像素）内的相机障碍
 DEFAULT_CASE_CHAOSHENG_ANCHOR_RADIUS_PX = 50
+
+_COLD_STORAGE_MARKERS = ("prod-cold", "STORAGE_ACCESS_ERROR")
+
+
+class ColdStorageError(RuntimeError):
+    """Bag 数据在冷存储中，无法直接读取。"""
+    pass
+
+
+def _check_cold_storage(exc: Exception) -> None:
+    """检测异常是否由冷存储引起，是则抛出 ColdStorageError。"""
+    msg = str(exc)
+    for marker in _COLD_STORAGE_MARKERS:
+        if marker in msg:
+            raise ColdStorageError(
+                f"数据在冷存储中: {msg[:200]}"
+            ) from exc
 
 
 @dataclass
@@ -278,6 +296,132 @@ def infer_main_camera_from_pipeline(tag_id: int, ts_us: int) -> Optional[str]:
         f"Step 5 已执行但仍未生成 yuyan_camera: "
         f"tag_id={tag_id}, ts={ts_us}"
     )
+
+
+def _collect_avm_paths_from_existing_dirs(
+    output_root: str, skip_if_crop_exists: bool = True,
+) -> Tuple[List[str], List[str], List[str]]:
+    """扫描 output_root 下已有 case 子目录，收集 AVM 图片路径。
+
+    返回 (avm_paths_to_mark, skipped_case_ids, selected_case_ids)
+    """
+    avm_paths: List[str] = []
+    skipped: List[str] = []
+    selected: List[str] = []
+    if not os.path.isdir(output_root):
+        return avm_paths, skipped, selected
+    for name in sorted(os.listdir(output_root)):
+        case_dir = os.path.join(output_root, name)
+        if not os.path.isdir(case_dir):
+            continue
+        avm_dir = os.path.join(case_dir, "avm")
+        if not os.path.isdir(avm_dir):
+            continue
+        if skip_if_crop_exists and os.path.isdir(os.path.join(case_dir, "crop")):
+            skipped.append(name)
+            continue
+        imgs = sorted(
+            f for f in os.listdir(avm_dir)
+            if f.lower().endswith((".jpg", ".jpeg", ".png"))
+        )
+        if not imgs:
+            continue
+        selected.append(name)
+        for img_name in imgs:
+            avm_paths.append(os.path.join(avm_dir, img_name))
+    return avm_paths, skipped, selected
+
+
+def _do_crop_from_avm_paths(
+    avm_paths: List[str], crop_id_json: str, crop_size: int = 150,
+) -> int:
+    """对 AVM 路径列表做中心裁剪，返回裁剪数量。"""
+    crop_id_map = _load_crop_id_json(crop_id_json)
+    if not crop_id_map:
+        print("[crop] crop_id.json 为空或不存在，跳过裁剪")
+        return 0
+    crop_half = crop_size // 2
+    total = 0
+    case_dirs_seen: set = set()
+    for avm_path in avm_paths:
+        stem = os.path.splitext(os.path.basename(avm_path))[0]
+        center_str = crop_id_map.get(stem)
+        if not center_str:
+            continue
+        try:
+            coords = json.loads(center_str)
+            cx, cy = int(coords[0]), int(coords[1])
+        except (json.JSONDecodeError, IndexError, ValueError, TypeError):
+            print(f"[crop] WARN: {stem} 坐标解析失败: {center_str!r}", file=sys.stderr)
+            continue
+        avm_img = cv2.imread(avm_path)
+        if avm_img is None:
+            continue
+        h, w = avm_img.shape[:2]
+        x1 = max(cx - crop_half, 0)
+        y1 = max(cy - crop_half, 0)
+        x2 = min(cx + crop_half, w)
+        y2 = min(cy + crop_half, h)
+        if x2 <= x1 or y2 <= y1:
+            print(f"[crop] WARN: {stem} 裁剪区域为空 cx={cx} cy={cy}", file=sys.stderr)
+            continue
+        case_dir = os.path.dirname(os.path.dirname(avm_path))
+        crop_out_dir = os.path.join(case_dir, "crop")
+        if case_dir not in case_dirs_seen:
+            os.makedirs(crop_out_dir, exist_ok=True)
+            case_dirs_seen.add(case_dir)
+        crop_img = avm_img[y1:y2, x1:x2]
+        cv2.imwrite(os.path.join(crop_out_dir, f"{stem}.jpg"), crop_img)
+        total += 1
+    return total
+
+
+def _mark_existing_and_crop(args: argparse.Namespace) -> int:
+    """--mark-existing 模式：扫描已有子目录，跳过有 crop/ 的，标注+裁剪。"""
+    avm_paths, skipped, selected = _collect_avm_paths_from_existing_dirs(
+        args.output_root, skip_if_crop_exists=True,
+    )
+    print(f"[mark-existing] 扫描 {args.output_root}")
+    print(f"  已有 crop/ 跳过: {len(skipped)} 个 case")
+    print(f"  待标注: {len(selected)} 个 case, {len(avm_paths)} 张 AVM")
+    if skipped:
+        for s in skipped:
+            print(f"    [跳过] {s}")
+
+    if not avm_paths:
+        print("[mark-existing] 无需标注的 AVM，退出")
+        return 0
+
+    # OpenCV 逐张标注
+    crop_id_path = args.crop_id_json
+    print(
+        "\n[mark-existing] 左键拖动红色 | s 保存覆盖并记录质心 | z/r 撤销/清空 | "
+        "n 下一张（自动记录质心） | q/ESC 结束"
+    )
+    for i, p in enumerate(avm_paths, start=1):
+        img = cv2.imread(p)
+        if img is None or img.size == 0:
+            print(f"[mark-existing] 跳过（无法读取）: {p}", file=sys.stderr)
+            continue
+        stem = os.path.splitext(os.path.basename(p))[0]
+        title = f"mark AVM [{i}/{len(avm_paths)}]: {p}"
+        r = interactive_red_mark_session(
+            img,
+            save_path=p,
+            window_title=title,
+            thickness=args.mark_thickness,
+            allow_next=True,
+            case_id=stem,
+            crop_id_path=crop_id_path,
+        )
+        if r == "quit":
+            break
+    cv2.destroyAllWindows()
+
+    # crop 后处理
+    total_cropped = _do_crop_from_avm_paths(avm_paths, args.crop_id_json)
+    print(f"\n[crop] 150×150 中心裁剪完成: {total_cropped} 张")
+    return 0
 
 
 def _load_crop_id_json(path: str) -> Dict[str, str]:
@@ -835,6 +979,7 @@ def scan_camera_timestamps(
                 ts_us = int(obj.header.timestamp_sec * 1e6)
                 out[cam].append(ts_us)
     except Exception as e:
+        _check_cold_storage(e)
         raise RuntimeError(f"扫描 bag 时间戳失败: {heavy_bag}, err={e}") from e
 
     for cam in out:
@@ -892,25 +1037,31 @@ def extract_selected_images(
     need_ts_by_cam: Dict[str, set[int]],
 ) -> Dict[str, Dict[int, object]]:
     out: Dict[str, Dict[int, object]] = {c: {} for c in config.CAMERA_NAMES}
-    with DpBag(bag=heavy_bag) as bag:
-        for topic, msg, _ in bag.read_messages(
-            topics=list(camera_topics.keys()),
-            dpbag_name=heavy_bag,
-            force_get_data_by_raw=True,
-        ):
-            cam = camera_topics.get(topic)
-            if cam is None:
-                continue
-            obj = CompressedImage()
-            obj.ParseFromString(strip_header(msg.data))
-            ts_us = int(obj.header.timestamp_sec * 1e6)
-            if ts_us not in need_ts_by_cam.get(cam, set()):
-                continue
-            if ts_us in out[cam]:
-                continue
-            img = cv2.imdecode(np.frombuffer(obj.data, np.uint8), cv2.IMREAD_COLOR)
-            if img is not None and img.size > 0:
-                out[cam][ts_us] = img
+    try:
+        with DpBag(bag=heavy_bag) as bag:
+            for topic, msg, _ in bag.read_messages(
+                topics=list(camera_topics.keys()),
+                dpbag_name=heavy_bag,
+                force_get_data_by_raw=True,
+            ):
+                cam = camera_topics.get(topic)
+                if cam is None:
+                    continue
+                obj = CompressedImage()
+                obj.ParseFromString(strip_header(msg.data))
+                ts_us = int(obj.header.timestamp_sec * 1e6)
+                if ts_us not in need_ts_by_cam.get(cam, set()):
+                    continue
+                if ts_us in out[cam]:
+                    continue
+                img = cv2.imdecode(np.frombuffer(obj.data, np.uint8), cv2.IMREAD_COLOR)
+                if img is not None and img.size > 0:
+                    out[cam][ts_us] = img
+    except ColdStorageError:
+        raise
+    except Exception as e:
+        _check_cold_storage(e)
+        raise
     return out
 
 
@@ -1632,52 +1783,60 @@ def main() -> int:
         ),
     )
     args = parser.parse_args()
+
     if args.mark_avm:
         warn_if_mark_avm_no_gui()
-    ensure_runtime_deps()
 
+    case_ids: List[str] = []
     if args.case_list:
         case_ids = load_case_ids_from_file(args.case_list)
-        if not case_ids:
-            print("case 列表为空", file=sys.stderr)
-            return 1
     elif args.case_id:
         case_ids = [args.case_id]
-    else:
+    elif not args.mark_avm:
         parser.error("请提供单个 case_id，或使用 --case-list FILE")
 
     os.makedirs(args.output_root, exist_ok=True)
 
     failed = 0
-    all_avm_paths_for_mark: List[str] = []
-    for idx, cid in enumerate(case_ids, start=1):
-        if len(case_ids) > 1:
-            print(f"\n{'=' * 70}\n[{idx}/{len(case_ids)}] case_id={cid}\n{'=' * 70}")
-        try:
-            paths = run_case_generation(cid, args)
-            all_avm_paths_for_mark.extend(paths)
-        except Exception as e:
-            print(f"[FAIL] {cid}: {e}", file=sys.stderr)
-            failed += 1
+    cold_storage_cases: List[str] = []
+    if case_ids:
+        ensure_runtime_deps()
+        for idx, cid in enumerate(case_ids, start=1):
+            if len(case_ids) > 1:
+                print(f"\n{'=' * 70}\n[{idx}/{len(case_ids)}] case_id={cid}\n{'=' * 70}")
+            try:
+                run_case_generation(cid, args)
+            except ColdStorageError:
+                print(f"[COLD] {cid}: 数据在冷存储中，跳过")
+                cold_storage_cases.append(cid)
+                failed += 1
+            except Exception as e:
+                print(f"[FAIL] {cid}: {e}", file=sys.stderr)
+                failed += 1
 
     if args.mark_avm:
-        if all_avm_paths_for_mark:
+        avm_paths, skipped_cases, selected_cases = _collect_avm_paths_from_existing_dirs(
+            args.output_root, skip_if_crop_exists=True,
+        )
+        if skipped_cases:
+            print(f"\n[mark-avm] 已有 crop/ 跳过: {len(skipped_cases)} 个 case")
+        if avm_paths:
             print(
-                f"\n[mark-avm] 全部 {len(case_ids)} 个 case 已就绪（含跳过已有输出的 case），"
-                f"共 {len(all_avm_paths_for_mark)} 张 AVM，开始统一逐张标注 …"
+                f"[mark-avm] 待标注: {len(selected_cases)} 个 case，"
+                f"共 {len(avm_paths)} 张 AVM，开始统一逐张标注 …"
             )
             print(
                 "[mark-avm] 左键拖动红色 | s 保存覆盖并记录质心 | z/r 撤销/清空 | "
                 "n 下一张（自动记录质心） | q/ESC 结束"
             )
             crop_id_path = args.crop_id_json
-            for i, p in enumerate(all_avm_paths_for_mark, start=1):
+            for i, p in enumerate(avm_paths, start=1):
                 again = cv2.imread(p)
                 if again is None or again.size == 0:
                     print(f"[mark-avm] 跳过（无法读取）: {p}", file=sys.stderr)
                     continue
                 stem = os.path.splitext(os.path.basename(p))[0]
-                title = f"mark AVM [{i}/{len(all_avm_paths_for_mark)}]: {p}"
+                title = f"mark AVM [{i}/{len(avm_paths)}]: {p}"
                 r = interactive_red_mark_session(
                     again,
                     save_path=p,
@@ -1690,59 +1849,19 @@ def main() -> int:
                 if r == "quit":
                     break
             cv2.destroyAllWindows()
-        else:
-            print(
-                "[mark-avm] 跳过交互：所有 case 均未产生可读的 AVM 落盘路径",
-                file=sys.stderr,
-            )
 
-    # ── crop 后处理：mark-avm 完成后，基于 crop_id.json 裁剪 ──
-    if all_avm_paths_for_mark:
-        crop_id_map = _load_crop_id_json(args.crop_id_json)
-        if crop_id_map:
-            crop_size = 150
-            crop_half = crop_size // 2
-            total_cropped = 0
-            case_dirs_seen: set = set()
-            for avm_path in all_avm_paths_for_mark:
-                stem = os.path.splitext(os.path.basename(avm_path))[0]
-                center_str = crop_id_map.get(stem)
-                if not center_str:
-                    continue
-                try:
-                    coords = json.loads(center_str)
-                    cx, cy = int(coords[0]), int(coords[1])
-                except (json.JSONDecodeError, IndexError, ValueError, TypeError):
-                    print(
-                        f"[crop] WARN: {stem} 坐标解析失败: {center_str!r}",
-                        file=sys.stderr,
-                    )
-                    continue
-                avm_img = cv2.imread(avm_path)
-                if avm_img is None:
-                    continue
-                h, w = avm_img.shape[:2]
-                x1 = max(cx - crop_half, 0)
-                y1 = max(cy - crop_half, 0)
-                x2 = min(cx + crop_half, w)
-                y2 = min(cy + crop_half, h)
-                if x2 <= x1 or y2 <= y1:
-                    print(
-                        f"[crop] WARN: {stem} 裁剪区域为空 cx={cx} cy={cy}",
-                        file=sys.stderr,
-                    )
-                    continue
-                case_dir = os.path.dirname(os.path.dirname(avm_path))
-                crop_out_dir = os.path.join(case_dir, "crop")
-                if case_dir not in case_dirs_seen:
-                    os.makedirs(crop_out_dir, exist_ok=True)
-                    case_dirs_seen.add(case_dir)
-                crop_img = avm_img[y1:y2, x1:x2]
-                cv2.imwrite(os.path.join(crop_out_dir, f"{stem}.jpg"), crop_img)
-                total_cropped += 1
-            print(f"\n[crop] 150×150 中心裁剪完成: {total_cropped} 张")
+            total_cropped = _do_crop_from_avm_paths(avm_paths, args.crop_id_json)
+            if total_cropped:
+                print(f"\n[crop] 150×150 中心裁剪完成: {total_cropped} 张")
         else:
-            print("[crop] crop_id.json 为空或不存在，跳过裁剪")
+            print("[mark-avm] 所有 case 均已有 crop/，无需标注")
+
+    if cold_storage_cases:
+        print(f"\n{'=' * 70}")
+        print(f"[汇总] 冷存储跳过 {len(cold_storage_cases)} 个 case:")
+        for cid in cold_storage_cases:
+            print(f"  {cid}")
+        print(f"{'=' * 70}")
 
     return 1 if failed else 0
 
