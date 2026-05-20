@@ -20,7 +20,7 @@
 
 批量：使用 ``--case-list /path/to/case_id.txt``（每行一个 ``{tag}_{timestamp_us}``，支持 ``#`` 注释）。
 
-python tool/generate_avm_from_case.py --case-list /mnt/public-data/user/ziroujiang/generate_raw_data/case_id.txt --mark-avm 
+PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python python tool/generate_avm_from_case.py --case-list /mnt/public-data/user/ziroujiang/generate_raw_data/case_id.txt --mark-avm 
 
 成功生成后会写入 ``<case_out>/.generate_avm_manifest.json``（记录 ``ref_ts``、``frames``、``frame_step``、``main_camera`` 等）。下次若 manifest 与当前 CLI 一致且对应 **每帧** ``avm/*.jpg`` 与主路鱼眼均已存在且非空，则 **整 case 跳过**：**不打开 Heavy bag、不调 get_meta_data**（加 ``--force-regenerate`` 强制重做）。尚无 manifest 的旧目录仍会走 bag 流程。
 """
@@ -79,6 +79,11 @@ except ImportError:
     avm_positions_to_yuyan_camera = None  # type: ignore[misc,assignment]
 
 try:
+    from vlm.avp_vlm_pipeline_avm import draw_single_tag as _draw_single_tag
+except ImportError:
+    _draw_single_tag = None  # type: ignore[misc,assignment]
+
+try:
     from dpbag import strip_header
     from dpbag.bag.bag import DpBag
 except ImportError:
@@ -106,7 +111,7 @@ except Exception:
 
 
 DEFAULT_OUTPUT_ROOT = "/mnt/public-data/user/ziroujiang/generate_raw_data"
-DEFAULT_FRAMES = 10
+DEFAULT_FRAMES = 3
 DEFAULT_FRAME_STEP = 5
 # 与 crop_read_data_chaosheng / pipeline Step5 AVM 匹配 read_data 时间戳目录一致
 READ_DATA_TS_TOLERANCE_US = 50_000
@@ -218,11 +223,8 @@ def parse_filename_ts_us(name: str) -> Optional[int]:
     return int(m.group(1)) * 1_000_000 + int(m.group(2))
 
 
-def infer_main_camera_from_pipeline(tag_id: int, ts_us: int) -> Optional[str]:
-    """与 ``vlm/avp_vlm_pipeline_avm`` 诊断一致：读取 ``draw_image/<tag>/<ts>/index_avm.json`` 的 ``yuyan_camera``。
-
-    （绘图阶段写的是 ``index_avm.json``；若仅存旧文件 ``index.json`` 亦尝试一次。）
-    """
+def _read_yuyan_camera_from_index(tag_id: int, ts_us: int) -> Optional[str]:
+    """从 ``draw_image/<tag>/<ts>/index_avm.json`` 读取 ``yuyan_camera``。"""
     base = os.path.join(config.DRAW_IMAGE_DIR, str(tag_id), str(ts_us))
     for fname in ("index_avm.json", "index.json"):
         idx_path = os.path.join(base, fname)
@@ -237,6 +239,57 @@ def infer_main_camera_from_pipeline(tag_id: int, ts_us: int) -> Optional[str]:
         except Exception:
             continue
     return None
+
+
+def _run_step5_for_tag(tag_id: int) -> None:
+    """对单个 tag_id 执行 Step 5（draw_single_tag），生成 index_avm.json。"""
+    if _draw_single_tag is None:
+        raise RuntimeError(
+            "无法导入 vlm.avp_vlm_pipeline_avm.draw_single_tag，"
+            "请确认 vlm 模块可用"
+        )
+    draw_args = argparse.Namespace(
+        data_path=config.READ_DATA_DIR,
+        chaosheng_pixel_radius=30,
+        yuyan=True,
+        ignore_fs_types=[],
+    )
+    print(f"  [INFO] tag_id={tag_id}: index_avm.json 不存在，运行 Step 5 生成 ...",
+          flush=True)
+    result = _draw_single_tag(tag_id, draw_args)
+    if "draw_success" not in result:
+        detail = result
+        raise RuntimeError(
+            f"Step 5 draw_single_tag 未成功: tag_id={tag_id}, result={detail}"
+        )
+    print(f"  [INFO] tag_id={tag_id}: Step 5 完成", flush=True)
+
+
+def infer_main_camera_from_pipeline(tag_id: int, ts_us: int) -> Optional[str]:
+    """读取 ``index_avm.json`` 的 ``yuyan_camera``；若文件不存在则先跑 Step 5 生成。"""
+    cam = _read_yuyan_camera_from_index(tag_id, ts_us)
+    if cam is not None:
+        return cam
+    _run_step5_for_tag(tag_id)
+    cam = _read_yuyan_camera_from_index(tag_id, ts_us)
+    if cam is not None:
+        return cam
+    raise RuntimeError(
+        f"Step 5 已执行但仍未生成 yuyan_camera: "
+        f"tag_id={tag_id}, ts={ts_us}"
+    )
+
+
+def _load_crop_id_json(path: str) -> Dict[str, str]:
+    """加载 crop_id.json，格式 {case_id: "[x,y]"}。"""
+    if not os.path.isfile(path):
+        return {}
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"[crop] WARN: 加载 {path} 失败: {e}", file=sys.stderr)
+        return {}
 
 
 _READ_DATA_REQUIRED_JSON = ("chaosheng.json", "obstacle.json", "pose.json")
@@ -1642,6 +1695,54 @@ def main() -> int:
                 "[mark-avm] 跳过交互：所有 case 均未产生可读的 AVM 落盘路径",
                 file=sys.stderr,
             )
+
+    # ── crop 后处理：mark-avm 完成后，基于 crop_id.json 裁剪 ──
+    if all_avm_paths_for_mark:
+        crop_id_map = _load_crop_id_json(args.crop_id_json)
+        if crop_id_map:
+            crop_size = 150
+            crop_half = crop_size // 2
+            total_cropped = 0
+            case_dirs_seen: set = set()
+            for avm_path in all_avm_paths_for_mark:
+                stem = os.path.splitext(os.path.basename(avm_path))[0]
+                center_str = crop_id_map.get(stem)
+                if not center_str:
+                    continue
+                try:
+                    coords = json.loads(center_str)
+                    cx, cy = int(coords[0]), int(coords[1])
+                except (json.JSONDecodeError, IndexError, ValueError, TypeError):
+                    print(
+                        f"[crop] WARN: {stem} 坐标解析失败: {center_str!r}",
+                        file=sys.stderr,
+                    )
+                    continue
+                avm_img = cv2.imread(avm_path)
+                if avm_img is None:
+                    continue
+                h, w = avm_img.shape[:2]
+                x1 = max(cx - crop_half, 0)
+                y1 = max(cy - crop_half, 0)
+                x2 = min(cx + crop_half, w)
+                y2 = min(cy + crop_half, h)
+                if x2 <= x1 or y2 <= y1:
+                    print(
+                        f"[crop] WARN: {stem} 裁剪区域为空 cx={cx} cy={cy}",
+                        file=sys.stderr,
+                    )
+                    continue
+                case_dir = os.path.dirname(os.path.dirname(avm_path))
+                crop_out_dir = os.path.join(case_dir, "crop")
+                if case_dir not in case_dirs_seen:
+                    os.makedirs(crop_out_dir, exist_ok=True)
+                    case_dirs_seen.add(case_dir)
+                crop_img = avm_img[y1:y2, x1:x2]
+                cv2.imwrite(os.path.join(crop_out_dir, f"{stem}.jpg"), crop_img)
+                total_cropped += 1
+            print(f"\n[crop] 150×150 中心裁剪完成: {total_cropped} 张")
+        else:
+            print("[crop] crop_id.json 为空或不存在，跳过裁剪")
 
     return 1 if failed else 0
 
