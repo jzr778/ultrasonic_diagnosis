@@ -3,31 +3,37 @@ import os
 import tarfile
 import subprocess
 
-# 与本地 run.py 中 freespace3d 实验对齐，按需改 job_name / work_dir
-project_name = "freespace3d"
-job_name = "avp-freespace3d-c01-temporal-bev-fusion-0518-baseline"
+# 按需改 job_name
+project_name = "ultrasonic-diagnosis"
+job_name = "pai-diagnosis-qwen35-27b-5193"
 
-cfg_file = "configs/configs_3dfreespace/task.py"
-work_dir = f"./outputs/{job_name}"
+cfg_file = "train.sh"
+DATA_ROOT = "/mnt/csi-data-aly/user/ziroujiang/datasets/train_data_v2"
+work_dir = f"/mnt/csi-data-aly/user/ziroujiang/model/{job_name}"
 deepkeer_project = project_name
 deepkeer_name = job_name
 
 # 复现实验排障开关：True 时注入更详细的分布式/算子调试环境变量
-enable_debug_env = True
+enable_debug_env = False
 
-code_tar_file = "/mnt/yrfs/yujianguo/code_tar/" + job_name + ".tar.gz"
+_script_dir = os.path.dirname(os.path.abspath(__file__))
+# 本地打包目录（本机通常无 CPFS 挂载）；上传后 PAI 从 remote_code_tar_file 读取
+_code_tar_dir = os.path.join(_script_dir, "code_tar")
+os.makedirs(_code_tar_dir, exist_ok=True)
+code_tar_file = os.path.join(_code_tar_dir, job_name + ".tar.gz")
 print('code_tar_file : ', code_tar_file)
 
 port = "22"
-remote_ip = "10.250.128.109"
-output_dir = "/mnt/csi-data-aly/user/yujianguo/model/"
-remote_code_tar_dir = "/mnt/csi-data-aly/user/yujianguo/code_tar/"
+remote_ip = "10.250.130.131"
+output_dir = f"/mnt/csi-data-aly/user/ziroujiang/model/{job_name}"
+remote_code_tar_dir = "/mnt/csi-data-aly/user/ziroujiang/code_tar/"
 remote_code_tar_file = remote_code_tar_dir + job_name + ".tar.gz"
 
 # 打包时排除大目录与无关文件（与 rsync 排除 outputs 一致）
 _EXCLUDE_PATH_SEGMENTS = frozenset(
     {
         "outputs",
+        "output",
         "temp",
         "vision.egg-info",
         "unit_tests",
@@ -52,12 +58,14 @@ _EXCLUDE_PATH_SEGMENTS = frozenset(
         "env",
         ".conda",
         "dist",
+        "code_tar",
+        "infer_results",
     }
 )
 
 
 def _should_exclude_tar_member(arcname):
-    """arcname 形如 vision_train_framework/vision/..."""
+    """arcname 形如 proj/..."""
     name = arcname.replace("\\", "/")
     parts = name.split("/")
     for seg in parts:
@@ -89,10 +97,21 @@ source_code_dir = os.getcwd()
 with tarfile.open(code_tar_file, "w:gz", compresslevel=6) as tar:
     tar.add(source_code_dir, arcname=os.path.basename(source_code_dir), filter=exclude_function)
 
-upload_commands = f"scp -r -P {port} {code_tar_file} root@{remote_ip}:{remote_code_tar_dir}"
+mkdir_remote = (
+    f"ssh -p {port} root@{remote_ip} "
+    f"'mkdir -p {remote_code_tar_dir} {output_dir}'"
+)
+print("Prepare remote dirs:", mkdir_remote)
+subprocess.run(mkdir_remote, shell=True, check=True)
+
+upload_commands = f"scp -P {port} {code_tar_file} root@{remote_ip}:{remote_code_tar_file}"
+print("Upload:", upload_commands)
 result = subprocess.run(upload_commands, shell=True, text=True, capture_output=True)
-print(upload_commands)
-print(result)
+print(result.stdout)
+if result.returncode != 0:
+    print("stderr:", result.stderr)
+    raise SystemExit(f"scp failed (exit {result.returncode})")
+print("Upload OK:", remote_code_tar_file)
 
 # 若训练依赖公共数据软链，在此追加命令（路径请按集群实际修改）
 ln_commands = [
@@ -100,52 +119,35 @@ ln_commands = [
     # f"sudo ln -s /mnt/csi-data-aly/shared/public/trajcaching_v3/debs /mnt/public-data/shared/public/trajcaching_v3/debs",
 ]
 
-# 解压后顶层目录名 = 本地打包时 cwd 的 basename（一般为 vision_train_framework）
-_remote_repo = "vision_train_framework"
+# 解压后顶层目录名 = 本地打包时 cwd 的 basename（在 proj/ 目录下执行本脚本则为 proj）
+_remote_repo = "proj"
 
 ln_commands = [
-    f"mkdir -p /mnt/pubic-data/shared/public/trajcaching_v3/",
-    f"sudo ln -s /mnt/csi-data-aly/shared/public/trajcaching_v3/debs /mnt/pubic-data/shared/public/trajcaching_v3/debs",
+    # f"mkdir -p /mnt/pubic-data/shared/public/trajcaching_v3/",
+    # f"sudo ln -s /mnt/csi-data-aly/shared/public/trajcaching_v3/debs /mnt/pubic-data/shared/public/trajcaching_v3/debs",
 ]
 
 run = [
-    *ln_commands,
-    f"nvidia-smi",
-    # f"export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7",
+    # "sleep infinity"
+    # *ln_commands,
+    f"pip install ms-swift==4.2.0 -i https://mirrors.aliyun.com/pypi/simple/",
+    f"pip install qwen-vl-utils==0.0.14",
     f"cp {remote_code_tar_file} /workspace",
     f"cd /workspace",
     f"rm -rf {_remote_repo}",
-    f"ls -l",
     f"tar zxvf {job_name}.tar.gz",
-    f"if [ ! -d /workspace/{_remote_repo}/outputs ]; then ln -s {output_dir} /workspace/{_remote_repo}/outputs; fi",
-    f"set +u",
     f"cd /workspace/{_remote_repo}/",
-    f"python setup.py develop",
-    f"apt install -y libturbojpeg || true",
-    f"pwd",
-    (
-        "export TORCH_DISTRIBUTED_DEBUG=DETAIL; "
-        "export CUDA_LAUNCH_BLOCKING=0; "
-        "export NCCL_ASYNC_ERROR_HANDLING=1; "
-        "export TORCH_SHOW_CPP_STACKTRACES=1; "
-        "export CUDNN_DETERMINISTIC=0; "
-        "export CUDNN_BENCHMARK=0; "
-        "echo '[debug-env] enabled: TORCH_DISTRIBUTED_DEBUG=DETAIL, CUDA_LAUNCH_BLOCKING=0, "
-        "NCCL_ASYNC_ERROR_HANDLING=1, TORCH_SHOW_CPP_STACKTRACES=1, CUDNN_DETERMINISTIC=0, "
-        "CUDNN_BENCHMARK=0'"
-    ) if enable_debug_env else "echo '[debug-env] disabled'",
-    f"./tools/deeproute_dist_train.sh --cfg_file {cfg_file} "
-    f"--work_dir={work_dir} "
-    f"--deekeeper_project_name {deepkeer_project} "
-    f"--deekeeper_experiment_name {deepkeer_name} ",
+    f"export TRAIN_OUTPUT_DIR={output_dir}",
+    f"chmod +x ./train.sh",
+    f"bash -c ./train.sh",
 ]
 
 
 priority = 6
-num_machine = 8
+num_machine = 4
 num_gpu = 16
 name = job_name
 gpu_type = "PPU"
 platform = "pai"
 
-image = "acr-yr-prod-registry-vpc.cn-wulanchabu.cr.aliyuncs.com/ppu/vtf:vtf-v161-py38-cuda116-torch20-np123-u20-yjg-0106"
+image = "dsw-registry-vpc.cn-wulanchabu.cr.aliyuncs.com/training-service/vllm:qwen3.5-xpu2.0.0-accl-fixreasoning"

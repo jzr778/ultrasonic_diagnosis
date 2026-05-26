@@ -1,0 +1,5 @@
+other_obstacle,2471
+wheel_stop,929
+curb_like,793
+ground_irregularity,586
+speed_bump,133

@@ -26,8 +26,8 @@ CSV 格式（有表头）::
 
     python tool/upload_predictions_to_feishu.py \
         --csv /home/jiangzirou/avp_promptkit/tool/v1.csv \
-        --data-dir /mnt/public-data/user/ziroujiang/trigger60000 \
-        --spreadsheet-url "https://rqk9rsooi4.feishu.cn/sheets/ROlMszSSphJZ6MtaIQcc70vxnaf"
+        --data-dir /mnt/public-data/user/ziroujiang/data_202605_part \
+        --spreadsheet-url "https://rqk9rsooi4.feishu.cn/sheets/Tzggs79ZEhqFwKtetN7cDGStnSf"
 """
 
 from __future__ import annotations
