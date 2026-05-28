@@ -5,10 +5,10 @@ import subprocess
 
 # 按需改 job_name
 project_name = "ultrasonic-diagnosis"
-job_name = "pai-diagnosis-qwen35-27b-5193"
+job_name = "pai-diagnosis-qwen35-27b-v3"
 
 cfg_file = "train.sh"
-DATA_ROOT = "/mnt/csi-data-aly/user/ziroujiang/datasets/train_data_v2"
+DATA_ROOT = "/mnt/csi-data-aly/user/ziroujiang/datasets/all_data_v3"
 work_dir = f"/mnt/csi-data-aly/user/ziroujiang/model/{job_name}"
 deepkeer_project = project_name
 deepkeer_name = job_name
@@ -144,7 +144,7 @@ run = [
 
 
 priority = 6
-num_machine = 4
+num_machine = 2
 num_gpu = 16
 name = job_name
 gpu_type = "PPU"

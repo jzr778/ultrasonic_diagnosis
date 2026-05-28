@@ -23,7 +23,17 @@
 PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python python tool/generate_avm_from_case.py --case-list /mnt/public-data/user/ziroujiang/generate_raw_data/case_id.txt --mark-avm 
 
 PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python python tool/generate_avm_from_case.py --mark-avm
-成功生成后会写入 ``<case_out>/.generate_avm_manifest.json``（记录 ``ref_ts``、``frames``、``frame_step``、``main_camera`` 等）。下次若 manifest 与当前 CLI 一致且对应 **每帧** ``avm/*.jpg`` 与主路鱼眼均已存在且非空，则 **整 case 跳过**：**不打开 Heavy bag、不调 get_meta_data**（加 ``--force-regenerate`` 强制重做）。尚无 manifest 的旧目录仍会走 bag 流程。
+
+生成 + 标注 + 扁平导出（与 ``generate_ground_irregularity`` 同结构）::
+
+    PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python python tool/generate_avm_from_case.py \
+      --case-list /mnt/public-data/user/ziroujiang/generate_raw_data/case_id.txt \
+      --mark-avm \
+      --export-flat /mnt/public-data/user/ziroujiang/generate_raw_data_speed_bump
+
+成功生成后会写入 ``<case_out>/.generate_avm_manifest.json``（记录 ``ref_ts``、``frames``、``frame_step``、``main_camera`` 等）。下次若 manifest 与当前 CLI 一致且对应 **每帧** ``avm/*.jpg`` 与 ``yuyan/*.jpg`` 均已存在且非空，则 **整 case 跳过**：**不打开 Heavy bag、不调 get_meta_data**（加 ``--force-regenerate`` 强制重做）。尚无 manifest 的旧目录仍会走 bag 流程。
+
+``--export-flat`` 在全部 case 的 avm/crop/yuyan 就绪后，将 ``<output_root>/<case>/avm|crop|yuyan`` 汇总为 ``<export-flat>/images|crop|yuyan``（仅导出三者齐全的帧）。
 """
 
 from __future__ import annotations
@@ -80,6 +90,15 @@ except ImportError:
     avm_positions_to_yuyan_camera = None  # type: ignore[misc,assignment]
 
 try:
+    from vlm.avp_vlm_pipeline_avm import (
+        get_direction_from_position,
+        _AVM_DIRECTION_TO_YUYAN_CAM,
+    )
+except ImportError:
+    get_direction_from_position = None  # type: ignore[misc,assignment]
+    _AVM_DIRECTION_TO_YUYAN_CAM = {}  # type: ignore[misc]
+
+try:
     from vlm.avp_vlm_pipeline_avm import draw_single_tag as _draw_single_tag
 except ImportError:
     _draw_single_tag = None  # type: ignore[misc,assignment]
@@ -119,6 +138,9 @@ READ_DATA_TS_TOLERANCE_US = 50_000
 # 落盘于 ``<case_out>/``，用于下次在无 manifest 校验下也能跳过打开 bag（须与 CLI 参数一致）
 GENERATE_AVM_MANIFEST_BASENAME = ".generate_avm_manifest.json"
 GENERATE_AVM_MANIFEST_VERSION = 1
+_FISHEYE_ALL_DIR = ".fisheye_all"
+_FLAT_EXPORT_SUBDIRS = ("images", "crop", "yuyan")
+_FLAT_IMAGE_EXTS = frozenset({".jpg", ".jpeg", ".png", ".webp"})
 # 以 case_id 对应 read_data 子目录中的原始 chaosheng 为锚，只绘制其投影周边（像素）内的相机障碍
 DEFAULT_CASE_CHAOSHENG_ANCHOR_RADIUS_PX = 50
 
@@ -376,6 +398,189 @@ def _do_crop_from_avm_paths(
     return total
 
 
+def _reassign_yuyan_from_crop_id(
+    output_root: str, crop_id_json: str,
+) -> int:
+    """根据 crop_id.json 中每张 AVM 的 OpenCV 标记坐标，逐帧选择对应的鱼眼相机并汇入 ``yuyan/``。
+
+    从 ``_FISHEYE_ALL_DIR/panoramic_X/`` 取图写入 ``yuyan/``，完成后删除临时目录。
+    返回成功复制的文件数。
+    """
+    if get_direction_from_position is None or not _AVM_DIRECTION_TO_YUYAN_CAM:
+        print("[yuyan-reassign] WARN: 方位推断模块不可用，跳过", file=sys.stderr)
+        return 0
+
+    crop_id_map = _load_crop_id_json(crop_id_json)
+    if not crop_id_map:
+        print("[yuyan-reassign] crop_id.json 为空或不存在，跳过")
+        return 0
+
+    total = 0
+    case_dirs = sorted(
+        d for d in os.listdir(output_root)
+        if os.path.isdir(os.path.join(output_root, d))
+        and os.path.isdir(os.path.join(output_root, d, "avm"))
+    )
+
+    for case_name in case_dirs:
+        case_dir = os.path.join(output_root, case_name)
+        fisheye_dir = os.path.join(case_dir, _FISHEYE_ALL_DIR)
+        if not os.path.isdir(fisheye_dir):
+            continue
+        avm_dir = os.path.join(case_dir, "avm")
+        yuyan_dir = os.path.join(case_dir, "yuyan")
+        avm_files = [
+            f for f in os.listdir(avm_dir)
+            if f.lower().endswith((".jpg", ".jpeg", ".png"))
+        ]
+        if not avm_files:
+            continue
+
+        frame_cameras: List[str] = []
+        assignments: List[Tuple[str, str]] = []  # (stem, cam)
+
+        for fname in sorted(avm_files):
+            stem = os.path.splitext(fname)[0]
+            center_str = crop_id_map.get(stem)
+            if not center_str:
+                continue
+            try:
+                coords = json.loads(center_str)
+                cx, cy = int(coords[0]), int(coords[1])
+            except (json.JSONDecodeError, IndexError, ValueError, TypeError):
+                print(f"[yuyan-reassign] WARN: {stem} 坐标解析失败: {center_str!r}", file=sys.stderr)
+                continue
+            direction = get_direction_from_position(cx, cy)
+            cam = _AVM_DIRECTION_TO_YUYAN_CAM.get(direction, "panoramic_1")
+            frame_cameras.append(cam)
+            assignments.append((stem, cam))
+
+        if not assignments:
+            continue
+
+        os.makedirs(yuyan_dir, exist_ok=True)
+        copied = 0
+        for stem, cam in assignments:
+            src = os.path.join(fisheye_dir, cam, f"{stem}.jpg")
+            if not os.path.isfile(src):
+                print(
+                    f"[yuyan-reassign] WARN: {case_name}/{_FISHEYE_ALL_DIR}/{cam}/{stem}.jpg 不存在，跳过",
+                    file=sys.stderr,
+                )
+                continue
+            dst = os.path.join(yuyan_dir, f"{stem}.jpg")
+            shutil.copy2(src, dst)
+            copied += 1
+
+        shutil.rmtree(fisheye_dir, ignore_errors=True)
+
+        cam_summary = {}
+        for cam in frame_cameras:
+            cam_summary[cam] = cam_summary.get(cam, 0) + 1
+        cam_str = ", ".join(f"{c}×{n}" for c, n in sorted(cam_summary.items()))
+        print(f"[yuyan-reassign] {case_name}: {copied} 张 → yuyan/ ({cam_str})")
+        total += copied
+
+    return total
+
+
+def _is_nonempty_image(path: str) -> bool:
+    return os.path.isfile(path) and os.path.getsize(path) > 0
+
+
+def _iter_case_dirs_with_avm(output_root: str) -> List[str]:
+    """返回含 ``avm/`` 的 case 子目录绝对路径（跳过隐藏目录）。"""
+    if not os.path.isdir(output_root):
+        return []
+    out: List[str] = []
+    for name in sorted(os.listdir(output_root)):
+        if name.startswith("."):
+            continue
+        case_dir = os.path.join(output_root, name)
+        if os.path.isdir(case_dir) and os.path.isdir(os.path.join(case_dir, "avm")):
+            out.append(case_dir)
+    return out
+
+
+def export_output_root_to_flat(
+    output_root: str,
+    export_root: str,
+    *,
+    on_conflict: str = "overwrite",
+    dry_run: bool = False,
+) -> Dict[str, int]:
+    """将 ``output_root`` 下各 case 的 avm/crop/yuyan 整理为扁平训练目录。
+
+    目标布局与 ``generate_ground_irregularity`` 一致::
+      <export_root>/images/{tag}_{ref_ts}.jpg  ← 来自各 case 的 avm/
+      <export_root>/crop/...
+      <export_root>/yuyan/...
+
+    仅导出 avm、crop、yuyan 三者均存在且非空的帧；缺一则计入 incomplete 并跳过。
+    """
+    stats: Dict[str, int] = {sub: 0 for sub in _FLAT_EXPORT_SUBDIRS}
+    stats["incomplete"] = 0
+    stats["conflict_skip"] = 0
+    stats["cases_scanned"] = 0
+
+    if not dry_run:
+        for sub in _FLAT_EXPORT_SUBDIRS:
+            os.makedirs(os.path.join(export_root, sub), exist_ok=True)
+
+    for case_dir in _iter_case_dirs_with_avm(output_root):
+        stats["cases_scanned"] += 1
+        avm_dir = os.path.join(case_dir, "avm")
+        for fname in sorted(os.listdir(avm_dir)):
+            ext = os.path.splitext(fname)[1].lower()
+            if ext not in _FLAT_IMAGE_EXTS:
+                continue
+            stem = os.path.splitext(fname)[0]
+            src_avm = os.path.join(avm_dir, fname)
+            src_crop = os.path.join(case_dir, "crop", f"{stem}.jpg")
+            src_yuyan = os.path.join(case_dir, "yuyan", f"{stem}.jpg")
+            if not (
+                _is_nonempty_image(src_avm)
+                and _is_nonempty_image(src_crop)
+                and _is_nonempty_image(src_yuyan)
+            ):
+                stats["incomplete"] += 1
+                print(
+                    f"[export-flat] 不完整跳过: {stem} "
+                    f"(avm={_is_nonempty_image(src_avm)}, "
+                    f"crop={_is_nonempty_image(src_crop)}, "
+                    f"yuyan={_is_nonempty_image(src_yuyan)})",
+                    file=sys.stderr,
+                )
+                continue
+
+            dst_avm = os.path.join(export_root, "images", fname)
+            dst_crop = os.path.join(export_root, "crop", f"{stem}.jpg")
+            dst_yuyan = os.path.join(export_root, "yuyan", f"{stem}.jpg")
+            dst_triple = (dst_avm, dst_crop, dst_yuyan)
+            if on_conflict == "skip" and any(os.path.exists(p) for p in dst_triple):
+                stats["conflict_skip"] += 1
+                continue
+            if on_conflict == "error":
+                for p in dst_triple:
+                    if os.path.exists(p):
+                        raise FileExistsError(f"冲突: {p} 已存在")
+            if not dry_run:
+                shutil.copy2(src_avm, dst_avm)
+                shutil.copy2(src_crop, dst_crop)
+                shutil.copy2(src_yuyan, dst_yuyan)
+            stats["images"] += 1
+            stats["crop"] += 1
+            stats["yuyan"] += 1
+
+    print(
+        f"[export-flat] 扫描 case: {stats['cases_scanned']}，"
+        f"导出 images={stats['images']} crop={stats['crop']} yuyan={stats['yuyan']}，"
+        f"不完整跳过={stats['incomplete']}，冲突跳过={stats['conflict_skip']}"
+    )
+    print(f"[export-flat] 目标目录: {export_root}")
+    return stats
+
+
 def _mark_existing_and_crop(args: argparse.Namespace) -> int:
     """--mark-existing 模式：扫描已有子目录，跳过有 crop/ 的，标注+裁剪。"""
     avm_paths, skipped, selected = _collect_avm_paths_from_existing_dirs(
@@ -389,7 +594,13 @@ def _mark_existing_and_crop(args: argparse.Namespace) -> int:
             print(f"    [跳过] {s}")
 
     if not avm_paths:
-        print("[mark-existing] 无需标注的 AVM，退出")
+        print("[mark-existing] 无需标注的 AVM")
+        if getattr(args, "export_flat", None):
+            export_output_root_to_flat(
+                args.output_root,
+                args.export_flat,
+                on_conflict=getattr(args, "export_flat_conflict", "overwrite"),
+            )
         return 0
 
     # OpenCV 逐张标注
@@ -421,6 +632,17 @@ def _mark_existing_and_crop(args: argparse.Namespace) -> int:
     # crop 后处理
     total_cropped = _do_crop_from_avm_paths(avm_paths, args.crop_id_json)
     print(f"\n[crop] 150×150 中心裁剪完成: {total_cropped} 张")
+
+    total_yuyan = _reassign_yuyan_from_crop_id(args.output_root, args.crop_id_json)
+    if total_yuyan:
+        print(f"[yuyan-reassign] 逐帧鱼眼重分配完成: {total_yuyan} 张 → yuyan/")
+
+    if getattr(args, "export_flat", None):
+        export_output_root_to_flat(
+            args.output_root,
+            args.export_flat,
+            on_conflict=getattr(args, "export_flat_conflict", "overwrite"),
+        )
     return 0
 
 
@@ -1178,19 +1400,18 @@ def _manifest_path(case_out: str) -> str:
 
 
 def _output_files_complete_for_refs(
-    case_out: str, tag_id: int, main_camera: str, ref_ts_list: Sequence[int]
+    case_out: str, tag_id: int, ref_ts_list: Sequence[int]
 ) -> bool:
-    """``case_out/avm`` 下各 ``ref_ts`` 对应 jpg 均存在且非空；若有主方位相机也检查鱼眼目录。"""
+    """``case_out/avm`` 与 ``case_out/yuyan`` 下各 ``ref_ts`` 对应 jpg 均存在且非空。"""
     avm_dir = os.path.join(case_out, "avm")
-    y_dir = os.path.join(case_out, main_camera) if main_camera else ""
+    yuyan_dir = os.path.join(case_out, "yuyan")
     for rts in ref_ts_list:
         avm_p = os.path.join(avm_dir, f"{tag_id}_{int(rts)}.jpg")
         if not (os.path.isfile(avm_p) and os.path.getsize(avm_p) > 0):
             return False
-        if y_dir:
-            y_p = os.path.join(y_dir, f"{tag_id}_{int(rts)}.jpg")
-            if not (os.path.isfile(y_p) and os.path.getsize(y_p) > 0):
-                return False
+        y_p = os.path.join(yuyan_dir, f"{tag_id}_{int(rts)}.jpg")
+        if not (os.path.isfile(y_p) and os.path.getsize(y_p) > 0):
+            return False
     return True
 
 
@@ -1227,7 +1448,7 @@ def _try_skip_without_opening_bag(
     if not isinstance(raw_refs, list) or not raw_refs:
         return None
     ref_ts_list = [int(x) for x in raw_refs]
-    if not _output_files_complete_for_refs(case_out, tag_id, main_camera, ref_ts_list):
+    if not _output_files_complete_for_refs(case_out, tag_id, ref_ts_list):
         return None
     avm_out_dir = os.path.join(case_out, "avm")
     print(
@@ -1271,12 +1492,11 @@ def run_case_generation(case_id: str, args: argparse.Namespace) -> List[str]:
     else:
         main_camera = args.main_camera
 
-    if main_camera:
-        skip_paths = _try_skip_without_opening_bag(
-            case_id, args, tag_id, target_ts, main_camera
-        )
-        if skip_paths is not None:
-            return skip_paths
+    skip_paths = _try_skip_without_opening_bag(
+        case_id, args, tag_id, target_ts, main_camera
+    )
+    if skip_paths is not None:
+        return skip_paths
 
     meta = get_meta_data(tag_id=tag_id)
     if not meta or not meta.get("body"):
@@ -1543,20 +1763,21 @@ def run_case_generation(case_id: str, args: argparse.Namespace) -> List[str]:
                     f"[yuyan] 从叠绘超声质心推断主方位相机: {main_camera}（方位: {inferred_dir}）"
                 )
 
-        if main_camera:
-            yuyan_out_dir = os.path.join(case_out, main_camera)
-            os.makedirs(yuyan_out_dir, exist_ok=True)
+        fisheye_tmp_dir = os.path.join(case_out, _FISHEYE_ALL_DIR)
+        for cam_name in config.CAMERA_NAMES:
+            cam_out_dir = os.path.join(fisheye_tmp_dir, cam_name)
+            os.makedirs(cam_out_dir, exist_ok=True)
             for pf in planned:
-                cam_ts = pf.per_cam_ts.get(main_camera)
-                if cam_ts is not None and cam_ts in images_by_cam_ts.get(main_camera, {}):
-                    img = images_by_cam_ts[main_camera][cam_ts]
+                cam_ts = pf.per_cam_ts.get(cam_name)
+                if cam_ts is not None and cam_ts in images_by_cam_ts.get(cam_name, {}):
+                    img = images_by_cam_ts[cam_name][cam_ts]
                     out_name = f"{tag_id}_{pf.ref_ts}.jpg"
-                    cv2.imwrite(os.path.join(yuyan_out_dir, out_name), img)
+                    cv2.imwrite(os.path.join(cam_out_dir, out_name), img)
 
         print("=" * 70)
         print(f"case_id: {case_id}")
         print(f"选中 Heavy bag: {best_heavy}")
-        print(f"主方位相机: {main_camera or '（未推断到，已跳过单路鱼眼）'}")
+        print(f"主方位相机(超声): {main_camera or '（未推断到）'}（mark-avm 后按 crop_id 逐帧重选）")
         if eff_step != args.frame_step:
             print(
                 f"抽帧步长: 请求 {args.frame_step}，可用帧不足已自动回退为 {eff_step}"
@@ -1565,10 +1786,7 @@ def run_case_generation(case_id: str, args: argparse.Namespace) -> List[str]:
             print(f"抽帧步长: {eff_step}")
         print(f"计划帧数: {len(planned)}")
         print(f"AVM 拼接落盘: {stitched_avm} 张")
-        if main_camera:
-            print(f"单路鱼眼输出({main_camera}): {len(planned)} 张")
-        else:
-            print("单路鱼眼输出: 跳过（无主方位相机）")
+        print(f"四路鱼眼暂存: {fisheye_tmp_dir}（mark-avm 后自动选入 yuyan/ 并清理）")
         if not args.skip_pipeline_overlay and pipeline_projector is not None:
             mode_label = "Light bag 现场抽取" if per_frame_extract_used else "read_data 目录最近邻"
             print(
@@ -1782,7 +2000,37 @@ def main() -> int:
             "默认 /mnt/public-data/user/ziroujiang/generate_raw_data/crop_id.json"
         ),
     )
+    parser.add_argument(
+        "--export-flat",
+        metavar="DIR",
+        default="",
+        help=(
+            "将全部 case 的 avm/crop/yuyan 整理为扁平目录 DIR（images/crop/yuyan），"
+            "布局与 generate_ground_irregularity 一致；在生成与 mark-avm 结束后执行"
+        ),
+    )
+    parser.add_argument(
+        "--export-flat-only",
+        action="store_true",
+        help="仅从 --output-root 扫描已有 case 并执行 --export-flat，不生成、不标注",
+    )
+    parser.add_argument(
+        "--export-flat-conflict",
+        choices=("skip", "overwrite", "error"),
+        default="overwrite",
+        help="扁平导出时目标文件已存在的处理方式（默认 overwrite）",
+    )
     args = parser.parse_args()
+
+    if args.export_flat_only:
+        if not args.export_flat:
+            parser.error("--export-flat-only 须同时指定 --export-flat DIR")
+        export_output_root_to_flat(
+            args.output_root,
+            args.export_flat,
+            on_conflict=args.export_flat_conflict,
+        )
+        return 0
 
     if args.mark_avm:
         warn_if_mark_avm_no_gui()
@@ -1792,8 +2040,8 @@ def main() -> int:
         case_ids = load_case_ids_from_file(args.case_list)
     elif args.case_id:
         case_ids = [args.case_id]
-    elif not args.mark_avm:
-        parser.error("请提供单个 case_id，或使用 --case-list FILE")
+    elif not args.mark_avm and not args.export_flat:
+        parser.error("请提供单个 case_id、--case-list FILE、--mark-avm 或 --export-flat")
 
     os.makedirs(args.output_root, exist_ok=True)
 
@@ -1853,8 +2101,22 @@ def main() -> int:
             total_cropped = _do_crop_from_avm_paths(avm_paths, args.crop_id_json)
             if total_cropped:
                 print(f"\n[crop] 150×150 中心裁剪完成: {total_cropped} 张")
+
+            total_yuyan = _reassign_yuyan_from_crop_id(args.output_root, args.crop_id_json)
+            if total_yuyan:
+                print(f"[yuyan-reassign] 逐帧鱼眼重分配完成: {total_yuyan} 张 → yuyan/")
         else:
             print("[mark-avm] 所有 case 均已有 crop/，无需标注")
+            total_yuyan = _reassign_yuyan_from_crop_id(args.output_root, args.crop_id_json)
+            if total_yuyan:
+                print(f"[yuyan-reassign] 逐帧鱼眼重分配完成: {total_yuyan} 张 → yuyan/")
+
+    if args.export_flat:
+        export_output_root_to_flat(
+            args.output_root,
+            args.export_flat,
+            on_conflict=args.export_flat_conflict,
+        )
 
     if cold_storage_cases:
         print(f"\n{'=' * 70}")

@@ -14,7 +14,7 @@
     # 标准：id_mapping.json 与 logs 写到 tool/output，Step1–5，复制到 raw_data
     python tool/collect_raw_data.py -p iffcom -v a8N1EG1vg
 
-    python tool/collect_raw_data.py -p iffcom -v a8N1EG1vg --skip-steps 2
+    python tool/collect_raw_data.py -p iffcom -v iudJpE1Dg --skip-steps 2
 
     # 另存最终图片到其它目录；不过滤 FS_CAR
     python tool/collect_raw_data.py --dst-root /path/to/out --no-filter-fs-car
