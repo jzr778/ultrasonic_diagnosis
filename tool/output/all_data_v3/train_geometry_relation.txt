@@ -1,0 +1,3 @@
+# total=5946
+aligned,4743
+misaligned,1203

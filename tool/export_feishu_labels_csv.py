@@ -11,7 +11,8 @@ python tool/export_feishu_labels_csv.py \
 README 规则摘要:
   1) entity_existence ∈ {yes, no}
   2) geometry_relation ∈ {aligned, misaligned}
-  3) object_type ∈ {curb_like, wheel_stop, speed_bump, ground_irregularity, other_obstacle}
+  3) object_type ∈ {parking_curb, hard_curb, wheel_stop, speed_bump,
+     ground_irregularity, other_obstacle}（curb_like 已废弃）
   且: entity_existence=no 时，geometry_relation/object_type 置空。
 """
 
@@ -27,6 +28,10 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 import requests
 
+_project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
+
 OPEN_API = "https://open.feishu.cn/open-apis"
 DEFAULT_REQUEST_TIMEOUT = 15.0
 
@@ -38,15 +43,14 @@ DEFAULT_SPREADSHEET_URL = (
 )
 DEFAULT_OUTPUT_CSV = "/mnt/public-data/user/ziroujiang/data_202605_part/label.csv"
 
-# README 约定的 object_type 顺序（用于 id 映射）
-OBJECT_TYPE_ORDER = [
-    "curb_like",
-    "wheel_stop",
-    "speed_bump",
-    "ground_irregularity",
-    "other_obstacle",
-]
-OBJECT_TYPE_ID = {name: i for i, name in enumerate(OBJECT_TYPE_ORDER)}
+from prompts_engine.context.object_type_catalog import (  # noqa: E402
+    OBJECT_TYPE_ALIASES,
+    OBJECT_TYPE_ID,
+    OBJECT_TYPE_ORDER,
+    DEPRECATED_OBJECT_TYPE_ALIASES,
+    map_object_type_label,
+    object_type_task_prompt,
+)
 
 
 def spreadsheet_token_from_url(url: str) -> str:
@@ -230,15 +234,6 @@ GEOMETRY_ALIASES = {
     "未命中": "misaligned",
 }
 
-OBJECT_TYPE_ALIASES = {
-    "路沿/台阶": "curb_like",
-    "轮挡": "wheel_stop",
-    "减速带": "speed_bump",
-    "地面异常": "ground_irregularity",
-    "其他障碍": "other_obstacle",
-}
-
-
 def map_entity(raw_text: str) -> Tuple[str, Optional[int]]:
     n = _norm_label(raw_text)
     std = ENTITY_ALIASES.get(n)
@@ -263,9 +258,11 @@ def map_geometry(raw_text: str, entity_id: Optional[int]) -> Tuple[str, Optional
 
 def map_object_type(raw_text: str, entity_id: Optional[int]) -> Tuple[str, Optional[int]]:
     if entity_id == 0:
-        return "", None
+        return map_object_type_label(raw_text, entity_is_no=True)
     n = _norm_label(raw_text)
-    std = OBJECT_TYPE_ALIASES.get(n)
+    if n in DEPRECATED_OBJECT_TYPE_ALIASES:
+        return "", None
+    std = OBJECT_TYPE_ALIASES.get(n) or OBJECT_TYPE_ALIASES.get(raw_text.strip())
     if std is None:
         return "", None
     return std, OBJECT_TYPE_ID.get(std)
@@ -347,15 +344,7 @@ TASK_GEOMETRY_RELATION = (
     "请判断红色超声高亮与附近真实障碍之间的几何关系。可选项：aligned, misaligned。"
 )
 
-TASK_OBJECT_TYPE = (
-    "<image>任务：障碍物类型判定。"
-    "请根据红色超声高亮附近所对应的真实障碍，只输出一个英文标签。"
-    "类别含义（帮助理解，回答仍只输出标签本身）："
-    "curb_like=路沿/台阶；wheel_stop=轮挡；speed_bump=减速带；"
-    "ground_irregularity=地面异常（井盖/轻微凹凸/小坑/纹理突起/地面轨道等）；"
-    "other_obstacle=其余障碍（墙/车/柱子/纸箱/人等）。"
-    "可选项：curb_like, wheel_stop, speed_bump, ground_irregularity, other_obstacle。"
-)
+TASK_OBJECT_TYPE = object_type_task_prompt()
 
 
 def _make_sample(case_id: str, task_prompt: str, answer: str) -> Dict[str, Any]:

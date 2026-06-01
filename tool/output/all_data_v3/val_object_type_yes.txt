@@ -1,0 +1,7 @@
+# total=661
+other_obstacle,306
+wheel_stop,114
+parking_curb,0
+hard_curb,99
+speed_bump,80
+ground_irregularity,62
