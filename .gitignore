@@ -23,9 +23,8 @@ logs/
 *.zip
 *.rar
 
-# 外部项目解压产物
-# offline_avm_generate_release/
-
+# 外部项目产物
+proj/code_tar/
 
 
 # 运行时生成的 JSON 数据文件
