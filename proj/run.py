@@ -5,7 +5,7 @@ import subprocess
 
 # 按需改 job_name
 project_name = "ultrasonic-diagnosis"
-job_name = "pai-diagnosis-qwen35-27b-v3"
+job_name = "pai-diagnosis-qwen35-27b-v5"
 
 cfg_file = "train.sh"
 DATA_ROOT = "/mnt/csi-data-aly/user/ziroujiang/datasets/all_data_v3"
@@ -24,7 +24,7 @@ code_tar_file = os.path.join(_code_tar_dir, job_name + ".tar.gz")
 print('code_tar_file : ', code_tar_file)
 
 port = "22"
-remote_ip = "10.250.130.131"
+remote_ip = "10.250.128.176"
 output_dir = f"/mnt/csi-data-aly/user/ziroujiang/model/{job_name}"
 remote_code_tar_dir = "/mnt/csi-data-aly/user/ziroujiang/code_tar/"
 remote_code_tar_file = remote_code_tar_dir + job_name + ".tar.gz"

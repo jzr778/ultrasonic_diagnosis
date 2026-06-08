@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-从飞书电子表格提取 A/E/F/G 列并导出标签 CSV。
+从飞书电子表格导出标签 CSV（默认跳过 B/C/D 图片列，其余列按表头原样导出）。
 
 python tool/export_feishu_labels_csv.py --generate-jsonl
 python tool/export_feishu_labels_csv.py \
   --generate-jsonl \
-  --from-csv /mnt/public-data/user/ziroujiang/data_202605_part/label.csv \
-  --jsonl-dir /mnt/public-data/user/ziroujiang/data_202605_part/
+  --from-csv /mnt/public-data/user/ziroujiang/generate_parking_curb/label.csv \
+  --jsonl-dir /mnt/public-data/user/ziroujiang/generate_parking_curb/
 
 README 规则摘要:
   1) entity_existence ∈ {yes, no}
@@ -39,15 +39,11 @@ DEFAULT_REQUEST_TIMEOUT = 15.0
 _DEFAULT_FEISHU_APP_ID = "cli_a6e0444aedfbd00b"
 _DEFAULT_FEISHU_APP_SECRET = "8W1Art9TRWrV50C7QgITwbYbMMqLKI5x"
 DEFAULT_SPREADSHEET_URL = (
-    "https://rqk9rsooi4.feishu.cn/sheets/KsNcszoHahXxSwtNC6McR5M8nPh"
+    "https://rqk9rsooi4.feishu.cn/sheets/JAeBseDpYhsTIPtkvtMcjefinBi"
 )
-DEFAULT_OUTPUT_CSV = "/mnt/public-data/user/ziroujiang/data_202605_part/label.csv"
+DEFAULT_OUTPUT_CSV = "/mnt/public-data/user/ziroujiang/label.csv"
 
 from prompts_engine.context.object_type_catalog import (  # noqa: E402
-    OBJECT_TYPE_ALIASES,
-    OBJECT_TYPE_ID,
-    OBJECT_TYPE_ORDER,
-    DEPRECATED_OBJECT_TYPE_ALIASES,
     map_object_type_label,
     object_type_task_prompt,
 )
@@ -257,26 +253,50 @@ def map_geometry(raw_text: str, entity_id: Optional[int]) -> Tuple[str, Optional
 
 
 def map_object_type(raw_text: str, entity_id: Optional[int]) -> Tuple[str, Optional[int]]:
-    if entity_id == 0:
-        return map_object_type_label(raw_text, entity_is_no=True)
-    n = _norm_label(raw_text)
-    if n in DEPRECATED_OBJECT_TYPE_ALIASES:
-        return "", None
-    std = OBJECT_TYPE_ALIASES.get(n) or OBJECT_TYPE_ALIASES.get(raw_text.strip())
-    if std is None:
-        return "", None
-    return std, OBJECT_TYPE_ID.get(std)
+    return map_object_type_label(raw_text, entity_is_no=(entity_id == 0))
 
 
-def read_values_a_to_g(
+def _grid_column_count(sheets: List[Dict[str, Any]], sheet_id: str) -> int:
+    for s in sheets:
+        if str(s.get("sheet_id")) == str(sheet_id):
+            gp = s.get("grid_properties") or {}
+            cc = gp.get("column_count")
+            if cc is not None:
+                return max(int(cc), 8)
+    return 26
+
+
+def col_index_to_letter(idx: int) -> str:
+    """0 -> A, 25 -> Z, 26 -> AA。"""
+    idx += 1
+    letters = ""
+    while idx:
+        idx, rem = divmod(idx - 1, 26)
+        letters = chr(65 + rem) + letters
+    return letters
+
+
+def col_letter_to_index(col: str) -> int:
+    col = col.strip().upper()
+    n = 0
+    for ch in col:
+        if not ("A" <= ch <= "Z"):
+            continue
+        n = n * 26 + (ord(ch) - ord("A") + 1)
+    return n - 1
+
+
+def read_values_range(
     spreadsheet_token: str,
     sheet_id: str,
     headers: Dict[str, str],
+    col_start: str,
+    col_end: str,
     start_row: int,
     end_row: int,
     timeout: float,
 ) -> List[List[Any]]:
-    rng = f"{sheet_id}!A{start_row}:G{end_row}"
+    rng = f"{sheet_id}!{col_start}{start_row}:{col_end}{end_row}"
     r = requests.get(
         f"{OPEN_API}/sheets/v2/spreadsheets/{spreadsheet_token}/values_batch_get",
         headers=headers,
@@ -286,25 +306,134 @@ def read_values_a_to_g(
     r.raise_for_status()
     payload = r.json()
     if payload.get("code") != 0:
-        raise RuntimeError(f"读取 A:G 失败: {payload}")
+        raise RuntimeError(f"读取 {col_start}:{col_end} 失败: {payload}")
     vrs = (payload.get("data") or {}).get("valueRanges") or []
     if not vrs:
         return []
     return vrs[0].get("values") or []
 
 
-def write_csv(path: str, rows: List[Dict[str, Any]]) -> None:
-    os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
-    fieldnames = [
-        "case_id",
-        "entity_existence",
-        "geometry_relation",
-        "object_type",
-    ]
+def _sanitize_csv_field(name: str, col_letter: str) -> str:
+    s = (name or "").strip() or f"col_{col_letter}"
+    s = re.sub(r"[\r\n\t,]+", "_", s)
+    s = re.sub(r"_+", "_", s).strip("_")
+    return s or f"col_{col_letter}"
+
+
+_IMAGE_HEADER_KEYWORDS = (
+    "avm",
+    "crop",
+    "yuyan",
+    "原图",
+    "鱼眼",
+    "图片",
+    "image",
+    "embed",
+)
+
+
+def _is_image_column(col_letter: str, header: str, skip_letters: set) -> bool:
+    if col_letter.upper() in skip_letters:
+        return True
+    h = (header or "").lower()
+    return any(k in h for k in _IMAGE_HEADER_KEYWORDS)
+
+
+def _pick_export_columns(
+    header_row: List[Any],
+    skip_letters: set,
+) -> List[Tuple[int, str, str]]:
+    """返回 [(col_index, col_letter, csv_field_name), ...]，不含图片列。"""
+    out: List[Tuple[int, str, str]] = []
+    used_names: Dict[str, int] = {}
+    for idx in range(len(header_row)):
+        letter = col_index_to_letter(idx)
+        header = _cell_text(header_row[idx])
+        if _is_image_column(letter, header, skip_letters):
+            continue
+        if letter == "A":
+            base = "case_id"
+        else:
+            base = _sanitize_csv_field(header, letter)
+        if base in used_names:
+            used_names[base] += 1
+            field = f"{base}_{letter}"
+        else:
+            used_names[base] = 1
+            field = base
+        out.append((idx, letter, field))
+    return out
+
+
+def export_rows_from_sheet(
+    values: List[List[Any]],
+    export_cols: List[Tuple[int, str, str]],
+    *,
+    case_id_field: str,
+) -> List[Dict[str, str]]:
+    rows: List[Dict[str, str]] = []
+    for row in values:
+        if not row:
+            continue
+        case_id = normalize_case_id(row[0] if len(row) > 0 else "")
+        if not case_id:
+            continue
+        rec: Dict[str, str] = {}
+        for idx, _letter, field in export_cols:
+            if field == case_id_field:
+                rec[field] = case_id
+            else:
+                rec[field] = _cell_text(row[idx] if idx < len(row) else "")
+        rows.append(rec)
+    return rows
+
+
+def _find_field_by_keywords(
+    row: Dict[str, str], keywords: Tuple[str, ...]
+) -> str:
+    for key, val in row.items():
+        k = key.lower()
+        if any(w in k for w in keywords):
+            return (val or "").strip()
+    return ""
+
+
+def wide_row_to_canonical(row: Dict[str, str]) -> Dict[str, Any]:
+    """宽表一行 → generate-jsonl 用的 entity/geometry/object_type。"""
+    raw_entity = _find_field_by_keywords(
+        row, ("实体", "entity_existence", "entity")
+    )
+    raw_geom = _find_field_by_keywords(
+        row, ("超声", "几何", "geometry", "命中", "偏移")
+    )
+    raw_obj = _find_field_by_keywords(
+        row, ("障碍", "object_type", "类型")
+    )
+    entity, entity_id = map_entity(raw_entity)
+    geom, _ = map_geometry(raw_geom, entity_id)
+    obj, _ = map_object_type(raw_obj, entity_id)
+    return {
+        "case_id": row.get("case_id") or _find_field_by_keywords(row, ("case", "id")) or "",
+        "entity_existence": entity,
+        "geometry_relation": geom,
+        "object_type": obj,
+    }
+
+
+def write_csv(path: str, rows: List[Dict[str, Any]], fieldnames: List[str]) -> None:
+    os.makedirs(os.path.dirname(os.path.abspath(path)) or ".", exist_ok=True)
     with open(path, "w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=fieldnames)
+        w = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore")
         w.writeheader()
         w.writerows(rows)
+
+
+def write_canonical_label_csv(path: str, rows: List[Dict[str, Any]]) -> None:
+    write_csv(
+        path,
+        rows,
+        ["case_id", "entity_existence", "geometry_relation", "object_type"],
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -430,9 +559,12 @@ def generate_training_jsonl(
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="提取飞书表格 A/E/F/G 列并按 README 规则映射，导出 label.csv"
+        description="从飞书表导出标签 CSV（默认跳过 B/C/D 图片列，其余列按表头导出）"
     )
-    parser.add_argument("--spreadsheet-url", default=DEFAULT_SPREADSHEET_URL)
+    parser.add_argument(
+        "--spreadsheet-url",
+        default=os.environ.get("FEISHU_SPREADSHEET_URL", "").strip() or DEFAULT_SPREADSHEET_URL,
+    )
     parser.add_argument("--spreadsheet-token", default="")
     parser.add_argument("--wiki-token", default="")
     parser.add_argument("--sheet-index", type=int, default=0)
@@ -465,6 +597,22 @@ def main() -> int:
         "--from-csv",
         default="",
         help="跳过飞书 API，直接从已有 label.csv 生成 JSONL（需配合 --generate-jsonl）",
+    )
+    parser.add_argument(
+        "--skip-cols",
+        default="B,C,D",
+        help="跳过的图片列字母，逗号分隔（默认 B,C,D）",
+    )
+    parser.add_argument(
+        "--last-col",
+        default="",
+        help="读取上界列字母（默认按 sheet 列数，至少到 H）",
+    )
+    parser.add_argument(
+        "--format",
+        choices=("wide", "canonical"),
+        default="wide",
+        help="wide=按表头导出全部非图片列；canonical=仅 case_id+三任务英文标签",
     )
     args = parser.parse_args()
 
@@ -512,72 +660,118 @@ def main() -> int:
     sheets = fetch_sheets(spreadsheet_token, headers, args.request_timeout)
     sheet_id = pick_sheet_id(sheets, args.sheet_index, args.sheet_title)
 
-    start_row = args.header_rows + 1
-    values = read_values_a_to_g(
+    skip_letters = {
+        p.strip().upper()
+        for p in (args.skip_cols or "B,C,D").split(",")
+        if p.strip()
+    }
+    grid_cols = _grid_column_count(sheets, sheet_id)
+    last_idx = max(grid_cols - 1, col_letter_to_index("H"))
+    if (args.last_col or "").strip():
+        last_idx = max(last_idx, col_letter_to_index(args.last_col.strip()))
+    last_col = col_index_to_letter(last_idx)
+
+    header_row_num = args.header_rows
+    header_values = read_values_range(
         spreadsheet_token,
         sheet_id,
         headers,
-        start_row=start_row,
-        end_row=args.max_read_rows,
-        timeout=args.request_timeout,
+        "A",
+        last_col,
+        header_row_num,
+        header_row_num,
+        args.request_timeout,
+    )
+    header_row = header_values[0] if header_values else []
+    export_cols = _pick_export_columns(header_row, skip_letters)
+    if not export_cols:
+        print("未找到可导出的非图片列", file=sys.stderr)
+        return 1
+
+    case_id_field = export_cols[0][2]
+    for idx, letter, field in export_cols:
+        if letter == "A" or "case" in field.lower() or "id" in field.lower():
+            case_id_field = field
+            break
+
+    start_row = args.header_rows + 1
+    values = read_values_range(
+        spreadsheet_token,
+        sheet_id,
+        headers,
+        "A",
+        last_col,
+        start_row,
+        args.max_read_rows,
+        args.request_timeout,
     )
 
-    rows: List[Dict[str, Any]] = []
+    wide_rows = export_rows_from_sheet(
+        values, export_cols, case_id_field=case_id_field
+    )
+
     unknown_entity = unknown_geom = unknown_obj = 0
-
-    for i, row in enumerate(values):
-        case_id = normalize_case_id(row[0] if len(row) > 0 else "")
-        if not case_id:
+    canonical_rows: List[Dict[str, Any]] = []
+    for wr in wide_rows:
+        canon = wide_row_to_canonical(wr)
+        cid = str(canon.get("case_id", "")).strip()
+        if not cid:
             continue
-
-        raw_e = _cell_text(row[4] if len(row) > 4 else "")
-        raw_f = _cell_text(row[5] if len(row) > 5 else "")
-        raw_g = _cell_text(row[6] if len(row) > 6 else "")
-
-        entity, entity_id = map_entity(raw_e)
-        geom, geom_id = map_geometry(raw_f, entity_id)
-        obj, obj_id = map_object_type(raw_g, entity_id)
-
+        raw_e = _find_field_by_keywords(wr, ("实体", "entity"))
+        raw_f = _find_field_by_keywords(wr, ("超声", "几何", "命中", "偏移"))
+        raw_g = _find_field_by_keywords(wr, ("障碍", "object"))
+        entity_id = 1 if canon.get("entity_existence") == "yes" else (
+            0 if canon.get("entity_existence") == "no" else None
+        )
         if raw_e and entity_id is None:
             unknown_entity += 1
-        if raw_f and entity_id != 0 and geom_id is None:
+        if raw_f and entity_id != 0 and not canon.get("geometry_relation"):
             unknown_geom += 1
-        if raw_g and entity_id != 0 and obj_id is None:
+        if raw_g and entity_id != 0 and not canon.get("object_type"):
             unknown_obj += 1
+        canonical_rows.append(canon)
 
-        rows.append(
-            {
-                "case_id": case_id,
-                "entity_existence": entity,
-                "geometry_relation": geom,
-                "object_type": obj,
-            }
+    if args.format == "wide":
+        rows_out: List[Dict[str, Any]] = list(wide_rows)
+        fieldnames = [f for _i, _l, f in export_cols]
+    else:
+        rows_out = canonical_rows
+        fieldnames = ["case_id", "entity_existence", "geometry_relation", "object_type"]
+
+    input_count = len(rows_out)
+    if not args.keep_duplicates:
+        key_field = "case_id" if "case_id" in fieldnames else fieldnames[0]
+        latest_by_case: Dict[str, Dict[str, Any]] = {}
+        for r in rows_out:
+            latest_by_case[str(r.get(key_field, ""))] = r
+        rows_out = sorted(
+            latest_by_case.values(), key=lambda x: str(x.get(key_field, ""))
         )
 
-    input_count = len(rows)
-    if not args.keep_duplicates:
-        latest_by_case: Dict[str, Dict[str, Any]] = {}
-        for r in rows:
-            latest_by_case[str(r["case_id"])] = r
-        rows = sorted(latest_by_case.values(), key=lambda x: str(x["case_id"]))
-
-    write_csv(args.output_csv, rows)
+    write_csv(args.output_csv, rows_out, fieldnames)
 
     print(f"sheet_id={sheet_id}")
+    print(f"读取列: A–{last_col}，跳过图片列: {','.join(sorted(skip_letters))}")
+    print(
+        f"导出列 ({len(export_cols)}): "
+        + ", ".join(f"{l}:{f}" for _i, l, f in export_cols)
+    )
     print(f"读取数据行范围: {start_row}..{args.max_read_rows}")
     print(f"有效 case 行: {input_count}")
     if not args.keep_duplicates:
-        print(f"按 case_id 去重后: {len(rows)}")
-    print(
-        f"未知标签计数: entity={unknown_entity}, geometry={unknown_geom}, object_type={unknown_obj}"
-    )
-    print(f"已写入: {args.output_csv}")
+        print(f"按 case_id 去重后: {len(rows_out)}")
+    if args.format == "canonical":
+        print(
+            f"未知标签计数: entity={unknown_entity}, geometry={unknown_geom}, "
+            f"object_type={unknown_obj}"
+        )
+    print(f"已写入 ({args.format}): {args.output_csv}")
 
     if args.generate_jsonl:
         jsonl_dir = (args.jsonl_dir or "").strip() or os.path.dirname(
             os.path.abspath(args.output_csv)
         )
-        counts = generate_training_jsonl(rows, jsonl_dir)
+        counts = generate_training_jsonl(canonical_rows, jsonl_dir)
         for name, cnt in counts.items():
             print(f"  {name}.jsonl: {cnt} 条")
         print(f"JSONL 已写入: {jsonl_dir}/")

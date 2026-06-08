@@ -45,7 +45,16 @@ os.environ.setdefault("DPBAG_DP_PASSWORD", DR_PASSWORD)
 # ============ VLM API ============
 
 VLM_API_KEY = os.environ.get("VLM_API_KEY", "")
-VLM_BASE_URL = os.environ.get("VLM_BASE_URL", "https://api.apiqik.online/v1/")
+# openai：OpenAI 兼容 chat/completions；vertex：七牛 bypass Vertex generateContent
+VLM_API_STYLE = os.environ.get("VLM_API_STYLE", "openai").strip().lower()
+VLM_BASE_URL = os.environ.get(
+    "VLM_BASE_URL",
+    "https://api.qnaigc.com/bypass/vertex/v1",
+)
+# 备用 Base（主地址失败时可重试）；如 https://openai.qiniu.com/bypass/vertex/v1
+VLM_BASE_URL_ALT = os.environ.get("VLM_BASE_URL_ALT", "").strip()
+# vertex 模式下默认模型；pipeline --model auto 时使用
+VLM_MODEL = os.environ.get("VLM_MODEL", "gemini-3.1-pro-preview")
 
 # ============ 飞书 ============
 

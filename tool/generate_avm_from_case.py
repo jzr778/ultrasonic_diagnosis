@@ -19,6 +19,10 @@
   /mnt/public-data/user/ziroujiang/generate_raw_data
 
 批量：使用 ``--case-list /path/to/case_id.txt``（每行一个 ``{tag}_{timestamp_us}``，支持 ``#`` 注释）。
+**任一 bag 读失败**（不存在、超时、冷存储、网络错误等）**立即放弃该 case**，不尝试其它 Heavy bag、不回退 read_data；单条失败会写入
+``<output-root>/.generate_avm_failures.jsonl``，**再次跑同一列表时自动跳过已记录 case**（``--retry-failed`` 可强制重试）。
+
+远端读 bag 已优化：按文件名预选 1–3 个 Heavy 候选 + ``read_messages(start_time/end_time)`` 只扫 target 附近时间窗（默认 ±45s），四路时间戳一次扫完，不再对 9 个 Heavy 整包遍历。
 
 PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python python tool/generate_avm_from_case.py --case-list /mnt/public-data/user/ziroujiang/generate_raw_data/case_id.txt --mark-avm 
 
@@ -29,7 +33,7 @@ PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python python tool/generate_avm_from_case
     PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python python tool/generate_avm_from_case.py \
       --case-list /mnt/public-data/user/ziroujiang/generate_raw_data/case_id.txt \
       --mark-avm \
-      --export-flat /mnt/public-data/user/ziroujiang/generate_raw_data_speed_bump
+      --export-flat /mnt/public-data/user/ziroujiang/generate_parking_curb
 
 成功生成后会写入 ``<case_out>/.generate_avm_manifest.json``（记录 ``ref_ts``、``frames``、``frame_step``、``main_camera`` 等）。下次若 manifest 与当前 CLI 一致且对应 **每帧** ``avm/*.jpg`` 与 ``yuyan/*.jpg`` 均已存在且非空，则 **整 case 跳过**：**不打开 Heavy bag、不调 get_meta_data**（加 ``--force-regenerate`` 强制重做）。尚无 manifest 的旧目录仍会走 bag 流程。
 
@@ -44,13 +48,14 @@ import copy
 import csv
 import os
 import re
+from datetime import datetime
 import shutil
 import subprocess
 import sys
 import tempfile
 import json
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 import cv2
 import numpy as np
@@ -143,6 +148,12 @@ _FLAT_EXPORT_SUBDIRS = ("images", "crop", "yuyan")
 _FLAT_IMAGE_EXTS = frozenset({".jpg", ".jpeg", ".png", ".webp"})
 # 以 case_id 对应 read_data 子目录中的原始 chaosheng 为锚，只绘制其投影周边（像素）内的相机障碍
 DEFAULT_CASE_CHAOSHENG_ANCHOR_RADIUS_PX = 50
+# 从 bag 文件名推断分片时长（无法从相邻 bag 推断时的回退值，默认 5 分钟）
+DEFAULT_BAG_SEGMENT_SPAN_US = 300_000_000
+# 远端扫 bag 时在 target_ts 两侧各扩展的时间窗（秒），避免整包 read_messages
+DEFAULT_BAG_SCAN_MARGIN_SEC = 45
+# 按文件名预选后最多尝试打开的 Heavy bag 个数（读失败仍立即放弃该 case）
+DEFAULT_BAG_CANDIDATE_LIMIT = 3
 
 _COLD_STORAGE_MARKERS = ("prod-cold", "STORAGE_ACCESS_ERROR")
 
@@ -150,6 +161,24 @@ _COLD_STORAGE_MARKERS = ("prod-cold", "STORAGE_ACCESS_ERROR")
 class ColdStorageError(RuntimeError):
     """Bag 数据在冷存储中，无法直接读取。"""
     pass
+
+
+class BagNotFoundError(RuntimeError):
+    """远端 bag 不存在或无法访问（DATA_NOT_FOUND 等）。"""
+    pass
+
+
+_BAG_NOT_FOUND_MARKERS = (
+    "DATA_NOT_FOUND",
+    "Can not found bag",
+    "Can not find bag",
+    "NOT_FOUND",
+)
+
+
+def _is_bag_not_found(exc: BaseException) -> bool:
+    msg = str(exc)
+    return any(m in msg for m in _BAG_NOT_FOUND_MARKERS)
 
 
 def _check_cold_storage(exc: Exception) -> None:
@@ -160,6 +189,14 @@ def _check_cold_storage(exc: Exception) -> None:
             raise ColdStorageError(
                 f"数据在冷存储中: {msg[:200]}"
             ) from exc
+
+
+def _fail_bag(bag_name: str, exc: Exception) -> None:
+    """任意 bag 访问失败：立即中止当前 case（不尝试其它 bag）。"""
+    _check_cold_storage(exc)
+    if _is_bag_not_found(exc):
+        raise BagNotFoundError(f"bag 失败: {bag_name}, err={exc}") from exc
+    raise RuntimeError(f"bag 失败: {bag_name}, err={exc}") from exc
 
 
 @dataclass
@@ -187,6 +224,70 @@ def normalize_case_id_line(raw: str) -> str:
         return ""
     # "tag_ts," 或 "tag_ts, col2..." → 只要第一列
     return s.split(",", maxsplit=1)[0].strip()
+
+
+def _append_failure_log(log_path: str, record: Dict[str, str]) -> None:
+    os.makedirs(os.path.dirname(os.path.abspath(log_path)) or ".", exist_ok=True)
+    with open(log_path, "a", encoding="utf-8") as f:
+        f.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+
+def _load_failure_case_ids(log_path: str) -> Set[str]:
+    """读取失败日志中已记录的 case_id（去重）。"""
+    ids: Set[str] = set()
+    if not os.path.isfile(log_path):
+        return ids
+    with open(log_path, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                rec = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            cid = str(rec.get("case_id") or "").strip()
+            if cid:
+                ids.add(cid)
+    return ids
+
+
+def _print_batch_summary(
+    *,
+    total: int,
+    success_cases: List[str],
+    failed_records: List[Dict[str, str]],
+    cold_storage_cases: List[str],
+    skipped_prior_failures: List[str],
+    failures_log: str,
+) -> None:
+    print(f"\n{'=' * 70}")
+    print(
+        f"[汇总] case 共 {total} 个：成功 {len(success_cases)}，"
+        f"失败 {len(failed_records)}，冷存储跳过 {len(cold_storage_cases)}，"
+        f"历史失败跳过 {len(skipped_prior_failures)}"
+    )
+    if skipped_prior_failures:
+        print(
+            f"  历史失败跳过示例: {skipped_prior_failures[0]}"
+            + (
+                f" … 等 {len(skipped_prior_failures)} 个"
+                if len(skipped_prior_failures) > 1
+                else ""
+            )
+        )
+        print(f"  记录文件: {failures_log}")
+    if success_cases:
+        print(f"  成功示例: {success_cases[0]}" + (f" … 等 {len(success_cases)} 个" if len(success_cases) > 1 else ""))
+    if failed_records:
+        print("  失败列表:")
+        for rec in failed_records[:20]:
+            print(f"    {rec['case_id']}: [{rec.get('kind', 'error')}] {rec.get('error', '')[:120]}")
+        if len(failed_records) > 20:
+            print(f"    … 另有 {len(failed_records) - 20} 条，见 {failures_log}")
+    if failures_log and (failed_records or cold_storage_cases):
+        print(f"  失败明细已追加: {failures_log}")
+    print(f"{'=' * 70}")
 
 
 def load_case_ids_from_file(path: str) -> List[str]:
@@ -253,6 +354,74 @@ def extract_yyyymm_from_bag_prefix(bag_prefix: str) -> str:
     if not m:
         raise ValueError(f"无法从 bag 名解析 YYYYMM: {bag_prefix}")
     return m.group(1)[:6]
+
+
+def parse_bag_name_start_us(bag_name: str) -> Optional[int]:
+    """从 bag 文件名解析分片起始墙钟时间（μs），如 ``..._20260314_124415.Heavy...``。"""
+    m = re.search(r"_(\d{8})_(\d{6})\.", os.path.basename(bag_name))
+    if not m:
+        return None
+    try:
+        dt = datetime.strptime(m.group(1) + m.group(2), "%Y%m%d%H%M%S")
+        return int(dt.timestamp() * 1_000_000)
+    except ValueError:
+        return None
+
+
+def _bag_segment_end_us(
+    heavy_bags: Sequence[str], idx: int, *, default_span_us: int = DEFAULT_BAG_SEGMENT_SPAN_US
+) -> int:
+    start = parse_bag_name_start_us(heavy_bags[idx])
+    if start is None:
+        return 0
+    if idx + 1 < len(heavy_bags):
+        nxt = parse_bag_name_start_us(heavy_bags[idx + 1])
+        if nxt is not None and nxt > start:
+            return nxt - 1
+    return start + int(default_span_us)
+
+
+def rank_heavy_bags_by_filename(
+    heavy_bags: Sequence[str], target_ts: int
+) -> List[str]:
+    """按文件名分片与 target_ts 的接近程度排序 Heavy bag（不访问远端）。"""
+    scored: List[Tuple[int, str]] = []
+    for i, bag in enumerate(heavy_bags):
+        start = parse_bag_name_start_us(bag)
+        if start is None:
+            scored.append((10**30, bag))
+            continue
+        end = _bag_segment_end_us(heavy_bags, i)
+        if start <= target_ts <= end:
+            mid = (start + end) // 2
+            scored.append((abs(target_ts - mid), bag))
+        else:
+            scored.append((min(abs(target_ts - start), abs(target_ts - end)), bag))
+    scored.sort(key=lambda x: x[0])
+    return [b for _, b in scored]
+
+
+def scan_time_window_us(
+    target_ts: int,
+    frames: int,
+    frame_step: int,
+    *,
+    margin_sec: float = DEFAULT_BAG_SCAN_MARGIN_SEC,
+) -> Tuple[int, int]:
+    """为 read_messages 计算 start_time/end_time（μs）。"""
+    step_span = int(max(1, frames - 1) * max(1, frame_step) * 200_000)
+    margin = int(max(5.0, margin_sec) * 1_000_000)
+    half = step_span + margin
+    return int(target_ts) - half, int(target_ts) + half
+
+
+def narrow_time_window_us(
+    ts_list: Sequence[int], *, pad_us: int = 5_000_000
+) -> Tuple[int, int]:
+    if not ts_list:
+        return 0, 2**63 - 1
+    lo, hi = min(ts_list), max(ts_list)
+    return lo - int(pad_us), hi + int(pad_us)
 
 
 def parse_filename_ts_us(name: str) -> Optional[int]:
@@ -809,12 +978,22 @@ def extract_per_frame_payloads_from_light_bag(
         config.PLANNING_TOPIC,
         config.CHAOSHENG_TOPIC,
     ]
+    lo, hi = narrow_time_window_us(
+        targets, pad_us=max(int(max_skew_us) * 4, 5_000_000)
+    )
+    print(
+        f"[lightbag-scan] {os.path.basename(light_bag)} window_us=[{lo},{hi}] "
+        f"frames={len(targets)}",
+        flush=True,
+    )
     try:
         with DpBag(bag=light_bag) as bag:
             for topic, msg, _ in bag.read_messages(
                 topics=topics,
                 dpbag_name=light_bag,
                 force_get_data_by_raw=True,
+                start_time=lo,
+                end_time=hi,
             ):
                 raw = strip_header(msg.data)
 
@@ -884,7 +1063,7 @@ def extract_per_frame_payloads_from_light_bag(
                     _update("chaosheng", ts, lambda items=items: items)
                     continue
     except Exception as e:
-        raise RuntimeError(f"扫描 Light bag 失败: {light_bag}, err={e}") from e
+        _fail_bag(light_bag, e)
 
     return payload, diffs
 
@@ -1182,15 +1361,31 @@ def scan_camera_timestamps(
     heavy_bag: str,
     camera_topics: Dict[str, str],
     only_cam: Optional[str] = None,
+    *,
+    start_us: Optional[int] = None,
+    end_us: Optional[int] = None,
 ) -> Dict[str, List[int]]:
     out: Dict[str, List[int]] = {c: [] for c in camera_topics.values()}
+    read_kw: Dict[str, Any] = {
+        "topics": list(camera_topics.keys()),
+        "dpbag_name": heavy_bag,
+        "force_get_data_by_raw": True,
+    }
+    if start_us is not None:
+        read_kw["start_time"] = int(start_us)
+    if end_us is not None:
+        read_kw["end_time"] = int(end_us)
+    win = ""
+    if start_us is not None and end_us is not None:
+        win = f" window_us=[{start_us},{end_us}]"
+    print(
+        f"[bag-scan] {os.path.basename(heavy_bag)} cam="
+        f"{only_cam or 'all'}{win}",
+        flush=True,
+    )
     try:
         with DpBag(bag=heavy_bag) as bag:
-            for topic, msg, _ in bag.read_messages(
-                topics=list(camera_topics.keys()),
-                dpbag_name=heavy_bag,
-                force_get_data_by_raw=True,
-            ):
+            for topic, msg, _ in bag.read_messages(**read_kw):
                 cam = camera_topics.get(topic)
                 if cam is None:
                     continue
@@ -1201,8 +1396,7 @@ def scan_camera_timestamps(
                 ts_us = int(obj.header.timestamp_sec * 1e6)
                 out[cam].append(ts_us)
     except Exception as e:
-        _check_cold_storage(e)
-        raise RuntimeError(f"扫描 bag 时间戳失败: {heavy_bag}, err={e}") from e
+        _fail_bag(heavy_bag, e)
 
     for cam in out:
         out[cam].sort()
@@ -1214,24 +1408,52 @@ def choose_best_heavy_bag(
     target_ts: int,
     main_cam: str,
     camera_topics: Dict[str, str],
-) -> Tuple[str, List[int]]:
-    best_bag = None
-    best_main_ts: List[int] = []
-    best_diff = None
-    for bag_name in heavy_bags:
-        ts_map = scan_camera_timestamps(bag_name, camera_topics, only_cam=main_cam)
+    *,
+    frames: int = DEFAULT_FRAMES,
+    frame_step: int = DEFAULT_FRAME_STEP,
+    bag_candidate_limit: int = DEFAULT_BAG_CANDIDATE_LIMIT,
+    scan_margin_sec: float = DEFAULT_BAG_SCAN_MARGIN_SEC,
+) -> Tuple[str, List[int], Dict[str, List[int]]]:
+    """预选 Heavy bag + 时间窗内一次扫齐四路时间戳（避免整包遍历）。
+
+    - 先按文件名分片排序，最多尝试 ``bag_candidate_limit`` 个候选（默认 3）。
+    - 任一对 bag 的读取若抛错，立即向上抛出，不扫剩余 Heavy。
+    - 返回 ``(best_heavy, main_cam_ts_list, all_cam_ts_map)``，后续不再重复扫 bag。
+    """
+    ranked = rank_heavy_bags_by_filename(heavy_bags, target_ts)
+    win_start, win_end = scan_time_window_us(
+        target_ts, frames, frame_step, margin_sec=scan_margin_sec
+    )
+    limit = max(1, int(bag_candidate_limit or 1))
+    tried: List[str] = []
+    for bag_name in ranked[:limit]:
+        tried.append(bag_name)
+        ts_map = scan_camera_timestamps(
+            bag_name,
+            camera_topics,
+            only_cam=None,
+            start_us=win_start,
+            end_us=win_end,
+        )
         main_ts = ts_map.get(main_cam) or []
         if not main_ts:
+            print(
+                f"[bag-scan] {os.path.basename(bag_name)} 时间窗内无 {main_cam} 帧，"
+                f"尝试下一候选",
+                file=sys.stderr,
+            )
             continue
         near = nearest_ts(main_ts, target_ts)
-        diff = abs(near - target_ts)
-        if best_diff is None or diff < best_diff:
-            best_diff = diff
-            best_bag = bag_name
-            best_main_ts = main_ts
-    if not best_bag:
-        raise RuntimeError("没有找到包含主相机帧的 Heavy bag")
-    return best_bag, best_main_ts
+        print(
+            f"[bag-scan] 选用 {os.path.basename(bag_name)}："
+            f"{main_cam} 窗内 {len(main_ts)} 帧，最近 target Δ={abs(near - target_ts)}μs",
+            flush=True,
+        )
+        return bag_name, main_ts, ts_map
+    raise RuntimeError(
+        f"候选 Heavy bag 均无 {main_cam} 帧（已试 {len(tried)}/{len(heavy_bags)}："
+        f"{', '.join(os.path.basename(b) for b in tried)}）"
+    )
 
 
 def plan_frames(
@@ -1257,15 +1479,28 @@ def extract_selected_images(
     heavy_bag: str,
     camera_topics: Dict[str, str],
     need_ts_by_cam: Dict[str, set[int]],
+    *,
+    start_us: Optional[int] = None,
+    end_us: Optional[int] = None,
 ) -> Dict[str, Dict[int, object]]:
     out: Dict[str, Dict[int, object]] = {c: {} for c in config.CAMERA_NAMES}
+    read_kw: Dict[str, Any] = {
+        "topics": list(camera_topics.keys()),
+        "dpbag_name": heavy_bag,
+        "force_get_data_by_raw": True,
+    }
+    if start_us is not None:
+        read_kw["start_time"] = int(start_us)
+    if end_us is not None:
+        read_kw["end_time"] = int(end_us)
+    need_total = sum(len(v) for v in need_ts_by_cam.values())
+    print(
+        f"[bag-decode] {os.path.basename(heavy_bag)} 待解码 {need_total} 帧",
+        flush=True,
+    )
     try:
         with DpBag(bag=heavy_bag) as bag:
-            for topic, msg, _ in bag.read_messages(
-                topics=list(camera_topics.keys()),
-                dpbag_name=heavy_bag,
-                force_get_data_by_raw=True,
-            ):
+            for topic, msg, _ in bag.read_messages(**read_kw):
                 cam = camera_topics.get(topic)
                 if cam is None:
                     continue
@@ -1279,11 +1514,8 @@ def extract_selected_images(
                 img = cv2.imdecode(np.frombuffer(obj.data, np.uint8), cv2.IMREAD_COLOR)
                 if img is not None and img.size > 0:
                     out[cam][ts_us] = img
-    except ColdStorageError:
-        raise
     except Exception as e:
-        _check_cold_storage(e)
-        raise
+        _fail_bag(heavy_bag, e)
     return out
 
 
@@ -1508,8 +1740,15 @@ def run_case_generation(case_id: str, args: argparse.Namespace) -> List[str]:
         raise RuntimeError(f"tag_id={tag_id} 没有 Heavy bag")
 
     topic_to_cam = dict(zip(config.CAMERA_TOPICS, config.CAMERA_NAMES))
-    best_heavy, main_ts = choose_best_heavy_bag(
-        heavy_bags, target_ts, main_camera, topic_to_cam
+    best_heavy, main_ts, cam_ts_map = choose_best_heavy_bag(
+        heavy_bags,
+        target_ts,
+        main_camera,
+        topic_to_cam,
+        frames=args.frames,
+        frame_step=args.frame_step,
+        bag_candidate_limit=args.bag_candidate_limit,
+        scan_margin_sec=args.bag_scan_margin_sec,
     )
     selected_ref, eff_step = pick_nearby_window(
         main_ts, target_ts, args.frames, args.frame_step
@@ -1517,8 +1756,6 @@ def run_case_generation(case_id: str, args: argparse.Namespace) -> List[str]:
     if not selected_ref:
         raise RuntimeError("未找到可用参考帧")
 
-    # 扫全路时间戳并做最近邻规划
-    cam_ts_map = scan_camera_timestamps(best_heavy, topic_to_cam, only_cam=None)
     planned = plan_frames(selected_ref, cam_ts_map)
     if not planned:
         raise RuntimeError("四路最近邻规划失败，无可用帧")
@@ -1528,7 +1765,14 @@ def run_case_generation(case_id: str, args: argparse.Namespace) -> List[str]:
         for cam, ts in pf.per_cam_ts.items():
             need_ts_by_cam[cam].add(ts)
 
-    images_by_cam_ts = extract_selected_images(best_heavy, topic_to_cam, need_ts_by_cam)
+    decode_lo, decode_hi = narrow_time_window_us(selected_ref, pad_us=3_000_000)
+    images_by_cam_ts = extract_selected_images(
+        best_heavy,
+        topic_to_cam,
+        need_ts_by_cam,
+        start_us=decode_lo,
+        end_us=decode_hi,
+    )
 
     tmp_root = tempfile.mkdtemp(prefix=f"case_avm_{tag_id}_", dir=args.output_root)
     samples_root = os.path.join(tmp_root, "samples")
@@ -1581,37 +1825,30 @@ def run_case_generation(case_id: str, args: argparse.Namespace) -> List[str]:
             if not args.no_per_frame_payload:
                 proto_err = _ensure_light_bag_proto_runtime()
                 if proto_err:
-                    print(
-                        f"[pipeline-overlay] WARN: {proto_err}，回退到 read_data 目录最近邻方案",
-                        file=sys.stderr,
+                    raise RuntimeError(f"Light bag proto 不可用: {proto_err}")
+                light_bag = derive_light_bag_from_heavy(best_heavy)
+                print(f"[per-frame] 现场扫描 Light bag: {light_bag}")
+                try:
+                    per_frame_payloads, per_frame_diffs = (
+                        extract_per_frame_payloads_from_light_bag(
+                            light_bag,
+                            [pf.ref_ts for pf in planned],
+                            max_skew_us=args.pipeline_overlay_max_skew_us,
+                        )
                     )
-                else:
-                    light_bag = derive_light_bag_from_heavy(best_heavy)
-                    print(f"[per-frame] 现场扫描 Light bag: {light_bag}")
-                    try:
-                        per_frame_payloads, per_frame_diffs = (
-                            extract_per_frame_payloads_from_light_bag(
-                                light_bag,
-                                [pf.ref_ts for pf in planned],
-                                max_skew_us=args.pipeline_overlay_max_skew_us,
-                            )
-                        )
-                        per_frame_extract_used = True
-                        n_with_pose = sum(
-                            1 for v in per_frame_payloads.values() if v.get("pose")
-                        )
-                        n_nonempty_ch = sum(
-                            1 for v in per_frame_payloads.values() if v.get("chaosheng")
-                        )
-                        print(
-                            f"[per-frame] 抽取完成：pose {n_with_pose}/{len(planned)}，"
-                            f"非空 chaosheng {n_nonempty_ch}/{len(planned)}（空列表仍会叠绘相机/规划）"
-                        )
-                    except Exception as e:
-                        print(
-                            f"[pipeline-overlay] WARN: Light bag 抽取失败({e})，回退到 read_data 目录最近邻方案",
-                            file=sys.stderr,
-                        )
+                except Exception as e:
+                    _fail_bag(light_bag, e)
+                per_frame_extract_used = True
+                n_with_pose = sum(
+                    1 for v in per_frame_payloads.values() if v.get("pose")
+                )
+                n_nonempty_ch = sum(
+                    1 for v in per_frame_payloads.values() if v.get("chaosheng")
+                )
+                print(
+                    f"[per-frame] 抽取完成：pose {n_with_pose}/{len(planned)}，"
+                    f"非空 chaosheng {n_nonempty_ch}/{len(planned)}（空列表仍会叠绘相机/规划）"
+                )
 
             if not per_frame_extract_used:
                 snapshot_ts_sorted = list_read_data_snapshot_timestamps_sorted(
@@ -1979,6 +2216,28 @@ def main() -> int:
         ),
     )
     parser.add_argument(
+        "--retry-failed",
+        action="store_true",
+        help=(
+            "仍处理 .generate_avm_failures.jsonl 中已有记录的 case（默认会跳过这些 case）"
+        ),
+    )
+    parser.add_argument(
+        "--bag-scan-margin-sec",
+        type=float,
+        default=DEFAULT_BAG_SCAN_MARGIN_SEC,
+        help=(
+            "远端扫 Heavy/Light bag 时在 target_ts 两侧扩展的秒数（默认 45），"
+            "避免整包 read_messages"
+        ),
+    )
+    parser.add_argument(
+        "--bag-candidate-limit",
+        type=int,
+        default=DEFAULT_BAG_CANDIDATE_LIMIT,
+        help="按文件名预选后最多尝试打开的 Heavy bag 数（默认 3；读失败仍立即放弃该 case）",
+    )
+    parser.add_argument(
         "--mark-avm",
         action="store_true",
         help=(
@@ -2045,22 +2304,72 @@ def main() -> int:
 
     os.makedirs(args.output_root, exist_ok=True)
 
+    failures_log = os.path.join(
+        args.output_root, ".generate_avm_failures.jsonl"
+    )
+    prior_failure_ids: Set[str] = set()
+    if case_ids and not args.retry_failed:
+        prior_failure_ids = _load_failure_case_ids(failures_log)
+        if prior_failure_ids:
+            print(
+                f"[INFO] 已加载 {len(prior_failure_ids)} 个历史失败 case，"
+                f"将跳过（见 {failures_log}；加 --retry-failed 可重试）",
+                flush=True,
+            )
+
     failed = 0
+    success_cases: List[str] = []
+    failed_records: List[Dict[str, str]] = []
     cold_storage_cases: List[str] = []
+    skipped_prior_failures: List[str] = []
     if case_ids:
         ensure_runtime_deps()
         for idx, cid in enumerate(case_ids, start=1):
             if len(case_ids) > 1:
                 print(f"\n{'=' * 70}\n[{idx}/{len(case_ids)}] case_id={cid}\n{'=' * 70}")
+            if cid in prior_failure_ids:
+                print(
+                    f"[SKIP-FAIL] {cid}: 已在失败记录中，跳过（{failures_log}）",
+                    flush=True,
+                )
+                skipped_prior_failures.append(cid)
+                continue
             try:
                 run_case_generation(cid, args)
-            except ColdStorageError:
+                success_cases.append(cid)
+                print(f"[OK] {cid}", flush=True)
+            except ColdStorageError as e:
                 print(f"[COLD] {cid}: 数据在冷存储中，跳过")
                 cold_storage_cases.append(cid)
                 failed += 1
+                rec = {
+                    "case_id": cid,
+                    "kind": "cold_storage",
+                    "error": str(e),
+                }
+                failed_records.append(rec)
+                _append_failure_log(failures_log, rec)
+            except BagNotFoundError as e:
+                print(f"[FAIL] {cid}: bag 不可用 — {e}", file=sys.stderr)
+                failed += 1
+                rec = {"case_id": cid, "kind": "bag_not_found", "error": str(e)}
+                failed_records.append(rec)
+                _append_failure_log(failures_log, rec)
             except Exception as e:
                 print(f"[FAIL] {cid}: {e}", file=sys.stderr)
                 failed += 1
+                rec = {"case_id": cid, "kind": "error", "error": str(e)}
+                failed_records.append(rec)
+                _append_failure_log(failures_log, rec)
+
+        _print_batch_summary(
+            total=len(case_ids),
+            success_cases=success_cases,
+            failed_records=failed_records,
+            cold_storage_cases=cold_storage_cases,
+            skipped_prior_failures=skipped_prior_failures,
+            failures_log=failures_log,
+        )
 
     if args.mark_avm:
         avm_paths, skipped_cases, selected_cases = _collect_avm_paths_from_existing_dirs(
@@ -2106,7 +2415,14 @@ def main() -> int:
             if total_yuyan:
                 print(f"[yuyan-reassign] 逐帧鱼眼重分配完成: {total_yuyan} 张 → yuyan/")
         else:
-            print("[mark-avm] 所有 case 均已有 crop/，无需标注")
+            if skipped_cases:
+                print(
+                    f"[mark-avm] {len(skipped_cases)} 个 case 已有 crop/，无新 AVM 待标注"
+                )
+            else:
+                print(
+                    "[mark-avm] 未发现待标注 AVM（请确认生成是否成功，或检查 --output-root）"
+                )
             total_yuyan = _reassign_yuyan_from_crop_id(args.output_root, args.crop_id_json)
             if total_yuyan:
                 print(f"[yuyan-reassign] 逐帧鱼眼重分配完成: {total_yuyan} 张 → yuyan/")
@@ -2118,14 +2434,10 @@ def main() -> int:
             on_conflict=args.export_flat_conflict,
         )
 
-    if cold_storage_cases:
-        print(f"\n{'=' * 70}")
-        print(f"[汇总] 冷存储跳过 {len(cold_storage_cases)} 个 case:")
-        for cid in cold_storage_cases:
-            print(f"  {cid}")
-        print(f"{'=' * 70}")
-
-    return 1 if failed else 0
+    # 仅当「有 case 列表且全部失败」时返回非 0；部分成功仍返回 0，便于后续 mark/export 继续
+    if case_ids and failed == len(case_ids):
+        return 1
+    return 0
 
 
 if __name__ == "__main__":

@@ -22,12 +22,15 @@ CSV 格式（有表头）::
     E: 预测值（多条换行）
     F: 真实标签（多条换行）
 
+B/C/D 列：上传前读取表中已有内容；单格已有图则跳过该格；
+若三列均已齐全则整行不再插圖（可用 ``--force-images`` 强制重传）。
+
 用法::
 
     python tool/upload_predictions_to_feishu.py \
-        --csv /home/jiangzirou/avp_promptkit/tool/v1.csv \
+        --csv /home/jiangzirou/avp_promptkit/tool/val_misdetect_predictions.csv \
         --data-dir /mnt/public-data/user/ziroujiang/all_data_v3 \
-        --spreadsheet-url "https://rqk9rsooi4.feishu.cn/sheets/Ki8Js1DPnhFB8Utx2frc9gK9nqf"
+        --spreadsheet-url "https://rqk9rsooi4.feishu.cn/sheets/OEt0sKggfhnaratxk9rcO9YMnSg"
 """
 
 from __future__ import annotations
@@ -287,6 +290,39 @@ def resolve_image(directory: str, case_id: str) -> Optional[str]:
 # ── CSV 解析 & 聚合 ──────────────────────────────────────────────────────
 
 
+def read_wide_label_csv(csv_path: str) -> OrderedDict:
+    """读取每行一个 case、多列标签的 CSV（如 v4_eval_labels.csv）。
+
+    返回 OrderedDict: case_id -> {entity, geometry, object_type, misdetect}
+    """
+    key_map = {
+        "实体是否存在": "entity",
+        "超声标记命中或偏移": "geometry",
+        "障碍物类型": "object_type",
+        "是否误检": "misdetect",
+    }
+    groups: OrderedDict = OrderedDict()
+    with open(csv_path, encoding="utf-8-sig") as f:
+        reader = csv.DictReader(f)
+        fields = reader.fieldnames or []
+        col_id = "case_id" if "case_id" in fields else (fields[0] if fields else "id")
+        for row in reader:
+            cid = (row.get(col_id) or "").strip()
+            if not cid:
+                continue
+            lower = cid.lower()
+            for ext in (".jpg", ".jpeg", ".png"):
+                if lower.endswith(ext):
+                    cid = cid[: -len(ext)].strip()
+                    break
+            rec = {v: "" for v in key_map.values()}
+            for hdr, key in key_map.items():
+                if hdr in row:
+                    rec[key] = (row.get(hdr) or "").strip()
+            groups[cid] = rec
+    return groups
+
+
 def read_and_group_csv(csv_path: str) -> OrderedDict:
     """读取 CSV，按 id 聚合预测和真实标签。
 
@@ -364,19 +400,18 @@ def read_column_a(
     return row_by_case, last
 
 
-def read_row_range(
+def read_columns_bcd(
     spreadsheet_token: str,
     sheet_id: str,
     headers: dict,
-    col_start: str,
-    col_end: str,
     start_row: int,
     end_row: int,
     timeout: float,
 ) -> List[List[Any]]:
+    """读取 B:D 列，行 start_row..end_row（含）。"""
     if end_row < start_row:
         return []
-    rng = f"{sheet_id}!{col_start}{start_row}:{col_end}{end_row}"
+    rng = f"{sheet_id}!B{start_row}:D{end_row}"
     r = requests.get(
         f"{OPEN_API}/sheets/v2/spreadsheets/{spreadsheet_token}/values_batch_get",
         headers=headers,
@@ -386,11 +421,39 @@ def read_row_range(
     r.raise_for_status()
     data = r.json()
     if data.get("code") != 0:
-        raise RuntimeError(f"values_batch_get {col_start}:{col_end} 失败: {data}")
+        raise RuntimeError(f"values_batch_get B:D 失败: {data}")
     vrs = (data.get("data") or {}).get("valueRanges") or []
     if not vrs:
         return []
     return vrs[0].get("values") or []
+
+
+def bcd_cell_at(
+    bcd_values: List[List[Any]],
+    start_row: int,
+    row_1based: int,
+    col_idx: int,
+) -> Any:
+    """col_idx: 0=B, 1=C, 2=D。"""
+    i = row_1based - start_row
+    if i < 0 or i >= len(bcd_values):
+        return None
+    row = bcd_values[i]
+    if col_idx >= len(row):
+        return None
+    return row[col_idx]
+
+
+def case_has_complete_images(
+    bcd_values: List[List[Any]],
+    start_row: int,
+    row_1based: int,
+) -> bool:
+    """B/C/D 三列均已有图或文本时视为该 case 图片已齐全。"""
+    for col_idx in range(3):
+        if not cell_has_image_or_content(bcd_cell_at(bcd_values, start_row, row_1based, col_idx)):
+            return False
+    return True
 
 
 # ── main ──────────────────────────────────────────────────────────────────
@@ -403,8 +466,30 @@ def main() -> int:
     parser.add_argument("--csv", required=True, help="预测结果 CSV 文件路径")
     parser.add_argument(
         "--data-dir",
-        required=True,
-        help="数据根目录，下含 images/ crop/ yuyan/ 子目录",
+        default="",
+        help="数据根目录，下含 images/ crop/ yuyan/（上传图片时需要）",
+    )
+    parser.add_argument(
+        "--labels-efgh",
+        action="store_true",
+        help="宽表标签模式：将 CSV 中实体/几何/类型/是否误检写入 E/F/G/H",
+    )
+    parser.add_argument(
+        "--col-entity", default="E", help="--labels-efgh 时「实体是否存在」列（默认 E）"
+    )
+    parser.add_argument(
+        "--col-geometry", default="F", help="--labels-efgh 时「超声命中或偏移」列（默认 F）"
+    )
+    parser.add_argument(
+        "--col-object-type", default="G", help="--labels-efgh 时「障碍物类型」列（默认 G）"
+    )
+    parser.add_argument(
+        "--col-misdetect", default="H", help="--labels-efgh 时「是否误检」列（默认 H）"
+    )
+    parser.add_argument(
+        "--no-images",
+        action="store_true",
+        help="不上传 B/C/D 图片（仅写文本列）",
     )
     parser.add_argument("--spreadsheet-url", default="", help="电子表格 URL")
     parser.add_argument("--spreadsheet-token", default="", help="直接指定 token")
@@ -430,26 +515,40 @@ def main() -> int:
         default=0.05,
         help="两次图片写入间隔秒数",
     )
+    parser.add_argument(
+        "--force-images",
+        action="store_true",
+        help="即使 B/C/D 已有图也强制重新上传",
+    )
     parser.add_argument("--request-timeout", type=float, default=DEFAULT_REQUEST_TIMEOUT)
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--limit", type=int, default=None, help="只处理前 N 个 case")
     args = parser.parse_args()
 
     csv_path = args.csv
-    data_dir = args.data_dir.rstrip("/")
-    images_dir = os.path.join(data_dir, "images")
-    crop_dir = os.path.join(data_dir, "crop")
-    yuyan_dir = os.path.join(data_dir, "yuyan")
+    upload_images = not args.no_images
+    data_dir = (args.data_dir or "").rstrip("/")
+    images_dir = os.path.join(data_dir, "images") if data_dir else ""
+    crop_dir = os.path.join(data_dir, "crop") if data_dir else ""
+    yuyan_dir = os.path.join(data_dir, "yuyan") if data_dir else ""
 
     if not os.path.isfile(csv_path):
         print(f"CSV 文件不存在: {csv_path}", file=sys.stderr)
         return 1
-    for d in (images_dir, crop_dir, yuyan_dir):
-        if not os.path.isdir(d):
-            print(f"目录不存在: {d}", file=sys.stderr)
-            return 1
 
-    groups = read_and_group_csv(csv_path)
+    if upload_images:
+        if not data_dir:
+            print("上传图片需提供 --data-dir，或使用 --no-images", file=sys.stderr)
+            return 1
+        for d in (images_dir, crop_dir, yuyan_dir):
+            if not os.path.isdir(d):
+                print(f"目录不存在: {d}", file=sys.stderr)
+                return 1
+
+    if args.labels_efgh:
+        groups = read_wide_label_csv(csv_path)
+    else:
+        groups = read_and_group_csv(csv_path)
     if args.limit:
         limited: OrderedDict = OrderedDict()
         for i, (k, v) in enumerate(groups.items()):
@@ -460,16 +559,20 @@ def main() -> int:
 
     print(f"CSV 读取: {csv_path}")
     print(f"  唯一 case: {len(groups)}")
-    total_preds = sum(len(v["predictions"]) for v in groups.values())
-    total_labels = sum(len(v["labels"]) for v in groups.values())
-    print(f"  预测条数: {total_preds}, 标签条数: {total_labels}")
+    if args.labels_efgh:
+        print("  模式: 宽表标签 → E/F/G/H")
+    else:
+        total_preds = sum(len(v["predictions"]) for v in groups.values())
+        total_labels = sum(len(v["labels"]) for v in groups.values())
+        print(f"  预测条数: {total_preds}, 标签条数: {total_labels}")
 
-    missing_img = 0
-    for cid in groups:
-        if not resolve_image(images_dir, cid):
-            missing_img += 1
-    if missing_img:
-        print(f"  [WARN] {missing_img} 个 case 在 images/ 下无图片")
+    if upload_images:
+        missing_img = 0
+        for cid in groups:
+            if not resolve_image(images_dir, cid):
+                missing_img += 1
+        if missing_img:
+            print(f"  [WARN] {missing_img} 个 case 在 images/ 下无图片")
 
     # ── 飞书认证 ──
     app_id, app_secret = load_app_credentials()
@@ -494,10 +597,16 @@ def main() -> int:
             if i >= 5:
                 print(f"  ... 共 {len(groups)} 条（略）")
                 break
-            preds = " | ".join(info["predictions"])
-            labels = " | ".join(info["labels"])
-            img = resolve_image(images_dir, cid)
-            print(f"  {cid}: pred=[{preds}] label=[{labels}] img={'OK' if img else 'MISS'}")
+            if args.labels_efgh:
+                print(
+                    f"  {cid}: E={info.get('entity')} F={info.get('geometry')} "
+                    f"G={info.get('object_type')} H={info.get('misdetect')}"
+                )
+            else:
+                preds = " | ".join(info["predictions"])
+                labels = " | ".join(info["labels"])
+                img = resolve_image(images_dir, cid) if upload_images else None
+                print(f"  {cid}: pred=[{preds}] label=[{labels}] img={'OK' if img else 'SKIP'}")
         return 0
 
     tenant = get_tenant_access_token(app_id, app_secret, req_to)
@@ -537,35 +646,88 @@ def main() -> int:
         values_batch_update(token_str, headers, vrs, timeout=max(req_to, IMAGE_UPLOAD_TIMEOUT))
         print(f"写入 A 列: {len(new_a_rows)} 个新行")
 
-    # ── 写文本列（预测 + 真实标签）──
+    # ── 写文本列 ──
     text_vrs: List[Dict[str, Any]] = []
-    col_pred = args.col_pred.upper()
-    col_label = args.col_label.upper()
-    for cid, row, _ in assignments:
-        info = groups[cid]
-        pred_text = "\n".join(info["predictions"])
-        label_text = "\n".join(info["labels"])
-        text_vrs.append({
-            "range": f"{sheet_id}!{col_pred}{row}:{col_pred}{row}",
-            "values": [[pred_text]],
-        })
-        text_vrs.append({
-            "range": f"{sheet_id}!{col_label}{row}:{col_label}{row}",
-            "values": [[label_text]],
-        })
+    if args.labels_efgh:
+        col_map = [
+            (args.col_entity.upper(), "entity"),
+            (args.col_geometry.upper(), "geometry"),
+            (args.col_object_type.upper(), "object_type"),
+            (args.col_misdetect.upper(), "misdetect"),
+        ]
+        for cid, row, _ in assignments:
+            info = groups[cid]
+            for col_letter, key in col_map:
+                text_vrs.append({
+                    "range": f"{sheet_id}!{col_letter}{row}:{col_letter}{row}",
+                    "values": [[info.get(key, "")]],
+                })
+    else:
+        col_pred = args.col_pred.upper()
+        col_label = args.col_label.upper()
+        for cid, row, _ in assignments:
+            info = groups[cid]
+            pred_text = "\n".join(info["predictions"])
+            label_text = "\n".join(info["labels"])
+            text_vrs.append({
+                "range": f"{sheet_id}!{col_pred}{row}:{col_pred}{row}",
+                "values": [[pred_text]],
+            })
+            text_vrs.append({
+                "range": f"{sheet_id}!{col_label}{row}:{col_label}{row}",
+                "values": [[label_text]],
+            })
     if text_vrs:
         values_batch_update(token_str, headers, text_vrs, timeout=max(req_to, IMAGE_UPLOAD_TIMEOUT))
-        print(f"写入预测/标签文本: {len(text_vrs)} 格")
+        if args.labels_efgh:
+            print(f"写入 E/F/G/H 标签: {len(text_vrs)} 格")
+        else:
+            print(f"写入预测/标签文本: {len(text_vrs)} 格")
 
-    # ── 写图片列（B/C/D，跳过已有内容）──
+    if not upload_images:
+        print("已跳过图片上传（--no-images）")
+        print("全部完成")
+        return 0
+
+    # ── 写图片列（B/C/D：已有图的格 / 已齐全的三图 case 均跳过）──
     img_cols = [
-        (args.col_image.upper(), images_dir, "原图"),
-        (args.col_crop.upper(), crop_dir, "crop"),
-        (args.col_yuyan.upper(), yuyan_dir, "鱼眼"),
+        (args.col_image.upper(), 0, images_dir, "原图"),
+        (args.col_crop.upper(), 1, crop_dir, "crop"),
+        (args.col_yuyan.upper(), 2, yuyan_dir, "鱼眼"),
     ]
-    wrote = skipped = missed = 0
+    a_start = args.header_rows + 1
+    touch_rows = [row for _, row, _ in assignments]
+    bcd_values: List[List[Any]] = []
+    if touch_rows and not args.force_images:
+        end_read = max(touch_rows)
+        bcd_values = read_columns_bcd(
+            token_str, sheet_id, headers, a_start, end_read, req_to
+        )
+        print(
+            f"已读 B:D 行 {a_start}–{end_read}（{len(bcd_values)} 行），"
+            f"上传前跳过已有图"
+        )
+
+    wrote = skipped_cell = skipped_case = missed = 0
     for idx, (cid, row, _) in enumerate(assignments):
-        for col_letter, directory, label in img_cols:
+        if (
+            not args.force_images
+            and bcd_values
+            and case_has_complete_images(bcd_values, a_start, row)
+        ):
+            skipped_case += 1
+            skipped_cell += 3
+            if (idx + 1) % 50 == 0:
+                print(f"  进度: {idx + 1}/{len(assignments)} ...")
+            continue
+
+        for col_letter, col_idx, directory, label in img_cols:
+            if not args.force_images and bcd_values:
+                if cell_has_image_or_content(
+                    bcd_cell_at(bcd_values, a_start, row, col_idx)
+                ):
+                    skipped_cell += 1
+                    continue
             img_path = resolve_image(directory, cid)
             if not img_path:
                 missed += 1
@@ -579,7 +741,7 @@ def main() -> int:
                 wrote += 1
             except RuntimeError as e:
                 if "already" in str(e).lower() or "exist" in str(e).lower():
-                    skipped += 1
+                    skipped_cell += 1
                 else:
                     print(f"  [WARN] 写图失败 {cell} {img_path}: {e}", file=sys.stderr)
                     missed += 1
@@ -588,7 +750,10 @@ def main() -> int:
         if (idx + 1) % 20 == 0:
             print(f"  进度: {idx + 1}/{len(assignments)} ...")
 
-    print(f"\n图片写入: 成功={wrote}, 跳过已有={skipped}, 缺失/失败={missed}")
+    print(
+        f"\n图片写入: 新写={wrote}, 跳过格={skipped_cell}, "
+        f"跳过整行(三图齐全)={skipped_case}, 缺失/失败={missed}"
+    )
     print("全部完成")
     return 0
 

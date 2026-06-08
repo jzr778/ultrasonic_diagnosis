@@ -541,9 +541,15 @@ def diagnose_single_tag(tag_id, feishu_id, args):
     if comment_lines:
         comment_record = "诊断：\n" + "\n".join(comment_lines)
         logger.info(f"[诊断] tag={tag_id} 飞书评论:\n{comment_record}")
-        tester = FeishuCommentTester()
-        test_url = f"https://project.feishu.cn/{config.FEISHU_PROJECT_KEY}/case/detail/{feishu_id}"
-        tester.test_comment(test_url, comment_record)
+        if not getattr(args, "no_feishu_comment", False):
+            tester = FeishuCommentTester()
+            test_url = (
+                f"https://project.feishu.cn/{config.FEISHU_PROJECT_KEY}"
+                f"/case/detail/{feishu_id}"
+            )
+            tester.test_comment(test_url, comment_record)
+        else:
+            logger.info(f"[诊断] tag={tag_id} 已跳过飞书评论 (--no-feishu-comment)")
     logger.info(f"[诊断] tag={tag_id} 完成 (误检={len(stats['misdetected'])}, 正常={len(stats['normal'])}, API异常={len(stats['api_error'])})")
     return stats
 
@@ -629,6 +635,11 @@ def main():
         help="关闭鱼眼抽帧保存、鱼眼标注与 VLM 双图输入（默认开启鱼眼链路）",
     )
     parser.set_defaults(yuyan=True)
+    parser.add_argument(
+        "--no-feishu-comment",
+        action="store_true",
+        help="诊断完成后不向飞书 case 发评论",
+    )
     args = parser.parse_args()
 
     log_file = setup_logging()

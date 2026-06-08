@@ -1,18 +1,7 @@
 #!/usr/bin/env python3
-"""调用 EAS 微调模型：单条探活 / 全量评测 val_dataset.jsonl。
+"""EAS 微调模型：val 三分类评测（实体 / 几何 / 类型）。超声误检诊断见 tool/diagnose_val_dataset.py。
 
-cd /home/jiangzirou/avp_promptkit
-
-# 全量评测（约 2017 条，每条 ~10–15s，全程可能数小时）
-python scripts/test.py --eval
-
-# 先试跑 10 条
-python scripts/test.py --eval --limit 10
-
-# 指定输出文件（便于断点续跑）
-python scripts/test.py --eval -o scripts/eval_val.jsonl --resume
-
-
+python tool/eas_eval.py --eval --limit 10
 """
 
 from __future__ import annotations
@@ -21,6 +10,7 @@ import argparse
 import base64
 import json
 import mimetypes
+import os
 import re
 import sys
 import time
@@ -30,13 +20,29 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import requests
 
+try:
+    import cv2
+except ImportError:
+    cv2 = None  # type: ignore
+
 EAS_BASE = (
     "http://1204718816090335.cn-wulanchabu.pai-eas.aliyuncs.com"
-    "/api/predict/diagnosis_qwen35_27b_v3_clone5"
+    "/api/predict/diagnosis_qwen35_27b_v5_clone"
 )
 DEFAULT_DATA_ROOT = "/mnt/public-data/user/ziroujiang/all_data_v3"
-DEFAULT_VAL_JSONL = f"{DEFAULT_DATA_ROOT}/val_dataset.jsonl"
-DEFAULT_TOKEN = "MDJlZjMzNjU1MTkwNWQwOWQ1NzhhODhhMmU5Njg0ZTM0ODc2MGFhYg=="
+DEFAULT_VAL_JSONL = f"{DEFAULT_DATA_ROOT}/val_dataset_v5.jsonl"
+# 每个 EAS 部署有独立 Token（控制台 → 服务 → 调用信息 → Token）
+_DEFAULT_V3_TOKEN = "NWRlNWViZGI5NWJkZjFhMzg4YTc1YzY2MjRiYWVjYTgwNmVhMTZkOQ=="
+DEFAULT_TOKEN = os.environ.get("EAS_TOKEN", "").strip() or _DEFAULT_V3_TOKEN
+
+
+def _eas_auth_headers(token: str) -> Dict[str, str]:
+    return {
+        "Content-Type": "application/json",
+        "Authorization": (token or "").strip(),
+    }
+
+
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent
 if str(PROJECT_ROOT) not in sys.path:
@@ -119,7 +125,9 @@ def _label_from_sample(sample: Dict[str, Any]) -> str:
 
 
 def _normalize_pred(text: str) -> str:
-    text = text.strip()
+    text = (text or "").strip()
+    if not text:
+        return ""
     # 只取第一行、去掉常见包裹
     text = text.splitlines()[0].strip()
     text = re.sub(r"^[`\"']+|[`\"']+$", "", text)
@@ -161,6 +169,52 @@ def _build_openai_messages(sample: Dict[str, Any], data_root: Path) -> List[Dict
     ]
 
 
+def _prompt_from_sample(sample: Dict[str, Any]) -> str:
+    parts: List[str] = []
+    for msg in sample["messages"]:
+        if msg["role"] == "system":
+            parts.append(str(msg["content"]))
+        elif msg["role"] == "user":
+            parts.append(str(msg["content"]).replace("<image>", "", 1).strip())
+    return "\n\n".join(parts)
+
+
+def _load_images_for_sample(
+    sample: Dict[str, Any], data_root: Path
+) -> "OrderedDict[str, Any]":
+    from collections import OrderedDict
+
+    if cv2 is None:
+        raise RuntimeError("需要 opencv-python (cv2) 加载图片")
+    image_list: OrderedDict[str, Any] = OrderedDict()
+    for rel in sample["images"]:
+        p = data_root / rel
+        if not p.is_file():
+            raise FileNotFoundError(f"图片不存在: {p}")
+        img = cv2.imread(str(p))
+        if img is None or img.size == 0:
+            raise FileNotFoundError(f"无法读取: {p}")
+        key = rel.split("/")[0] if "/" in rel else rel
+        image_list[key] = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    return image_list
+
+
+def _infer_one_pipeline(
+    sample: Dict[str, Any],
+    data_root: Path,
+    model: str,
+) -> Tuple[str, Optional[int], str]:
+    """使用 pipeline 同款 VLM_API（config / .env），不发飞书评论。"""
+    from vlm.VLM_API import call_qwen_model_with_images
+
+    image_list = _load_images_for_sample(sample, data_root)
+    question = _prompt_from_sample(sample)
+    pred = call_qwen_model_with_images(image_list, question, model)
+    if isinstance(pred, str) and pred.startswith("调用失败"):
+        return "", None, pred
+    return (pred or "").strip(), 200, ""
+
+
 def _infer_one(
     sample: Dict[str, Any],
     data_root: Path,
@@ -169,8 +223,13 @@ def _infer_one(
     headers: Dict[str, str],
     max_tokens: int,
     timeout: int,
+    verbose: bool = False,
 ) -> Tuple[str, Optional[int], str]:
     """返回 (prediction, http_status, error_msg)。"""
+    t0 = time.perf_counter()
+    if verbose:
+        cid = _case_id_from_sample(sample)
+        print(f"  [{cid}] 编码 3 张图片为 base64...", flush=True)
     messages = _build_openai_messages(sample, data_root)
     payload = {
         "model": "Qwen3.5-27B",
@@ -180,15 +239,40 @@ def _infer_one(
         "stream": False,
         "chat_template_kwargs": {"enable_thinking": False},
     }
-    try:
-        resp = requests.post(
-            url, json=payload, headers=headers, timeout=timeout
+    if verbose:
+        payload_bytes = len(json.dumps(payload, ensure_ascii=False))
+        print(
+            f"  [{cid}] 请求体约 {payload_bytes / 1024 / 1024:.1f} MB，"
+            f"提交 EAS 推理（单条常见 20~90s，超时 {timeout}s）...",
+            flush=True,
         )
+    # connect 超时与读超时分离，避免连不上时傻等满 timeout
+    req_timeout: Any = (min(60, timeout), timeout)
+    try:
+        t_post = time.perf_counter()
+        resp = requests.post(
+            url, json=payload, headers=headers, timeout=req_timeout
+        )
+        if verbose:
+            print(
+                f"  [{cid}] HTTP {resp.status_code}，"
+                f"推理+传输耗时 {time.perf_counter() - t_post:.1f}s，"
+                f"总计 {time.perf_counter() - t0:.1f}s",
+                flush=True,
+            )
     except requests.exceptions.RequestException as e:
+        if verbose:
+            print(
+                f"  [{cid}] 请求失败（已等待 {time.perf_counter() - t0:.1f}s）: {e}",
+                flush=True,
+            )
         return "", None, str(e)
 
     if resp.status_code != 200:
-        return "", resp.status_code, resp.text[:500]
+        detail = (resp.text or "").strip()[:500]
+        if not detail:
+            detail = f"HTTP {resp.status_code}"
+        return "", resp.status_code, detail
 
     try:
         body = resp.json()
@@ -227,8 +311,18 @@ def run_val_eval(args: argparse.Namespace) -> int:
     out_jsonl = Path(args.output) if args.output else out_dir / f"eval_val_{ts}.jsonl"
     summary_path = out_jsonl.with_suffix(".summary.json")
 
-    url = f"{EAS_BASE}/v1/chat/completions"
-    headers = {"Content-Type": "application/json", "Authorization": args.token}
+    use_pipeline = getattr(args, "pipeline_vlm", False)
+    eas_base = (args.eas_base or EAS_BASE).rstrip("/")
+    url = f"{eas_base}/v1/chat/completions"
+    headers = _eas_auth_headers(args.token)
+    if use_pipeline:
+        import config as _cfg
+
+        print(
+            f"VLM 后端: pipeline VLM_API style={_cfg.VLM_API_STYLE} "
+            f"model={args.model}",
+            flush=True,
+        )
 
     samples: List[Dict[str, Any]] = []
     with open(val_path, encoding="utf-8") as f:
@@ -272,14 +366,19 @@ def run_val_eval(args: argparse.Namespace) -> int:
 
             t0 = time.time()
             try:
-                pred_raw, status, err = _infer_one(
-                    sample,
-                    data_root,
-                    url=url,
-                    headers=headers,
-                    max_tokens=args.max_tokens,
-                    timeout=args.timeout,
-                )
+                if use_pipeline:
+                    pred_raw, status, err = _infer_one_pipeline(
+                        sample, data_root, args.model
+                    )
+                else:
+                    pred_raw, status, err = _infer_one(
+                        sample,
+                        data_root,
+                        url=url,
+                        headers=headers,
+                        max_tokens=args.max_tokens,
+                        timeout=args.timeout,
+                    )
             except FileNotFoundError as e:
                 pred_raw, status, err = "", None, str(e)
 
@@ -332,11 +431,16 @@ def run_val_eval(args: argparse.Namespace) -> int:
                 )
 
     acc = stats["match"] / stats["ok"] if stats["ok"] else 0.0
+    import config as _cfg
+
     summary = {
         "val_jsonl": str(val_path),
         "data_root": str(data_root),
         "output_jsonl": str(out_jsonl),
-        "eas_base": EAS_BASE,
+        "backend": "pipeline_vlm_api" if use_pipeline else "eas",
+        "vlm_api_style": _cfg.VLM_API_STYLE if use_pipeline else "",
+        "vlm_model": args.model if use_pipeline else "Qwen3.5-27B",
+        "eas_base": eas_base,
         "total_samples": total,
         "processed": stats["total"],
         "skipped_resume": stats["skipped"],
@@ -365,12 +469,17 @@ def run_single(args: argparse.Namespace) -> int:
     sample = DEFAULT_SAMPLE
     expected = _label_from_sample(sample)
 
-    url = f"{EAS_BASE}/v1/chat/completions"
-    headers = {"Content-Type": "application/json", "Authorization": args.token}
+    eas_base = (args.eas_base or EAS_BASE).rstrip("/")
+    url = f"{eas_base}/v1/chat/completions"
+    headers = _eas_auth_headers(args.token)
 
     print(f"数据目录: {data_root}", flush=True)
     print(f"标注期望: {expected!r}", flush=True)
     print("请求中...", url, flush=True)
+    print(
+        f"（默认超时 {args.timeout}s：先本地编码 3 图，再上传并等 GPU 推理，期间无输出属正常）",
+        flush=True,
+    )
 
     pred, status, err = _infer_one(
         sample,
@@ -379,9 +488,24 @@ def run_single(args: argparse.Namespace) -> int:
         headers=headers,
         max_tokens=args.max_tokens,
         timeout=args.timeout,
+        verbose=True,
     )
-    if err:
-        print(f"失败 status={status} err={err}", file=sys.stderr)
+    if err or status != 200:
+        print(f"失败 status={status} err={err or 'unknown'}", file=sys.stderr)
+        if status == 404:
+            print(
+                f"提示: EAS 路径不存在，请确认服务已部署且 --eas-base 正确（当前 {eas_base}）",
+                file=sys.stderr,
+            )
+        elif status == 401:
+            print(
+                "提示: 401 表示 Token 与该服务不匹配。请在 PAI-EAS 控制台打开 "
+                f"「{eas_base.split('/api/predict/')[-1]}」→ 调用信息，"
+                "复制 Authorization Token，执行:\n"
+                "  export EAS_TOKEN='<新 token>'\n"
+                "  python tool/eas_eval.py --token \"$EAS_TOKEN\"",
+                file=sys.stderr,
+            )
         return 1
 
     print(f"status: {status}", flush=True)
@@ -389,26 +513,38 @@ def run_single(args: argparse.Namespace) -> int:
     print(f"期望: {expected!r}", flush=True)
     if _normalize_pred(pred) == _normalize_pred(expected):
         print("与标注一致")
+    else:
+        print("与标注不一致", file=sys.stderr)
+        return 1
     return 0
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="EAS 微调模型推理 / val 评测")
     parser.add_argument("--data-root", default=DEFAULT_DATA_ROOT)
-    parser.add_argument("--token", default=DEFAULT_TOKEN)
+    parser.add_argument(
+        "--eas-base",
+        default=os.environ.get("EAS_BASE", "").strip() or "",
+        help=f"EAS 服务根 URL（默认 {EAS_BASE}）",
+    )
+    parser.add_argument(
+        "--token",
+        default=DEFAULT_TOKEN,
+        help="EAS Authorization（也可用环境变量 EAS_TOKEN）；每个服务 token 不同",
+    )
     parser.add_argument("--max-tokens", type=int, default=32)
     parser.add_argument("--timeout", type=int, default=600)
 
     parser.add_argument(
         "--eval",
         action="store_true",
-        help="评测 val_dataset.jsonl 并写入 scripts/（见 --output-dir）",
+        help="评测 val_dataset.jsonl 并写入 tool/（见 --output-dir）",
     )
     parser.add_argument("--val-jsonl", default=DEFAULT_VAL_JSONL)
     parser.add_argument(
         "--output-dir",
         default=str(SCRIPT_DIR),
-        help="评测结果目录，默认 scripts/",
+        help="评测结果目录，默认 tool/",
     )
     parser.add_argument(
         "-o",
@@ -424,6 +560,16 @@ def main() -> int:
         "--single",
         action="store_true",
         help="只跑内置单条样本（默认不加 --eval 时等价）",
+    )
+    parser.add_argument(
+        "--pipeline-vlm",
+        action="store_true",
+        help="使用 pipeline 同款 VLM_API（.env），评测 val；不发飞书评论",
+    )
+    parser.add_argument(
+        "--model",
+        default="auto",
+        help="--pipeline-vlm 时传给 VLM_API（默认 auto → gemini-3.1-pro-preview 等）",
     )
     args = parser.parse_args()
 

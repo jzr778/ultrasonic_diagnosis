@@ -1,6 +1,0 @@
-/home/jiangzirou/avp_promptkit/tool/output/all_data_v3/train_entity_existence.txt	/home/jiangzirou/avp_promptkit/tool/output/all_data_v3/train_entity_existence.png	train 实体存在性 (n=6251)
-/home/jiangzirou/avp_promptkit/tool/output/all_data_v3/train_geometry_relation.txt	/home/jiangzirou/avp_promptkit/tool/output/all_data_v3/train_geometry_relation.png	train 几何关系·有实体 (n=5946)
-/home/jiangzirou/avp_promptkit/tool/output/all_data_v3/train_object_type_yes.txt	/home/jiangzirou/avp_promptkit/tool/output/all_data_v3/train_object_type_yes.png	train 障碍类型·有实体 (n=5946)
-/home/jiangzirou/avp_promptkit/tool/output/all_data_v3/val_entity_existence.txt	/home/jiangzirou/avp_promptkit/tool/output/all_data_v3/val_entity_existence.png	val 实体存在性 (n=695)
-/home/jiangzirou/avp_promptkit/tool/output/all_data_v3/val_geometry_relation.txt	/home/jiangzirou/avp_promptkit/tool/output/all_data_v3/val_geometry_relation.png	val 几何关系·有实体 (n=661)
-/home/jiangzirou/avp_promptkit/tool/output/all_data_v3/val_object_type_yes.txt	/home/jiangzirou/avp_promptkit/tool/output/all_data_v3/val_object_type_yes.png	val 障碍类型·有实体 (n=661)

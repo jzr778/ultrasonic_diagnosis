@@ -20,6 +20,8 @@ AVP 全流程 Pipeline
   python pipeline.py ... --chaosheng-pixel-radius 40   # Step5 BEV 超声-相机关联半径（默认 30）
   python pipeline.py ... --unpack-workers 1   # Step3 强制串行（默认按 CPU 并行，上限 4）
 
+  python pipeline.py -p iffcom -v U9zPLpFvR --eas-diagnose --skip-steps 2
+
 原 7 步中曾单独跳过 Step 3 或 4 的场景，现合并为 Step 3（跳过 3 即不解包也不写 read_data）。
 """
 
@@ -405,6 +407,378 @@ def step6_run_vlm(id_mapping_path, read_data_dir, model=None, ignore_fs_types=No
     log.info(f"  ✅ VLM 诊断完成")
 
 
+# ── Step 6 EAS 分支 ──────────────────────────────────────────
+def _collect_draw_image_to_flat(
+    draw_image_dir,
+    read_data_dir,
+    dst_root,
+    ignore_fs_types=None,
+    only_tag_ids=None,
+):
+    """将 pipeline Step5 产出的 draw_image/<tag>/<ts>/ 转换为 EAS 需要的 images/crop/yuyan 平铺结构。
+
+    only_tag_ids: 仅收集这些 tag 的数据；None 则收集全部。
+    复用 tool/collect_raw_data.py 已有逻辑。
+
+    Returns:
+        本次收集到的 case stem 集合（如 {"123456_17700001", ...}）。
+    """
+    from tool.collect_raw_data import _copy_drawn_images, _crop_drawn_images
+
+    tag_strs = [str(t) for t in only_tag_ids] if only_tag_ids else None
+    scope = f"tag_ids={tag_strs}" if tag_strs else "全部"
+    log.info(f"  draw_image → 平铺结构: {dst_root}（{scope}）")
+
+    # 收集前记录 images/ 已有文件，用于计算本次增量
+    images_dir = os.path.join(dst_root, "images")
+    before = set(os.listdir(images_dir)) if os.path.isdir(images_dir) else set()
+
+    _copy_drawn_images(draw_image_dir, dst_root, only_tag_ids=tag_strs)
+    _crop_drawn_images(
+        draw_image_dir,
+        read_data_dir,
+        dst_root,
+        size=150,
+        ignore_fs_types=ignore_fs_types or [],
+        only_tag_ids=tag_strs,
+    )
+
+    after = set(os.listdir(images_dir)) if os.path.isdir(images_dir) else set()
+    new_files = after - before
+    collected_stems = {os.path.splitext(f)[0] for f in new_files}
+
+    crop_dir = os.path.join(dst_root, "crop")
+    yuyan_dir = os.path.join(dst_root, "yuyan")
+    n_crop = len(os.listdir(crop_dir)) if os.path.isdir(crop_dir) else 0
+    n_yuyan = len(os.listdir(yuyan_dir)) if os.path.isdir(yuyan_dir) else 0
+    log.info(
+        f"  本次收集: images={len(new_files)}, "
+        f"目录总量: images={len(after)}, crop={n_crop}, yuyan={n_yuyan}"
+    )
+    return collected_stems
+
+
+def step6_eas_diagnose(
+    tag_ids,
+    data_dir,
+    output_dir,
+    *,
+    eas_base="",
+    eas_token="",
+    max_tokens=32,
+    timeout=600,
+    log_every=20,
+    resume=False,
+    draw_image_dir="",
+    read_data_dir="",
+    ignore_fs_types=None,
+    id_mapping=None,
+    project_key="",
+):
+    """用 EAS 微调模型对 images/crop/yuyan 三图做三分类→映射误检。
+
+    流程：
+      1. 从 draw_image/ 收集本次 tag_ids 的三图到 data_dir（pipeline_data/）
+      2. 按 tag_ids 过滤 data_dir/images/ 中属于本次流程的 case
+      3. 对每个 case 调 EAS 三分类 → 聚合映射「是否误检」
+      4. 输出 eas_eval_predictions.jsonl + eas_labels.csv 到 output_dir（log/）
+      5. 按 tag 聚合诊断结果，发飞书评论
+
+    id_mapping: {tag_id_str: feishu_id} 映射，用于发飞书评论。
+    """
+    banner(6, "EAS 微调模型三分类 → 误检诊断")
+
+    from tool.eas_eval import (
+        EAS_BASE as _DIAGNOSE_EAS_BASE,
+        DEFAULT_TOKEN as _DIAGNOSE_TOKEN,
+        _b64_image,
+        _eas_auth_headers,
+        _normalize_pred,
+    )
+    from tool.build_labels import build_row
+    from prompts_engine.context.object_type_catalog import object_type_task_prompt
+    import csv
+    import time
+    import requests
+    from pathlib import Path
+    from collections import defaultdict
+
+    # Step 6a: 从 draw_image 收集本次 tag 的三图到 data_dir
+    if draw_image_dir:
+        _collect_draw_image_to_flat(
+            draw_image_dir, read_data_dir, data_dir,
+            ignore_fs_types=ignore_fs_types,
+            only_tag_ids=tag_ids,
+        )
+
+    eas_base = (eas_base or _DIAGNOSE_EAS_BASE).rstrip("/")
+    token = eas_token or _DIAGNOSE_TOKEN
+    url = f"{eas_base}/v1/chat/completions"
+    headers = _eas_auth_headers(token)
+
+    now = datetime.now()
+    date_sub = now.strftime("%m%d")
+    ts_tag = now.strftime("%Y%m%d_%H%M%S")
+    eas_out_dir = os.path.join(output_dir, date_sub)
+    os.makedirs(eas_out_dir, exist_ok=True)
+    jsonl_path = os.path.join(eas_out_dir, f"eas_eval_predictions_{ts_tag}.jsonl")
+    csv_path = os.path.join(eas_out_dir, f"eas_labels_{ts_tag}.csv")
+
+    data_root = Path(data_dir)
+    images_dir = data_root / "images"
+    crop_dir = data_root / "crop"
+    yuyan_dir = data_root / "yuyan"
+
+    if not images_dir.is_dir():
+        log.error(f"  images/ 目录不存在: {images_dir}")
+        return
+
+    # Step 6b: 按 tag_ids 过滤，只诊断本次流程的 case
+    tag_prefixes = {str(t) for t in tag_ids}
+    all_stems = sorted(
+        p.stem for p in images_dir.iterdir()
+        if p.suffix.lower() in (".jpg", ".jpeg", ".png")
+    )
+    stems = sorted(s for s in all_stems if s.split("_")[0] in tag_prefixes)
+
+    log.info(f"  数据目录: {data_dir}")
+    log.info(f"  目录总量: {len(all_stems)} 个 case，本次 tag 匹配: {len(stems)} 个")
+    log.info(f"  EAS: {eas_base}")
+
+    SYSTEM_PROMPT = (
+        "你是泊车环视场景的超声/视觉联合诊断模型，须结合多图作答。图例：红标=超声地面障碍物"
+        "（点、短线或闭合多边形），为分析对象，表示超声在地面上的感知结果。绿线=邻车检测框"
+        "投影到地面的多边形，表示邻车可能占用的地面区域。黄线=相机障碍在AVM上的投影轮廓，"
+        "用于在鸟瞰中对齐真实可见障碍；判断时对齐黄线与真实障碍本体，比较红标与真实障碍的"
+        "关系，勿将红标与黄线本身当作一对匹配目标。中心黑矩形=自车（上为车头、下为车尾），"
+        "正在倒车入库。车位中心白箭头=预计倒车方向；若无箭头，默认沿车位中轴线直线倒车。"
+        "白矩形框=仅遮挡车牌，与障碍物/标线无关，分析时完全忽略。AVM由鱼眼展开拼接：红标"
+        "仅有地面投影、无高度语义；离地越高常渐淡/半透明或与背景融合，属成像与拼接特性，"
+        "不等于该处无实物。须结合鱼眼透视理解障碍远近、立面与地面接触，区分竖直方向透视"
+        "表现与地面接触位置，避免仅凭AVM上半部发虚误判空间关系。输入按顺序三张：①AVM"
+        "鸟瞰：以红标为准；高处虚化不得单独作为无实体依据。②以超声障碍质心为中心的局部"
+        "crop，用于聚焦红标。③与AVM主方位一致的单路鱼眼：绿/黄与AVM语义一致，图中不画"
+        "红标，红标仍以AVM为准；作透视与尺度参考，减轻仅凭鸟瞰在远近、实体尺度与类型上的"
+        "不确定；禁止在鱼眼与AVM之间做像素级距离换算或强行点配对。回答必须严格遵守用户"
+        "给出的任务与可选项；只输出要求的标签或词，不要解释。"
+    )
+
+    TASKS = [
+        (
+            "entity_existence",
+            "<image>任务：实体存在性判定。请判断红色超声高亮附近是否存在真实障碍。可选项：yes, no。",
+        ),
+        (
+            "geometry_relation",
+            "<image>任务：几何一致性判定。请判断红色超声高亮与附近真实障碍之间的几何关系。可选项：aligned, misaligned。",
+        ),
+        (
+            "object_type",
+            object_type_task_prompt(),
+        ),
+    ]
+
+    def _resolve_images(stem):
+        """返回 [avm, crop, yuyan] 三图路径列表，缺图返回 None。"""
+        paths = []
+        for d in (images_dir, crop_dir, yuyan_dir):
+            found = None
+            for ext in (".jpg", ".jpeg", ".png"):
+                p = d / f"{stem}{ext}"
+                if p.is_file():
+                    found = p
+                    break
+            if found is None:
+                return None
+            paths.append(found)
+        return paths
+
+    def _call_eas(image_paths, task_prompt):
+        user_text = task_prompt.replace("<image>", "", 1).strip()
+        user_content = [
+            {"type": "image_url", "image_url": {"url": _b64_image(p)}}
+            for p in image_paths
+        ]
+        user_content.append({"type": "text", "text": user_text})
+        payload = {
+            "model": "Qwen3.5-27B",
+            "messages": [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": user_content},
+            ],
+            "max_tokens": max_tokens,
+            "temperature": 0,
+            "stream": False,
+            "chat_template_kwargs": {"enable_thinking": False},
+        }
+        try:
+            resp = requests.post(
+                url, json=payload, headers=headers,
+                timeout=(min(60, timeout), timeout),
+            )
+        except requests.exceptions.RequestException as e:
+            return "", str(e)
+        if resp.status_code != 200:
+            return "", f"HTTP {resp.status_code}: {(resp.text or '')[:300]}"
+        try:
+            body = resp.json()
+            pred = body["choices"][0]["message"].get("content") or ""
+        except (KeyError, IndexError, json.JSONDecodeError) as e:
+            return "", f"parse: {e}"
+        return pred.strip(), ""
+
+    done_ids: set = set()
+    if resume and os.path.isfile(jsonl_path):
+        with open(jsonl_path, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    r = json.loads(line)
+                    if r.get("case_id") and not r.get("error"):
+                        done_ids.add(r["case_id"])
+                except json.JSONDecodeError:
+                    pass
+        log.info(f"  resume: 已有 {len(done_ids)} 条结果，跳过")
+
+    all_preds: dict = defaultdict(dict)
+    total = len(stems)
+    stats = {"ok": 0, "error": 0, "skip": 0}
+    mode = "a" if resume and os.path.isfile(jsonl_path) else "w"
+
+    with open(jsonl_path, mode, encoding="utf-8") as out_f:
+        for idx, stem in enumerate(stems, 1):
+            if stem in done_ids:
+                stats["skip"] += 1
+                continue
+
+            img_paths = _resolve_images(stem)
+            if img_paths is None:
+                log.warning(f"  [{idx}/{total}] {stem} 缺三图之一，跳过")
+                stats["error"] += 1
+                continue
+
+            case_preds = {}
+            has_error = False
+            t0 = time.time()
+
+            for task_name, task_prompt in TASKS:
+                if task_name != "entity_existence" and case_preds.get("entity_existence") == "no":
+                    break
+                pred_raw, err = _call_eas(img_paths, task_prompt)
+                pred_norm = _normalize_pred(pred_raw) if pred_raw else ""
+                row = {
+                    "case_id": stem,
+                    "task": task_name,
+                    "prediction": pred_raw,
+                    "prediction_norm": pred_norm,
+                    "error": err,
+                    "latency_s": round(time.time() - t0, 2),
+                }
+                out_f.write(json.dumps(row, ensure_ascii=False) + "\n")
+                out_f.flush()
+                if err:
+                    has_error = True
+                    break
+                case_preds[task_name] = pred_norm
+
+            elapsed = round(time.time() - t0, 2)
+            if has_error:
+                stats["error"] += 1
+                log.warning(f"  [{idx}/{total}] {stem} ERR {elapsed}s")
+            else:
+                stats["ok"] += 1
+                all_preds[stem] = case_preds
+                if idx % log_every == 0:
+                    log.info(
+                        f"  [{idx}/{total}] {stem} OK "
+                        f"entity={case_preds.get('entity_existence','')} "
+                        f"geom={case_preds.get('geometry_relation','')} "
+                        f"obj={case_preds.get('object_type','')} "
+                        f"{elapsed}s"
+                    )
+
+    # 若 resume 模式下有旧结果，也需要把旧结果加载到 all_preds
+    if resume and done_ids:
+        with open(jsonl_path, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    r = json.loads(line)
+                    cid = r.get("case_id", "")
+                    task = r.get("task", "")
+                    if cid and task and not r.get("error"):
+                        all_preds[cid][task] = r.get("prediction_norm", "")
+                except json.JSONDecodeError:
+                    pass
+
+    rows = []
+    for stem in sorted(all_preds.keys()):
+        preds = all_preds[stem]
+        fields = {
+            "entity": preds.get("entity_existence", ""),
+            "geometry": preds.get("geometry_relation", ""),
+            "object_type": preds.get("object_type", ""),
+        }
+        rows.append(build_row(stem, fields))
+
+    fieldnames = ["case_id", "实体是否存在", "超声标记命中或偏移", "障碍物类型", "是否误检"]
+    with open(csv_path, "w", encoding="utf-8-sig", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=fieldnames)
+        w.writeheader()
+        w.writerows(rows)
+
+    from collections import Counter
+    misdetect_dist = Counter(r["是否误检"] for r in rows)
+    log.info(f"  完成: 成功 {stats['ok']}, 失败 {stats['error']}, 跳过(resume) {stats['skip']}")
+    log.info(f"  预测 jsonl: {jsonl_path}")
+    log.info(f"  标签 CSV: {csv_path} ({len(rows)} 条)")
+    log.info(f"  是否误检分布: {dict(misdetect_dist)}")
+
+    # 按 tag 聚合诊断结果，发飞书评论
+    if id_mapping and project_key:
+        from collections import defaultdict as _dd
+        tag_results = _dd(list)
+        for r in rows:
+            tag = r["case_id"].split("_")[0]
+            ts = "_".join(r["case_id"].split("_")[1:])
+            tag_results[tag].append((ts, r["是否误检"]))
+
+        try:
+            from comment.add_comment import FeishuCommentTester
+            tester = FeishuCommentTester()
+        except Exception as e:
+            log.warning(f"  飞书评论初始化失败，跳过: {e}")
+            tester = None
+
+        if tester:
+            for tag_str, items in sorted(tag_results.items()):
+                feishu_id = id_mapping.get(tag_str)
+                if not feishu_id:
+                    continue
+                lines = []
+                for ts, verdict in items:
+                    lines.append(f"时间戳{ts}：{verdict}")
+                comment_record = "EAS诊断：\n" + "\n".join(lines)
+                log.info(f"  飞书评论 tag={tag_str}: {comment_record}")
+                try:
+                    test_url = (
+                        f"https://project.feishu.cn/{project_key}"
+                        f"/case/detail/{feishu_id}"
+                    )
+                    tester.test_comment(test_url, comment_record)
+                except Exception as e:
+                    log.warning(f"  飞书评论发送失败 tag={tag_str}: {e}")
+            log.info(f"  飞书评论发送完成")
+    else:
+        log.info(f"  未传入 id_mapping 或 project_key，跳过飞书评论")
+
+    log.info(f"  ✅ EAS 微调模型诊断完成")
+
+
 def _load_mirror_skip_info_from_read_data(tag_ids, read_data_dir):
     """优先复用 read_data 内缓存的后视镜折叠结果，避免重复远端读 bag。"""
     folded_tags = set()
@@ -482,15 +856,60 @@ def main():
             "强制串行用 1）"
         ),
     )
+    # ── EAS 微调模型诊断可选分支 ──
+    parser.add_argument(
+        "--eas-diagnose",
+        action="store_true",
+        help=(
+            "Step6 改用 EAS 微调模型三分类→映射误检（替代默认的大模型 VLM 诊断）。"
+            "自动从 draw_image/ 收集本次 tag 的 images/crop/yuyan 到 --eas-data-dir，"
+            "再按 tag_ids 只诊断本次流程的 case。输出 jsonl+CSV 到 --eas-output-dir。"
+        ),
+    )
+    parser.add_argument(
+        "--eas-data-dir",
+        default="/mnt/public-data/user/ziroujiang/pipeline_data",
+        help="EAS 分支的图片数据目录（images/crop/yuyan），默认 /mnt/public-data/user/ziroujiang/pipeline_data",
+    )
+    parser.add_argument(
+        "--eas-base",
+        default="",
+        help="EAS 服务根 URL（默认取 tool/eas_eval.py 中的 EAS_BASE）",
+    )
+    parser.add_argument(
+        "--eas-token",
+        default="",
+        help="EAS Authorization Token（默认取 EAS_TOKEN 环境变量或脚本内置）",
+    )
+    parser.add_argument(
+        "--eas-timeout",
+        type=int,
+        default=600,
+        help="EAS 单次请求超时秒数（默认 600）",
+    )
+    parser.add_argument(
+        "--eas-output-dir",
+        default=os.path.join(PROJECT_ROOT, "logs"),
+        help="--eas-diagnose 输出目录（jsonl + labels.csv，默认 logs/MMDD/）",
+    )
     args = parser.parse_args()
 
     if args.list_models:
-        from openai import OpenAI
-        client = OpenAI(api_key=config.VLM_API_KEY, base_url=config.VLM_BASE_URL)
-        models = client.models.list()
-        print("可用模型列表：")
-        for i, m in enumerate(models.data, 1):
-            print(f"  {i}. {m.id}")
+        from vlm.VLM_API import _use_vertex_api
+        if _use_vertex_api():
+            print("Vertex 模式（generateContent），配置模型：")
+            print(f"  1. {getattr(config, 'VLM_MODEL', 'gemini-3.1-pro-preview')}")
+            print(f"  Base: {config.VLM_BASE_URL}")
+            alt = getattr(config, "VLM_BASE_URL_ALT", "")
+            if alt:
+                print(f"  Alt:  {alt}")
+        else:
+            from openai import OpenAI
+            client = OpenAI(api_key=config.VLM_API_KEY, base_url=config.VLM_BASE_URL)
+            models = client.models.list()
+            print("可用模型列表：")
+            for i, m in enumerate(models.data, 1):
+                print(f"  {i}. {m.id}")
         sys.exit(0)
 
     _, log_file = setup_logging(args.log_dir)
@@ -616,17 +1035,35 @@ def main():
 
     # Step 6
     if 6 not in skip:
-        result_dir = config.RESULT_DIR
-        if os.path.isdir(result_dir):
-            log.info(f"[Step 6 前] 删除旧诊断结果目录: {result_dir}")
-            shutil.rmtree(result_dir)
-        elif os.path.lexists(result_dir):
-            log.info(f"[Step 6 前] 删除路径: {result_dir}")
-            os.remove(result_dir)
-        step6_run_vlm(vlm_id_mapping, args.read_data_dir, model=args.model,
-                      ignore_fs_types=args.ignore_fs_types,
-                      debug_thinking=args.debug_thinking,
-                      yuyan=args.yuyan)
+        if args.eas_diagnose:
+            with open(id_mapping_path, "r", encoding="utf-8") as f:
+                _id_map = json.load(f)
+            step6_eas_diagnose(
+                tag_ids,
+                args.eas_data_dir,
+                args.eas_output_dir,
+                eas_base=args.eas_base,
+                eas_token=args.eas_token,
+                timeout=args.eas_timeout,
+                resume=True,
+                draw_image_dir=config.DRAW_IMAGE_DIR,
+                read_data_dir=args.read_data_dir,
+                ignore_fs_types=args.ignore_fs_types,
+                id_mapping=_id_map,
+                project_key=args.project_key,
+            )
+        else:
+            result_dir = config.RESULT_DIR
+            if os.path.isdir(result_dir):
+                log.info(f"[Step 6 前] 删除旧诊断结果目录: {result_dir}")
+                shutil.rmtree(result_dir)
+            elif os.path.lexists(result_dir):
+                log.info(f"[Step 6 前] 删除路径: {result_dir}")
+                os.remove(result_dir)
+            step6_run_vlm(vlm_id_mapping, args.read_data_dir, model=args.model,
+                          ignore_fs_types=args.ignore_fs_types,
+                          debug_thinking=args.debug_thinking,
+                          yuyan=args.yuyan)
     else:
         log.info(f"[跳过 Step 6]")
 

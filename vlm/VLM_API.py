@@ -5,9 +5,11 @@ import io
 import re
 import os
 import sys
-from openai import OpenAI
-from typing import Dict, List, Any
+from typing import Any, Dict, List
 from collections import Counter
+
+import requests
+from openai import OpenAI
 
 _project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _project_root not in sys.path:
@@ -17,15 +19,126 @@ import config
 
 _auto_model_cache = {}
 
-def _resolve_model_name(model, client):
-    """如果 model 为 'auto'，则通过 API 自动获取可用模型名。"""
+
+def _use_vertex_api() -> bool:
+    style = getattr(config, "VLM_API_STYLE", "openai")
+    if style == "vertex":
+        return True
+    return "vertex" in (config.VLM_BASE_URL or "").lower()
+
+
+def _resolve_model_name(model, client=None):
+    """model 为 auto 时：vertex 用 VLM_MODEL；openai 则 list 首个可用模型。"""
     if model != "auto":
         return model
-    cache_key = (config.VLM_API_KEY, config.VLM_BASE_URL)
+    if _use_vertex_api():
+        return getattr(config, "VLM_MODEL", None) or "gemini-3.1-pro-preview"
+    cache_key = (config.VLM_API_KEY, config.VLM_BASE_URL, "openai")
     if cache_key not in _auto_model_cache:
+        if client is None:
+            client = OpenAI(
+                api_key=config.VLM_API_KEY,
+                base_url=config.VLM_BASE_URL,
+            )
         models = client.models.list()
         _auto_model_cache[cache_key] = models.data[0].id
     return _auto_model_cache[cache_key]
+
+
+def _vertex_generate_urls(model: str) -> List[str]:
+    bases = [config.VLM_BASE_URL]
+    alt = getattr(config, "VLM_BASE_URL_ALT", "") or ""
+    if alt and alt.rstrip("/") != (config.VLM_BASE_URL or "").rstrip("/"):
+        bases.append(alt)
+    urls = []
+    for base in bases:
+        if not base:
+            continue
+        b = base.rstrip("/")
+        urls.append(f"{b}/models/{model}:generateContent")
+    return urls
+
+
+def _vertex_parts_from_images(image_list: Dict[str, Any], question: str) -> List[Dict[str, Any]]:
+    parts: List[Dict[str, Any]] = [{"text": question}]
+    for _key, value in image_list.items():
+        base64_image = encode_image_array_to_base64(value)
+        if not base64_image:
+            continue
+        parts.append(
+            {
+                "inline_data": {
+                    "mime_type": "image/jpeg",
+                    "data": base64_image,
+                }
+            }
+        )
+    return parts
+
+
+def _parse_vertex_response(payload: Dict[str, Any]) -> str:
+    if payload.get("error"):
+        err = payload["error"]
+        if isinstance(err, dict):
+            return f"调用失败: {err.get('message', err)}"
+        return f"调用失败: {err}"
+    texts: List[str] = []
+    for cand in payload.get("candidates") or []:
+        content = cand.get("content") or {}
+        for part in content.get("parts") or []:
+            t = part.get("text")
+            if t:
+                texts.append(t)
+    return "\n".join(texts).strip()
+
+
+def call_vertex_model_with_images(
+    image_list: Dict[str, Any],
+    question: str,
+    model: str,
+    *,
+    temperature: float = 0.1,
+    max_output_tokens: int = 8192,
+    timeout: float = 180.0,
+) -> str:
+    """七牛 bypass Vertex generateContent（Bearer Token）。"""
+    resolved_model = _resolve_model_name(model)
+    body = {
+        "contents": [
+            {
+                "role": "user",
+                "parts": _vertex_parts_from_images(image_list, question),
+            }
+        ],
+        "generationConfig": {
+            "temperature": temperature,
+            "maxOutputTokens": max_output_tokens,
+        },
+    }
+    headers = {
+        "Authorization": f"Bearer {config.VLM_API_KEY}",
+        "Content-Type": "application/json",
+    }
+    last_err = ""
+    for url in _vertex_generate_urls(resolved_model):
+        try:
+            resp = requests.post(url, headers=headers, json=body, timeout=timeout)
+            try:
+                payload = resp.json()
+            except ValueError:
+                last_err = f"HTTP {resp.status_code}: {resp.text[:500]}"
+                continue
+            if resp.status_code >= 400:
+                last_err = _parse_vertex_response(payload) or f"HTTP {resp.status_code}"
+                continue
+            text = _parse_vertex_response(payload)
+            if text.startswith("调用失败:"):
+                last_err = text
+                continue
+            return text
+        except requests.RequestException as e:
+            last_err = str(e)
+    return f"调用失败: {last_err or 'vertex generateContent 无可用响应'}"
 
 
 def encode_image_to_base64(image_path):
@@ -55,14 +168,16 @@ def encode_image_array_to_base64(image_array):
 
 def call_qwen_model_with_images(image_list, question, model):
     """
-    调用Qwen模型进行多图像问答，支持重试机制
+    多图 VLM 调用。VLM_API_STYLE=vertex 时走 generateContent，否则 OpenAI 兼容接口。
 
     Args:
-        image_inputs: 可以是图像文件路径列表或numpy数组列表
+        image_list: 图像名 -> numpy 数组
         question: 问题文本
-        max_retries: 最大重试次数
+        model: 模型名或 auto
     """
-    # 配置客户端 - 使用阿里云百炼的端点
+    if _use_vertex_api():
+        return call_vertex_model_with_images(image_list, question, model)
+
     client = OpenAI(
         api_key=config.VLM_API_KEY,
         base_url=config.VLM_BASE_URL,

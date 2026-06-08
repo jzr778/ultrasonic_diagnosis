@@ -101,6 +101,9 @@ def _copy_image_subdirs(
                 continue
 
             dst_path = os.path.join(dst_dir, name)
+            if os.path.abspath(src_path) == os.path.abspath(dst_path):
+                stats[sub] += 1
+                continue
             if os.path.exists(dst_path):
                 if on_conflict == "skip":
                     skipped_conflict += 1

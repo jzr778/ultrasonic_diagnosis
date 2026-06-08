@@ -38,6 +38,7 @@ OBJECT_TYPE_ALIASES: Dict[str, str] = {
     "硬路沿": "hard_curb",
     "硬路沿台阶": "hard_curb",
     "路沿/台阶": "hard_curb",
+    "路沿台阶": "hard_curb",
     "不可压路沿": "hard_curb",
     "hard_curb": "hard_curb",
     "轮挡": "wheel_stop",
@@ -51,12 +52,11 @@ OBJECT_TYPE_ALIASES: Dict[str, str] = {
 }
 
 # 已废弃：导入或标注时拒绝，需改为 parking_curb / hard_curb
+# 注意：「路沿/台阶」在飞书中仍表示 hard_curb，勿放入本集合（见 OBJECT_TYPE_ALIASES）
 DEPRECATED_OBJECT_TYPE_ALIASES: FrozenSet[str] = frozenset(
     {
         "curb_like",
-        "路沿/台阶",
-        "路沿台阶",
-        "路沿",
+        "路沿",  # 单独「路沿」语义不明，需人工改为 parking_curb / hard_curb
     }
 )
 
@@ -78,8 +78,7 @@ def object_type_task_prompt() -> str:
         f"ground_irregularity={OBJECT_TYPE_ZH['ground_irregularity']}"
         "（井盖/轻微凹凸/小坑/纹理突起/地面轨道等）；",
         f"other_obstacle={OBJECT_TYPE_ZH['other_obstacle']}（墙/车/柱子/纸箱/人等）。",
-        f"可选项：{OBJECT_TYPE_OPTIONS_CSV}。",
-        "（已废弃 curb_like，勿输出。）",
+        f"可选项：{OBJECT_TYPE_OPTIONS_CSV}。"
     ]
     return "".join(lines)
 
