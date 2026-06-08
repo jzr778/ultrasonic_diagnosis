@@ -4,7 +4,7 @@ AVP 全流程 Pipeline
 
 步骤:
   1. get_id_mapping.py         → get_data/id_mapping.json  ({tag_id: feishu_id})
-  2. bag.py                    → offline_avm_generate_release/bag_list.txt
+  2. 已移除（原「获取 bag 列表」，冗余：Step 3 内部自行通过 meta_data 获取 bag）
   3. unpack_bag_for_avm + save_bag_data   解包 samples 并准备 read_data（每 tag 独立 BagReader；默认多 tag 并行，--unpack-workers 可调）
   4. run_standalone.sh          拼接鱼眼图（若 read_data 内后视镜折叠缓存判折叠则跳过对应 bag；无缓存 tag 不再远端补读）
   5. avp_vlm_pipeline_avm.py   绘制 AVM 标注图像（折叠 tag 从映射中剔除）
@@ -14,15 +14,13 @@ AVP 全流程 Pipeline
 
 用法:
   python pipeline.py -p iffcom -v U9zPLpFvR --model gemini-3-pro-preview
-  python pipeline.py -p iffcom -v U9zPLpFvR --skip-steps 1 2
+  python pipeline.py -p iffcom -v U9zPLpFvR --skip-steps 1
   python pipeline.py -p iffcom -v U9zPLpFvR --log-dir my_logs
   python pipeline.py ... --no-yuyan   # 关闭鱼眼抽帧与双图 VLM
   python pipeline.py ... --chaosheng-pixel-radius 40   # Step5 BEV 超声-相机关联半径（默认 30）
   python pipeline.py ... --unpack-workers 1   # Step3 强制串行（默认按 CPU 并行，上限 4）
 
-  python pipeline.py -p iffcom -v U9zPLpFvR --eas-diagnose --skip-steps 2
-
-原 7 步中曾单独跳过 Step 3 或 4 的场景，现合并为 Step 3（跳过 3 即不解包也不写 read_data）。
+  python pipeline.py -p iffcom -v U9zPLpFvR --eas-diagnose
 """
 
 import argparse
@@ -140,29 +138,6 @@ def step1_get_id_mapping(project_key, view_id, output_path):
     log.info(f"  ✅ 获取到 {len(mapping)} 条映射 → {output_path}")
     return tag_ids, feishu_ids
 
-
-# ── Step 2 ──────────────────────────────────────────────────
-def step2_get_bags(tag_ids, bag_list_path):
-    banner(2, "获取 bag 列表")
-
-    from get_data.get_meta_data import get_meta_data
-
-    bags = []
-    for tag_id in tag_ids:
-        meta_data = get_meta_data(tag_id=tag_id)
-        if not meta_data or not meta_data.get("body"):
-            log.warning(f"  ⚠️  tag_id {tag_id} 无 meta_data，跳过")
-            continue
-        bag_name_list = meta_data["body"][0].get("bagsName", [])
-        heavy_bags = sorted(b for b in bag_name_list if "Heavy" in b)
-        bags.extend(heavy_bags)
-
-    os.makedirs(os.path.dirname(os.path.abspath(bag_list_path)), exist_ok=True)
-    with open(bag_list_path, "w", encoding="utf-8") as f:
-        for bag in bags:
-            f.write(bag + "\n")
-    log.info(f"  ✅ 共 {len(bags)} 个 bag → {bag_list_path}")
-    return bags
 
 
 # ── Step 3 ──────────────────────────────────────────────────
@@ -819,7 +794,7 @@ def main():
                         default=config.READ_DATA_DIR,
                         help="save_bag_data 输出 / VLM 读取目录")
     parser.add_argument("--skip-steps", nargs="*", type=int, default=[],
-                        help="跳过指定步骤编号 (1-6)，如 --skip-steps 1 2")
+                        help="跳过指定步骤编号 (1/3/4/5/6)，如 --skip-steps 1 3")
     parser.add_argument("--model", nargs="+", default=["auto"],
                         help="VLM 模型名称列表，透传给 step6 (默认: auto)")
     parser.add_argument("--list-models", action="store_true",
@@ -917,7 +892,6 @@ def main():
     os.environ["PIPELINE_LOG_FILE"] = os.path.abspath(log_file)
 
     id_mapping_path = args.id_mapping
-    bag_list_path = os.path.join(PROJECT_ROOT, "offline_avm_generate_release", "bag_list.txt")
 
     skip = set(args.skip_steps)
 
@@ -939,13 +913,7 @@ def main():
         feishu_ids = list(mapping.values())
         log.info(f"[跳过 Step 1] 从文件加载 {len(mapping)} 条 tag_id ↔ feishu_id 映射")
 
-    # Step 2
-    if 2 not in skip:
-        step2_get_bags(tag_ids, bag_list_path)
-    else:
-        log.info(f"[跳过 Step 2]")
-
-    # Step 3
+    # Step 3（原 Step 2「获取 bag 列表」已移除，Step 3 内部自行通过 meta_data 获取 bag）
     tag_bag_prefixes = None
     if 3 not in skip:
         tag_bag_prefixes = step3_unpack_and_save_bag_data(
