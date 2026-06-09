@@ -8,20 +8,18 @@ AVP 全流程 Pipeline
   3. unpack_bag_for_avm + save_bag_data   解包 samples 并准备 read_data（每 tag 独立 BagReader；默认多 tag 并行，--unpack-workers 可调）
   4. run_standalone.sh          拼接鱼眼图（若 read_data 内后视镜折叠缓存判折叠则跳过对应 bag；无缓存 tag 不再远端补读）
   5. avp_vlm_pipeline_avm.py   绘制 AVM 标注图像（折叠 tag 从映射中剔除）
-  6. avp_vlm_pipeline_avm.py   大模型诊断（同上）
-  7. upload_to_feishu            诊断结果 CSV + 图片上传飞书电子表格（追加，去重）
+  6. EAS 微调模型三分类 → 映射「是否误检」（默认）；--openai-diagnose 时改走 VLM 大模型
+  7. upload_to_feishu            诊断结果 CSV + 图片上传飞书电子表格（默认开启，追加去重）
 
 日志自动保存到 diagnosis_logs/MMDD/pipeline_<时间戳>.log，同时在终端实时输出。
 
 用法:
-  python pipeline.py -p iffcom -v U9zPLpFvR --model gemini-3-pro-preview
+  python pipeline.py -p iffcom -v U9zPLpFvR                    # 默认：EAS 微调诊断 + 上传飞书
+  python pipeline.py -p iffcom -v U9zPLpFvR --openai-diagnose  # 可选：VLM 大模型 API 诊断
   python pipeline.py -p iffcom -v U9zPLpFvR --skip-steps 1
-  python pipeline.py -p iffcom -v U9zPLpFvR --log-dir my_logs
   python pipeline.py ... --no-yuyan   # 关闭鱼眼抽帧与双图 VLM
   python pipeline.py ... --chaosheng-pixel-radius 40   # Step5 BEV 超声-相机关联半径（默认 30）
   python pipeline.py ... --unpack-workers 1   # Step3 强制串行（默认按 CPU 并行，上限 4）
-  python pipeline.py -p iffcom -v U9zPLpFvR --eas-diagnose \
-    --feishu-sheet-url "https://rqk9rsooi4.feishu.cn/wiki/PnvnwxXdrie48Mkmxalcm6uLnCf"
 """
 
 import argparse
@@ -1142,9 +1140,9 @@ def _load_mirror_skip_info_from_read_data(tag_ids, read_data_dir):
 def main():
     parser = argparse.ArgumentParser(description="AVP 全流程 Pipeline")
     parser.add_argument("-p", "--project-key", default=config.FEISHU_PROJECT_KEY,
-                        help="飞书项目 Key")
+                        help="飞书项目 Key（默认 iffcom）")
     parser.add_argument("-v", "--view-id", default="U9zPLpFvR",
-                        help="飞书视图 ID (默认: U9zPLpFvR)")
+                        help="飞书视图 ID（默认 当天缺陷数据 `U9zPLpFvR`）")
     parser.add_argument("--samples-dir",
                         default=config.SAMPLES_DIR,
                         help="unpack 输出 / AVM 输入目录")
@@ -1192,14 +1190,13 @@ def main():
             "强制串行用 1）"
         ),
     )
-    # ── EAS 微调模型诊断可选分支 ──
+    # ── Step6 诊断分支：默认 EAS 微调模型；--openai-diagnose 时走 VLM 大模型 ──
     parser.add_argument(
-        "--eas-diagnose",
+        "--openai-diagnose",
         action="store_true",
         help=(
-            "Step6 改用 EAS 微调模型三分类→映射误检（替代默认的大模型 VLM 诊断）。"
-            "自动从 draw_image/ 收集本次 tag 的 images/crop/yuyan 到 --eas-data-dir，"
-            "再按 tag_ids 只诊断本次流程的 case。输出 jsonl+CSV 到 --eas-output-dir。"
+            "Step6 改用 VLM 大模型 API 诊断（替代默认的 EAS 微调模型）。"
+            "此模式下不执行 Step7 飞书表格上传。"
         ),
     )
     parser.add_argument(
@@ -1226,14 +1223,14 @@ def main():
     parser.add_argument(
         "--eas-output-dir",
         default=config.LOG_DIR,
-        help="--eas-diagnose 输出目录（jsonl + labels.csv，默认 diagnosis_logs/MMDD/）",
+        help="EAS 诊断输出目录（jsonl + labels.csv，默认 diagnosis_logs/MMDD/）",
     )
     parser.add_argument(
         "--feishu-sheet-url",
         default="https://rqk9rsooi4.feishu.cn/wiki/PnvnwxXdrie48Mkmxalcm6uLnCf",
         help=(
             "Step7: 诊断结果上传到飞书电子表格（支持 /wiki/ 或 /sheets/ 链接）。"
-            "不指定则跳过 Step 7"
+            "默认上传；--openai-diagnose 或 --skip-steps 7 时不执行"
         ),
     )
     parser.add_argument(
@@ -1379,7 +1376,19 @@ def main():
     # Step 6
     eas_csv_path = None
     if 6 not in skip:
-        if args.eas_diagnose:
+        if args.openai_diagnose:
+            result_dir = config.RESULT_DIR
+            if os.path.isdir(result_dir):
+                log.info(f"[Step 6 前] 删除旧诊断结果目录: {result_dir}")
+                shutil.rmtree(result_dir)
+            elif os.path.lexists(result_dir):
+                log.info(f"[Step 6 前] 删除路径: {result_dir}")
+                os.remove(result_dir)
+            step6_run_vlm(vlm_id_mapping, args.read_data_dir, model=args.model,
+                          ignore_fs_types=args.ignore_fs_types,
+                          debug_thinking=args.debug_thinking,
+                          yuyan=args.yuyan)
+        else:
             with open(id_mapping_path, "r", encoding="utf-8") as f:
                 _id_map = json.load(f)
             eas_csv_path = step6_eas_diagnose(
@@ -1396,23 +1405,11 @@ def main():
                 id_mapping=_id_map,
                 project_key=args.project_key,
             )
-        else:
-            result_dir = config.RESULT_DIR
-            if os.path.isdir(result_dir):
-                log.info(f"[Step 6 前] 删除旧诊断结果目录: {result_dir}")
-                shutil.rmtree(result_dir)
-            elif os.path.lexists(result_dir):
-                log.info(f"[Step 6 前] 删除路径: {result_dir}")
-                os.remove(result_dir)
-            step6_run_vlm(vlm_id_mapping, args.read_data_dir, model=args.model,
-                          ignore_fs_types=args.ignore_fs_types,
-                          debug_thinking=args.debug_thinking,
-                          yuyan=args.yuyan)
     else:
         log.info(f"[跳过 Step 6]")
 
-    # Step 7: 上传诊断结果到飞书电子表格（仅 EAS 分支且指定了 --feishu-sheet-url）
-    if 7 not in skip and args.eas_diagnose and eas_csv_path:
+    # Step 7: 默认 EAS 分支诊断后上传飞书；--openai-diagnose 不执行
+    if 7 not in skip and not args.openai_diagnose and eas_csv_path:
         step7_upload_to_feishu(
             eas_csv_path,
             args.eas_data_dir,
@@ -1421,6 +1418,8 @@ def main():
         )
     elif 7 in skip:
         log.info(f"[跳过 Step 7]")
+    elif args.openai_diagnose:
+        log.info(f"[跳过 Step 7]（--openai-diagnose 模式不上传飞书表格）")
 
     if mirror_filtered_mapping_path and os.path.isfile(mirror_filtered_mapping_path):
         try:
