@@ -45,8 +45,8 @@ python pipeline.py --openai-diagnose
     │
     ▼
 ┌─ Step 6 ─┐  模型诊断（二选一）
-│  默认     │  EAS 微调模型三分类 → 映射「是否误检」→ diagnosis_logs/MMDD/ + pipeline_data/
-│  --openai-│  VLM 大模型（Gemini / OpenAI 兼容）多任务诊断 → diagnosis_logs/MMDD/ + result_avm/
+│  默认     │  【默认】EAS 微调模型三分类 → 映射「是否误检」→ diagnosis_logs/MMDD/ + pipeline_data/
+│  --openai-│  【可选】VLM 大模型（Gemini / OpenAI 兼容）多任务诊断 → diagnosis_logs/MMDD/ + result_avm/
 │  diagnose │
 └───────────┘
     │
