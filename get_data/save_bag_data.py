@@ -42,6 +42,7 @@ _REQUIRED_JSON = (
     "plan.json",
 )
 _MIRROR_FOLD_CACHE = "mirror_fold_cache.json"
+_EVENT_HEAVY_BAGS_CACHE = "event_heavy_bags.json"
 
 
 def _timestamp_payload_complete(ts_dir, require_fisheye):
@@ -105,6 +106,10 @@ def save_data(tag_id, output_root=None, extract_fisheye=True, reader=None):
     with open(os.path.join(data_path, _MIRROR_FOLD_CACHE), 'w', encoding='utf-8') as f:
         json.dump(mirror_summary, f, ensure_ascii=False, indent=2)
     print(_MIRROR_FOLD_CACHE)
+
+    if reader.event_heavy_bags:
+        with open(os.path.join(data_path, _EVENT_HEAVY_BAGS_CACHE), 'w', encoding='utf-8') as f:
+            json.dump(reader.event_heavy_bags, f, ensure_ascii=False, indent=2)
 
     if not reader.perception_time_list:
         print(f"  tag_id={tag_id} 无超声波事件，跳过 bag 数据提取")

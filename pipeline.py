@@ -158,30 +158,54 @@ def _read_data_has_ultrasonic_timestamps(data_path):
     return False
 
 
-def _collect_bag_prefixes_for_tags(tag_ids, samples_dir):
-    """根据 tag_ids 反查 meta_data，收集本批 tag 涉及的所有 Heavy bag_prefix + YYYYMM。"""
+def _collect_event_bag_prefixes(tag_ids, read_data_dir):
+    """从 read_data 中收集有超声事件的 tag 对应的精确 Heavy bag_prefix → YYYYMM。
+
+    数据来源：Step 3 的 save_data 写入的 event_heavy_bags.json（仅含触发超声的 bag）。
+    无超声事件的 tag 自动跳过，无 event_heavy_bags.json 的 tag 也跳过（返回值中不含）。
+    """
     from get_data.unpack_bag_for_avm import extract_bag_prefix, extract_yyyymm
 
     result = {}
-    try:
-        from get_data.get_meta_data import get_meta_data
-    except ImportError:
-        return result
+    hit = 0
+    miss_no_event = 0
+    miss_no_cache = 0
+
     for tag_id in tag_ids:
+        tag_dir = os.path.join(read_data_dir, str(tag_id))
+        if not os.path.isdir(tag_dir):
+            miss_no_event += 1
+            continue
+
+        cache_path = os.path.join(tag_dir, "event_heavy_bags.json")
+        if not os.path.isfile(cache_path):
+            has_ts = any(
+                e.isdigit() and os.path.isdir(os.path.join(tag_dir, e))
+                for e in os.listdir(tag_dir)
+            )
+            if has_ts:
+                miss_no_cache += 1
+            else:
+                miss_no_event += 1
+            continue
+
         try:
-            meta = get_meta_data(tag_id=tag_id)
+            with open(cache_path, "r", encoding="utf-8") as f:
+                event_bags = json.load(f)
+            for bag_name in event_bags:
+                prefix = extract_bag_prefix(bag_name)
+                yyyymm = extract_yyyymm(prefix)
+                if prefix and yyyymm:
+                    result[prefix] = yyyymm
+            hit += 1
         except Exception:
-            continue
-        if not meta or not meta.get("body"):
-            continue
-        for bag_name in meta["body"][0].get("bagsName") or []:
-            if "Heavy" not in bag_name:
-                continue
-            prefix = extract_bag_prefix(bag_name)
-            yyyymm = extract_yyyymm(prefix)
-            if prefix and yyyymm:
-                result[prefix] = yyyymm
-    return result
+            miss_no_cache += 1
+
+    log.info(
+        f"  bag 精确收集: {hit} 个 tag 命中缓存 → {len(result)} 个 bag，"
+        f"无超声事件 {miss_no_event}，缺缓存 {miss_no_cache}"
+    )
+    return result, miss_no_cache
 
 
 def step3_unpack_and_save_bag_data(
@@ -191,7 +215,11 @@ def step3_unpack_and_save_bag_data(
     extract_fisheye=True,
     unpack_workers=DEFAULT_UNPACK_WORKERS,
 ):
-    """返回本次涉及的 bag_prefix → yyyymm 映射（含已跳过和新解包的），供 Step 4 过滤。"""
+    """解包 bag 并准备 read_data，返回有超声事件的精确 bag_prefix → yyyymm 映射。
+
+    数据来源：save_data 在 scan_ultrasonic_events 后写入的 event_heavy_bags.json，
+    只包含真正触发超声事件的 Heavy bag，而非该 tag 的全部 Heavy bag。
+    """
     banner(
         3,
         "解包 samples 并准备 read_data（unpack_bag_for_avm + save_bag_data；多 tag 可并行）",
@@ -213,50 +241,53 @@ def step3_unpack_and_save_bag_data(
         pending.append(tag_id)
 
     workers = max(1, int(unpack_workers or 1))
-    if not pending:
-        log.info(f"  ✅ Step 3 完成（解包 + read_data）({success}/{len(tag_ids)})")
-        bag_prefixes = _collect_bag_prefixes_for_tags(tag_ids, samples_dir)
-        return bag_prefixes
 
-    if workers == 1 or len(pending) == 1:
-        for tag_id in pending:
-            log.info(f"  tag_id={tag_id} 解包 + save_data ...")
-            try:
-                reader = unpack_tag(
-                    tag_id, output_root=samples_dir, return_reader=True
-                )
-                save_data(
-                    tag_id,
-                    output_root=read_data_dir,
-                    extract_fisheye=extract_fisheye,
-                    reader=reader,
-                )
-                success += 1
-                log.info(f"  tag_id={tag_id} ✅")
-            except Exception as e:
-                log.warning(f"  tag_id={tag_id} 失败: {e}")
-    else:
-        n = min(workers, len(pending))
-        log.info(
-            f"  Step3 并行解包: {len(pending)} 个 tag，进程数={n}（--unpack-workers={workers}）"
-        )
-        payloads = [
-            (tid, samples_dir, read_data_dir, extract_fisheye) for tid in pending
-        ]
-        with ProcessPoolExecutor(max_workers=n) as ex:
-            futures = {
-                ex.submit(unpack_one_tag, p): p[0] for p in payloads
-            }
-            for fut in as_completed(futures):
-                tag_id, ok, err = fut.result()
-                if ok:
+    if pending:
+        if workers == 1 or len(pending) == 1:
+            for tag_id in pending:
+                log.info(f"  tag_id={tag_id} 解包 + save_data ...")
+                try:
+                    reader = unpack_tag(
+                        tag_id, output_root=samples_dir, return_reader=True
+                    )
+                    save_data(
+                        tag_id,
+                        output_root=read_data_dir,
+                        extract_fisheye=extract_fisheye,
+                        reader=reader,
+                    )
                     success += 1
                     log.info(f"  tag_id={tag_id} ✅")
-                else:
-                    log.warning(f"  tag_id={tag_id} 失败: {err}")
+                except Exception as e:
+                    log.warning(f"  tag_id={tag_id} 失败: {e}")
+        else:
+            n = min(workers, len(pending))
+            log.info(
+                f"  Step3 并行解包: {len(pending)} 个 tag，进程数={n}（--unpack-workers={workers}）"
+            )
+            payloads = [
+                (tid, samples_dir, read_data_dir, extract_fisheye) for tid in pending
+            ]
+            with ProcessPoolExecutor(max_workers=n) as ex:
+                futures = {
+                    ex.submit(unpack_one_tag, p): p[0] for p in payloads
+                }
+                for fut in as_completed(futures):
+                    tag_id, ok, err = fut.result()
+                    if ok:
+                        success += 1
+                        log.info(f"  tag_id={tag_id} ✅")
+                    else:
+                        log.warning(f"  tag_id={tag_id} 失败: {err}")
 
     log.info(f"  ✅ Step 3 完成（解包 + read_data）({success}/{len(tag_ids)})")
-    bag_prefixes = _collect_bag_prefixes_for_tags(tag_ids, samples_dir)
+
+    bag_prefixes, miss = _collect_event_bag_prefixes(tag_ids, read_data_dir)
+    if miss:
+        log.warning(
+            f"  ⚠️  {miss} 个有超声事件的 tag 缺少 event_heavy_bags.json 缓存，"
+            f"需重跑 Step 3（删除对应 read_data 后重新解包）以生成精确缓存"
+        )
     return bag_prefixes
 
 
