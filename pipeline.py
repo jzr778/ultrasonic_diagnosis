@@ -463,8 +463,6 @@ def step6_eas_diagnose(
     banner(6, "EAS 微调模型三分类 → 误检诊断")
 
     from tool.eas_eval import (
-        EAS_BASE as _DIAGNOSE_EAS_BASE,
-        DEFAULT_TOKEN as _DIAGNOSE_TOKEN,
         _b64_image,
         _eas_auth_headers,
         _normalize_pred,
@@ -485,8 +483,8 @@ def step6_eas_diagnose(
             only_tag_ids=tag_ids,
         )
 
-    eas_base = (eas_base or _DIAGNOSE_EAS_BASE).rstrip("/")
-    token = eas_token or _DIAGNOSE_TOKEN
+    eas_base = (eas_base or config.EAS_BASE_URL).rstrip("/")
+    token = eas_token or config.EAS_TOKEN
     url = f"{eas_base}/v1/chat/completions"
     headers = _eas_auth_headers(token)
 
@@ -575,7 +573,7 @@ def step6_eas_diagnose(
         ]
         user_content.append({"type": "text", "text": user_text})
         payload = {
-            "model": "Qwen3.5-27B",
+            "model": config.EAS_MODEL,
             "messages": [
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": user_content},
@@ -1207,18 +1205,18 @@ def main():
     parser.add_argument(
         "--eas-base",
         default="",
-        help="EAS 服务根 URL（默认取 tool/eas_eval.py 中的 EAS_BASE）",
+        help="EAS 服务根 URL（默认取 config.EAS_BASE_URL）",
     )
     parser.add_argument(
         "--eas-token",
         default="",
-        help="EAS Authorization Token（默认取 EAS_TOKEN 环境变量或脚本内置）",
+        help="EAS Authorization Token（默认取 config.EAS_TOKEN）",
     )
     parser.add_argument(
         "--eas-timeout",
         type=int,
-        default=600,
-        help="EAS 单次请求超时秒数（默认 600）",
+        default=config.EAS_TIMEOUT,
+        help=f"EAS 单次请求超时秒数（默认 {config.EAS_TIMEOUT}）",
     )
     parser.add_argument(
         "--eas-output-dir",

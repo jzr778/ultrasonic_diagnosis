@@ -151,6 +151,7 @@ avp_promptkit/
 | 分组 | 变量 | 说明 |
 |------|------|------|
 | DR 平台 | `DR_USERNAME` / `DR_PASSWORD` | 远端 bag 数据访问凭证 |
-| VLM API | `VLM_API_KEY` / `VLM_BASE_URL` / `VLM_MODEL` | 大模型 API 配置 |
+| EAS 微调模型 | `EAS_BASE_URL` / `EAS_TOKEN` / `EAS_MODEL` | PAI-EAS 部署地址、Token、模型名 |
+| VLM API | `VLM_API_KEY` / `VLM_BASE_URL` / `VLM_MODEL` | `--openai-diagnose` 时的大模型 API 配置 |
 | 飞书 | `FEISHU_PLUGIN_ID` / `FEISHU_PLUGIN_SECRET` / `FEISHU_USER_KEY` | 飞书项目 API 凭证 |
 | 数据路径 | `AVP_DATA_BASE` | 中间产物根目录（默认 `/mnt/public-data/user/ziroujiang/avp`） |

@@ -25,15 +25,17 @@ try:
 except ImportError:
     cv2 = None  # type: ignore
 
-EAS_BASE = (
-    "http://1204718816090335.cn-wulanchabu.pai-eas.aliyuncs.com"
-    "/api/predict/diagnosis_qwen35_27b_v5_clone"
-)
+SCRIPT_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = SCRIPT_DIR.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+import config as _cfg  # noqa: E402
+
+EAS_BASE = _cfg.EAS_BASE_URL
+DEFAULT_TOKEN = _cfg.EAS_TOKEN
 DEFAULT_DATA_ROOT = "/mnt/public-data/user/ziroujiang/all_data_v3"
 DEFAULT_VAL_JSONL = f"{DEFAULT_DATA_ROOT}/val_dataset_v5.jsonl"
-# 每个 EAS 部署有独立 Token（控制台 → 服务 → 调用信息 → Token）
-_DEFAULT_V3_TOKEN = "NWRlNWViZGI5NWJkZjFhMzg4YTc1YzY2MjRiYWVjYTgwNmVhMTZkOQ=="
-DEFAULT_TOKEN = os.environ.get("EAS_TOKEN", "").strip() or _DEFAULT_V3_TOKEN
 
 
 def _eas_auth_headers(token: str) -> Dict[str, str]:
@@ -42,11 +44,6 @@ def _eas_auth_headers(token: str) -> Dict[str, str]:
         "Authorization": (token or "").strip(),
     }
 
-
-SCRIPT_DIR = Path(__file__).resolve().parent
-PROJECT_ROOT = SCRIPT_DIR.parent
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
 
 from prompts_engine.context.object_type_catalog import (  # noqa: E402
     DEPRECATED_OBJECT_TYPE_ALIASES,
@@ -232,7 +229,7 @@ def _infer_one(
         print(f"  [{cid}] 编码 3 张图片为 base64...", flush=True)
     messages = _build_openai_messages(sample, data_root)
     payload = {
-        "model": "Qwen3.5-27B",
+        "model": _cfg.EAS_MODEL,
         "messages": messages,
         "max_tokens": max_tokens,
         "temperature": 0,
@@ -314,9 +311,9 @@ def run_val_eval(args: argparse.Namespace) -> int:
     use_pipeline = getattr(args, "pipeline_vlm", False)
     eas_base = (args.eas_base or EAS_BASE).rstrip("/")
     url = f"{eas_base}/v1/chat/completions"
-    headers = _eas_auth_headers(args.token)
+    token = args.token or DEFAULT_TOKEN
+    headers = _eas_auth_headers(token)
     if use_pipeline:
-        import config as _cfg
 
         print(
             f"VLM 后端: pipeline VLM_API style={_cfg.VLM_API_STYLE} "
@@ -439,7 +436,7 @@ def run_val_eval(args: argparse.Namespace) -> int:
         "output_jsonl": str(out_jsonl),
         "backend": "pipeline_vlm_api" if use_pipeline else "eas",
         "vlm_api_style": _cfg.VLM_API_STYLE if use_pipeline else "",
-        "vlm_model": args.model if use_pipeline else "Qwen3.5-27B",
+        "vlm_model": args.model if use_pipeline else _cfg.EAS_MODEL,
         "eas_base": eas_base,
         "total_samples": total,
         "processed": stats["total"],
@@ -471,7 +468,8 @@ def run_single(args: argparse.Namespace) -> int:
 
     eas_base = (args.eas_base or EAS_BASE).rstrip("/")
     url = f"{eas_base}/v1/chat/completions"
-    headers = _eas_auth_headers(args.token)
+    token = args.token or DEFAULT_TOKEN
+    headers = _eas_auth_headers(token)
 
     print(f"数据目录: {data_root}", flush=True)
     print(f"标注期望: {expected!r}", flush=True)
@@ -524,16 +522,16 @@ def main() -> int:
     parser.add_argument("--data-root", default=DEFAULT_DATA_ROOT)
     parser.add_argument(
         "--eas-base",
-        default=os.environ.get("EAS_BASE", "").strip() or "",
-        help=f"EAS 服务根 URL（默认 {EAS_BASE}）",
+        default="",
+        help=f"EAS 服务根 URL（默认取 config.EAS_BASE_URL）",
     )
     parser.add_argument(
         "--token",
-        default=DEFAULT_TOKEN,
-        help="EAS Authorization（也可用环境变量 EAS_TOKEN）；每个服务 token 不同",
+        default="",
+        help="EAS Authorization（默认取 config.EAS_TOKEN / 环境变量 EAS_TOKEN）",
     )
     parser.add_argument("--max-tokens", type=int, default=32)
-    parser.add_argument("--timeout", type=int, default=600)
+    parser.add_argument("--timeout", type=int, default=_cfg.EAS_TIMEOUT)
 
     parser.add_argument(
         "--eval",

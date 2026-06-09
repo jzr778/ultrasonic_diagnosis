@@ -64,6 +64,17 @@ FEISHU_USER_KEY = os.environ.get("FEISHU_USER_KEY", "")
 FEISHU_ENDPOINT = os.environ.get("FEISHU_ENDPOINT", "https://project.feishu.cn/open_api")
 FEISHU_PROJECT_KEY = os.environ.get("FEISHU_PROJECT_KEY", "iffcom")
 
+# ============ EAS 微调模型 ============
+
+EAS_BASE_URL = os.environ.get(
+    "EAS_BASE_URL",
+    "http://1204718816090335.cn-wulanchabu.pai-eas.aliyuncs.com"
+    "/api/predict/diagnosis_qwen35_27b_v5_clone",
+)
+EAS_TOKEN = os.environ.get("EAS_TOKEN", "").strip() or "NWRlNWViZGI5NWJkZjFhMzg4YTc1YzY2MjRiYWVjYTgwNmVhMTZkOQ=="
+EAS_MODEL = os.environ.get("EAS_MODEL", "Qwen3.5-27B")
+EAS_TIMEOUT = int(os.environ.get("EAS_TIMEOUT", "600"))
+
 # ============ 数据路径 ============
 
 DATA_BASE = os.environ.get("AVP_DATA_BASE", "/mnt/public-data/user/ziroujiang/avp")
