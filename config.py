@@ -68,11 +68,19 @@ FEISHU_PROJECT_KEY = os.environ.get("FEISHU_PROJECT_KEY", "iffcom")
 
 DATA_BASE = os.environ.get("AVP_DATA_BASE", "/mnt/public-data/user/ziroujiang/avp")
 
-SAMPLES_DIR = os.path.join(DATA_BASE, "samples") # 鱼眼
-GENERATE_DIR = os.path.join(DATA_BASE, "generate") # AVM
-READ_DATA_DIR = os.path.join(DATA_BASE, "read_data") # 定位信息
-DRAW_IMAGE_DIR = os.path.join(DATA_BASE, "draw_image") # 根据AVM和定位绘制图片
-RESULT_DIR = os.path.join(DATA_BASE, "result_avm") # 大模型诊断结果
+READ_DATA_DIR = os.path.join(DATA_BASE, "read_data")       # Step3: 解包 bag 产生的定位/超声等结构化数据
+SAMPLES_DIR = os.path.join(DATA_BASE, "samples")           # Step3: 解包 bag 产生的鱼眼原始帧
+GENERATE_DIR = os.path.join(DATA_BASE, "generate")         # Step4: 鱼眼拼接 AVM 全景图
+DRAW_IMAGE_DIR = os.path.join(DATA_BASE, "draw_image")     # Step5: 基于 AVM+定位 绘制标注图像
+RESULT_DIR = os.path.join(DATA_BASE, "result_avm")         # Step6: VLM 大模型诊断结果
+
+PIPELINE_DATA_DIR = os.environ.get(
+    "AVP_PIPELINE_DATA_DIR",
+    "/mnt/public-data/user/ziroujiang/pipeline_data",
+)  # Step6-EAS: 从 draw_image 收集的 images/crop/yuyan 平铺结构，供 EAS 微调模型诊断
+
+# 日志 & EAS 诊断产物目录（diagnosis_logs/MMDD/）
+LOG_DIR = os.path.join(DATA_BASE, "diagnosis_logs")         # pipeline 运行日志 + Step6-EAS 的 jsonl/csv 输出
 
 PROTO_DEBS_DIR = os.environ.get(
     "PROTO_DEBS_DIR",

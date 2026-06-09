@@ -9,8 +9,9 @@ AVP 全流程 Pipeline
   4. run_standalone.sh          拼接鱼眼图（若 read_data 内后视镜折叠缓存判折叠则跳过对应 bag；无缓存 tag 不再远端补读）
   5. avp_vlm_pipeline_avm.py   绘制 AVM 标注图像（折叠 tag 从映射中剔除）
   6. avp_vlm_pipeline_avm.py   大模型诊断（同上）
+  7. upload_to_feishu            诊断结果 CSV + 图片上传飞书电子表格（追加，去重）
 
-日志自动保存到 logs/pipeline_<时间戳>.log，同时在终端实时输出。
+日志自动保存到 diagnosis_logs/MMDD/pipeline_<时间戳>.log，同时在终端实时输出。
 
 用法:
   python pipeline.py -p iffcom -v U9zPLpFvR --model gemini-3-pro-preview
@@ -19,8 +20,8 @@ AVP 全流程 Pipeline
   python pipeline.py ... --no-yuyan   # 关闭鱼眼抽帧与双图 VLM
   python pipeline.py ... --chaosheng-pixel-radius 40   # Step5 BEV 超声-相机关联半径（默认 30）
   python pipeline.py ... --unpack-workers 1   # Step3 强制串行（默认按 CPU 并行，上限 4）
-
-  python pipeline.py -p iffcom -v U9zPLpFvR --eas-diagnose
+  python pipeline.py -p iffcom -v U9zPLpFvR --eas-diagnose \
+    --feishu-sheet-url "https://rqk9rsooi4.feishu.cn/wiki/PnvnwxXdrie48Mkmxalcm6uLnCf"
 """
 
 import argparse
@@ -38,7 +39,7 @@ import config
 
 PROJECT_ROOT = str(config.PROJECT_ROOT)
 PYTHON = sys.executable
-TOTAL_STEPS = 6
+TOTAL_STEPS = 7
 # Step3 默认并行度：上限 4 减轻远端限流风险；单核机器为 1。
 DEFAULT_UNPACK_WORKERS = max(1, min(4, (os.cpu_count() or 4)))
 _MIRROR_FOLD_CACHE = "mirror_fold_cache.json"
@@ -752,6 +753,366 @@ def step6_eas_diagnose(
         log.info(f"  未传入 id_mapping 或 project_key，跳过飞书评论")
 
     log.info(f"  ✅ EAS 微调模型诊断完成")
+    return csv_path
+
+
+# ── Step 7 ──────────────────────────────────────────────────
+_FEISHU_OPEN_API = "https://open.feishu.cn/open-apis"
+_DEFAULT_FEISHU_APP_ID = "cli_a6e0444aedfbd00b"
+_DEFAULT_FEISHU_APP_SECRET = "8W1Art9TRWrV50C7QgITwbYbMMqLKI5x"
+_IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".heic", ".tif", ".tiff"}
+_MAX_RANGES_PER_BATCH = 200
+_IMAGE_UPLOAD_TIMEOUT = 120
+_REQ_TIMEOUT = 15.0
+
+
+def _feishu_tenant_token():
+    app_id = (
+        os.environ.get("FEISHU_APP_ID", "").strip()
+        or os.environ.get("LARK_APP_ID", "").strip()
+        or _DEFAULT_FEISHU_APP_ID
+    )
+    app_secret = (
+        os.environ.get("FEISHU_APP_SECRET", "").strip()
+        or os.environ.get("LARK_APP_SECRET", "").strip()
+        or _DEFAULT_FEISHU_APP_SECRET
+    )
+    import requests as _rq
+    r = _rq.post(
+        f"{_FEISHU_OPEN_API}/auth/v3/tenant_access_token/internal",
+        json={"app_id": app_id, "app_secret": app_secret},
+        timeout=_REQ_TIMEOUT,
+    )
+    if r.status_code != 200:
+        raise RuntimeError(f"获取 tenant_access_token HTTP {r.status_code}: {r.text[:2000]}")
+    data = r.json()
+    token = data.get("tenant_access_token")
+    if not token:
+        raise RuntimeError(f"响应中无 tenant_access_token: {data}")
+    return str(token)
+
+
+def _feishu_resolve_spreadsheet_token(url_or_token: str) -> str:
+    """从 wiki/sheets URL 或直接 token 解析出 spreadsheet_token。"""
+    import re
+    import requests as _rq
+
+    url_or_token = url_or_token.strip()
+    # wiki 链接
+    m_wiki = re.search(r"/wiki/([A-Za-z0-9]+)", url_or_token)
+    if m_wiki:
+        wiki_token = m_wiki.group(1)
+        tenant = _feishu_tenant_token()
+        resp = _rq.get(
+            f"{_FEISHU_OPEN_API}/wiki/v2/spaces/get_node",
+            headers={"Authorization": f"Bearer {tenant}"},
+            params={"token": wiki_token},
+            timeout=_REQ_TIMEOUT,
+        )
+        if resp.status_code != 200:
+            raise RuntimeError(f"get_wiki_node HTTP {resp.status_code}: {resp.text[:2000]}")
+        j = resp.json()
+        if j.get("code") not in (None, 0):
+            raise RuntimeError(f"get_wiki_node 业务错误: {j}")
+        node = (j.get("data") or {}).get("node") or {}
+        t = node.get("obj_token") or node.get("node_token") or node.get("token")
+        if not t:
+            raise RuntimeError(f"Wiki node 无 obj_token: {j}")
+        return str(t)
+
+    # sheets 链接
+    m_sheet = re.search(r"/sheets/([A-Za-z0-9]+)", url_or_token)
+    if m_sheet:
+        return m_sheet.group(1)
+
+    # 直接 token
+    return url_or_token
+
+
+def _feishu_sheet_id(spreadsheet_token: str, headers: dict, sheet_index=0, sheet_title=None):
+    """获取第一个可见 sheet 的 sheet_id。"""
+    import requests as _rq
+    url = f"{_FEISHU_OPEN_API}/sheets/v3/spreadsheets/{spreadsheet_token}/sheets/query"
+    r = _rq.get(url, headers=headers, timeout=_REQ_TIMEOUT)
+    sheets = []
+    if r.status_code == 200:
+        j = r.json()
+        if j.get("code") in (None, 0):
+            sheets = (j.get("data") or {}).get("sheets") or []
+    if not sheets:
+        url2 = f"{_FEISHU_OPEN_API}/sheets/v2/spreadsheets/{spreadsheet_token}/metainfo"
+        r2 = _rq.get(url2, headers=headers, timeout=_REQ_TIMEOUT)
+        if r2.status_code != 200:
+            raise RuntimeError(f"sheets v3/v2 均失败: {r2.status_code}")
+        j2 = r2.json()
+        sheets = (j2.get("data") or {}).get("sheets") or []
+    visible = [
+        s for s in sheets
+        if not s.get("hidden") and s.get("resource_type", "sheet") == "sheet"
+    ]
+    if not visible:
+        raise RuntimeError("未找到可见 sheet")
+    if sheet_title:
+        for s in visible:
+            if s.get("title") == sheet_title:
+                return str(s.get("sheet_id")), sheets
+        raise RuntimeError(f"未找到标题为 {sheet_title!r} 的工作表")
+    sid = visible[sheet_index].get("sheet_id")
+    return str(sid), sheets
+
+
+def _feishu_grid_row_count(sheets, sheet_id):
+    for s in sheets:
+        if str(s.get("sheet_id")) == str(sheet_id):
+            gp = s.get("grid_properties") or {}
+            rc = gp.get("row_count")
+            if rc is not None:
+                return max(int(rc), 2)
+    return 20000
+
+
+def _feishu_read_col_a(spreadsheet_token, sheet_id, headers, header_rows, max_row):
+    """读 A 列已有 case_id → {case_id: 1-based行号}，以及最后非空行号。"""
+    import requests as _rq
+    start = header_rows + 1
+    if max_row < start:
+        return {}, header_rows
+    rng = f"{sheet_id}!A{start}:A{max_row}"
+    r = _rq.get(
+        f"{_FEISHU_OPEN_API}/sheets/v2/spreadsheets/{spreadsheet_token}/values_batch_get",
+        headers=headers, params={"ranges": rng}, timeout=_REQ_TIMEOUT,
+    )
+    r.raise_for_status()
+    data = r.json()
+    if data.get("code") != 0:
+        raise RuntimeError(f"values_batch_get A 失败: {data}")
+    vrs = (data.get("data") or {}).get("valueRanges") or []
+    if not vrs:
+        return {}, header_rows
+    values = vrs[0].get("values") or []
+    row_by_case = {}
+    last = header_rows
+    for i, row in enumerate(values):
+        row_1 = start + i
+        if not row:
+            continue
+        cell = row[0]
+        cid = _feishu_cell_text(cell).strip()
+        if not cid:
+            continue
+        for ext in (".jpg", ".jpeg", ".png"):
+            if cid.lower().endswith(ext):
+                cid = cid[:-len(ext)].strip()
+                break
+        last = max(last, row_1)
+        if cid not in row_by_case:
+            row_by_case[cid] = row_1
+    return row_by_case, last
+
+
+def _feishu_cell_text(cell):
+    if cell is None:
+        return ""
+    if isinstance(cell, str):
+        return cell.strip()
+    if isinstance(cell, dict):
+        for k in ("text", "cellText", "stringValue"):
+            v = cell.get(k)
+            if isinstance(v, str) and v.strip():
+                return v.strip()
+        return ""
+    return str(cell).strip()
+
+
+def _feishu_cell_has_content(cell):
+    if cell is None:
+        return False
+    if isinstance(cell, str):
+        return bool(cell.strip())
+    if isinstance(cell, dict):
+        if cell.get("type") == "embed-image" and cell.get("fileToken"):
+            return True
+        return bool(_feishu_cell_text(cell))
+    return True
+
+
+def _feishu_batch_update(spreadsheet_token, headers, value_ranges, timeout=_IMAGE_UPLOAD_TIMEOUT):
+    import requests as _rq
+    for i in range(0, len(value_ranges), _MAX_RANGES_PER_BATCH):
+        chunk = value_ranges[i:i + _MAX_RANGES_PER_BATCH]
+        r = _rq.post(
+            f"{_FEISHU_OPEN_API}/sheets/v2/spreadsheets/{spreadsheet_token}/values_batch_update",
+            headers=headers, json={"valueRanges": chunk}, timeout=timeout,
+        )
+        r.raise_for_status()
+        data = r.json()
+        if data.get("code") != 0:
+            raise RuntimeError(f"values_batch_update 失败: {data}")
+
+
+def _feishu_write_image(spreadsheet_token, headers, sheet_id, cell, image_path,
+                        timeout=_IMAGE_UPLOAD_TIMEOUT):
+    import requests as _rq
+    with open(image_path, "rb") as f:
+        raw = f.read()
+    if not raw:
+        return
+    name = os.path.basename(image_path)
+    if "." not in name:
+        name += ".png"
+    rng = f"{sheet_id}!{cell}:{cell}"
+    body = {"range": rng, "image": list(raw), "name": name}
+    r = _rq.post(
+        f"{_FEISHU_OPEN_API}/sheets/v2/spreadsheets/{spreadsheet_token}/values_image",
+        headers=headers, json=body, timeout=timeout,
+    )
+    data = r.json() if r.status_code == 200 else {}
+    if r.status_code != 200 or data.get("code") != 0:
+        raise RuntimeError(f"values_image 失败 {cell} {image_path}: HTTP {r.status_code} {data}")
+
+
+def _resolve_img(directory, case_id):
+    for ext in (".jpg", ".jpeg", ".png", ".bmp", ".webp"):
+        p = os.path.join(directory, case_id + ext)
+        if os.path.isfile(p):
+            return p
+    return None
+
+
+def step7_upload_to_feishu(
+    eas_csv_path,
+    data_dir,
+    feishu_url,
+    image_delay=0.05,
+):
+    """将 EAS 诊断结果 CSV + 图片上传至飞书电子表格。
+
+    表格列: A=case_id  B=avm  C=crop  D=yuyan
+            E=实体是否存在  F=超声标记命中或偏移  G=障碍物类型  H=微调模型预测（是否误检）
+
+    追加模式：已存在的 case_id 跳过新增行。
+    """
+    banner(7, "上传诊断结果到飞书电子表格")
+
+    import csv
+    import time
+
+    if not eas_csv_path or not os.path.isfile(eas_csv_path):
+        log.error(f"  ❌ CSV 文件不存在: {eas_csv_path}")
+        return
+    if not feishu_url:
+        log.warning("  ⚠️  未指定飞书表格 URL (--feishu-sheet-url)，跳过 Step 7")
+        return
+
+    # 读 CSV
+    rows_by_cid = {}
+    with open(eas_csv_path, encoding="utf-8-sig") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            cid = (row.get("case_id") or "").strip()
+            if not cid:
+                continue
+            rows_by_cid[cid] = {
+                "entity": (row.get("实体是否存在") or "").strip(),
+                "geometry": (row.get("超声标记命中或偏移") or "").strip(),
+                "object_type": (row.get("障碍物类型") or "").strip(),
+                "misdetect": (row.get("是否误检") or "").strip(),
+            }
+    if not rows_by_cid:
+        log.warning("  CSV 中无有效数据，跳过")
+        return
+    log.info(f"  CSV: {eas_csv_path}，共 {len(rows_by_cid)} 条")
+
+    images_dir = os.path.join(data_dir, "images")
+    crop_dir = os.path.join(data_dir, "crop")
+    yuyan_dir = os.path.join(data_dir, "yuyan")
+
+    # 飞书认证 & 解析 spreadsheet
+    spreadsheet_token = _feishu_resolve_spreadsheet_token(feishu_url)
+    tenant = _feishu_tenant_token()
+    headers = {
+        "Authorization": f"Bearer {tenant}",
+        "Content-Type": "application/json; charset=utf-8",
+    }
+    sheet_id, sheets = _feishu_sheet_id(spreadsheet_token, headers)
+    log.info(f"  spreadsheet_token={spreadsheet_token}, sheet_id={sheet_id}")
+
+    max_scan = _feishu_grid_row_count(sheets, sheet_id)
+    header_rows = 1
+    start_row = 2
+
+    existing, last_content = _feishu_read_col_a(
+        spreadsheet_token, sheet_id, headers, header_rows, max_scan,
+    )
+    log.info(f"  飞书已有 {len(existing)} 行 case_id，最后非空行={last_content}")
+
+    # 分配行：已有 → 跳过；新增 → 追加到行尾
+    case_ids = list(rows_by_cid.keys())
+    next_new = max(last_content + 1, start_row)
+    assignments = []
+    skipped_existing = 0
+    for cid in case_ids:
+        if cid in existing:
+            skipped_existing += 1
+            continue
+        assignments.append((cid, next_new))
+        existing[cid] = next_new
+        next_new += 1
+
+    log.info(f"  新增: {len(assignments)}，跳过(已存在): {skipped_existing}")
+    if not assignments:
+        log.info("  无新增行，Step 7 结束")
+        return
+
+    # 写 A 列 case_id
+    a_vrs = [
+        {"range": f"{sheet_id}!A{row}:A{row}", "values": [[cid]]}
+        for cid, row in assignments
+    ]
+    _feishu_batch_update(spreadsheet_token, headers, a_vrs)
+    log.info(f"  写入 A 列: {len(a_vrs)} 个新行")
+
+    # 写 E/F/G/H 标签列
+    label_col_map = [("E", "entity"), ("F", "geometry"), ("G", "object_type"), ("H", "misdetect")]
+    label_vrs = []
+    for cid, row in assignments:
+        info = rows_by_cid[cid]
+        for col, key in label_col_map:
+            label_vrs.append({
+                "range": f"{sheet_id}!{col}{row}:{col}{row}",
+                "values": [[info.get(key, "")]],
+            })
+    if label_vrs:
+        _feishu_batch_update(spreadsheet_token, headers, label_vrs)
+        log.info(f"  写入 E/F/G/H 标签: {len(label_vrs)} 格")
+
+    # 写 B/C/D 图片列
+    img_cols = [
+        ("B", images_dir, "avm"),
+        ("C", crop_dir, "crop"),
+        ("D", yuyan_dir, "yuyan"),
+    ]
+    wrote = missed = 0
+    for idx, (cid, row) in enumerate(assignments):
+        for col_letter, directory, label in img_cols:
+            img_path = _resolve_img(directory, cid)
+            if not img_path:
+                missed += 1
+                continue
+            cell = f"{col_letter}{row}"
+            try:
+                _feishu_write_image(spreadsheet_token, headers, sheet_id, cell, img_path)
+                wrote += 1
+            except RuntimeError as e:
+                log.warning(f"  写图失败 {cell} {img_path}: {e}")
+                missed += 1
+            if image_delay > 0:
+                time.sleep(image_delay)
+        if (idx + 1) % 20 == 0 or (idx + 1) == len(assignments):
+            log.info(f"  图片进度: {idx + 1}/{len(assignments)}")
+
+    log.info(f"  图片写入完成: 新写={wrote}, 缺失/失败={missed}")
+    log.info(f"  ✅ Step 7 飞书上传完成")
 
 
 def _load_mirror_skip_info_from_read_data(tag_ids, read_data_dir):
@@ -794,7 +1155,7 @@ def main():
                         default=config.READ_DATA_DIR,
                         help="save_bag_data 输出 / VLM 读取目录")
     parser.add_argument("--skip-steps", nargs="*", type=int, default=[],
-                        help="跳过指定步骤编号 (1/3/4/5/6)，如 --skip-steps 1 3")
+                        help="跳过指定步骤编号 (1/3/4/5/6/7)，如 --skip-steps 1 3")
     parser.add_argument("--model", nargs="+", default=["auto"],
                         help="VLM 模型名称列表，透传给 step6 (默认: auto)")
     parser.add_argument("--list-models", action="store_true",
@@ -805,9 +1166,9 @@ def main():
     parser.add_argument("--ignore-fs-types", nargs="*", default=[],
                         help="绘图/诊断时忽略的超声 freespaceType，如 --ignore-fs-types FS_CURB FS_CHOCK")
     parser.add_argument("--debug-thinking", action="store_true",
-                        help="Step6 记录 VLM 原始回复到 logs/MMDD/debug_thinking_*.txt")
-    parser.add_argument("--log-dir", default=os.path.join(PROJECT_ROOT, "logs"),
-                        help="日志输出目录 (默认: logs/)")
+                        help="Step6 记录 VLM 原始回复到 diagnosis_logs/MMDD/debug_thinking_*.txt")
+    parser.add_argument("--log-dir", default=config.LOG_DIR,
+                        help=f"日志输出目录 (默认: {config.LOG_DIR})")
     parser.add_argument(
         "--no-yuyan",
         dest="yuyan",
@@ -843,8 +1204,8 @@ def main():
     )
     parser.add_argument(
         "--eas-data-dir",
-        default="/mnt/public-data/user/ziroujiang/pipeline_data",
-        help="EAS 分支的图片数据目录（images/crop/yuyan），默认 /mnt/public-data/user/ziroujiang/pipeline_data",
+        default=config.PIPELINE_DATA_DIR,
+        help=f"EAS 分支的图片数据目录（images/crop/yuyan），默认 {config.PIPELINE_DATA_DIR}",
     )
     parser.add_argument(
         "--eas-base",
@@ -864,8 +1225,22 @@ def main():
     )
     parser.add_argument(
         "--eas-output-dir",
-        default=os.path.join(PROJECT_ROOT, "logs"),
-        help="--eas-diagnose 输出目录（jsonl + labels.csv，默认 logs/MMDD/）",
+        default=config.LOG_DIR,
+        help="--eas-diagnose 输出目录（jsonl + labels.csv，默认 diagnosis_logs/MMDD/）",
+    )
+    parser.add_argument(
+        "--feishu-sheet-url",
+        default="https://rqk9rsooi4.feishu.cn/wiki/PnvnwxXdrie48Mkmxalcm6uLnCf",
+        help=(
+            "Step7: 诊断结果上传到飞书电子表格（支持 /wiki/ 或 /sheets/ 链接）。"
+            "不指定则跳过 Step 7"
+        ),
+    )
+    parser.add_argument(
+        "--image-delay",
+        type=float,
+        default=0.05,
+        help="Step7 两次图片写入间隔秒数（默认 0.05）",
     )
     args = parser.parse_args()
 
@@ -1002,11 +1377,12 @@ def main():
         log.info(f"[跳过 Step 5]")
 
     # Step 6
+    eas_csv_path = None
     if 6 not in skip:
         if args.eas_diagnose:
             with open(id_mapping_path, "r", encoding="utf-8") as f:
                 _id_map = json.load(f)
-            step6_eas_diagnose(
+            eas_csv_path = step6_eas_diagnose(
                 tag_ids,
                 args.eas_data_dir,
                 args.eas_output_dir,
@@ -1035,6 +1411,17 @@ def main():
     else:
         log.info(f"[跳过 Step 6]")
 
+    # Step 7: 上传诊断结果到飞书电子表格（仅 EAS 分支且指定了 --feishu-sheet-url）
+    if 7 not in skip and args.eas_diagnose and eas_csv_path:
+        step7_upload_to_feishu(
+            eas_csv_path,
+            args.eas_data_dir,
+            args.feishu_sheet_url,
+            image_delay=args.image_delay,
+        )
+    elif 7 in skip:
+        log.info(f"[跳过 Step 7]")
+
     if mirror_filtered_mapping_path and os.path.isfile(mirror_filtered_mapping_path):
         try:
             os.remove(mirror_filtered_mapping_path)
@@ -1055,6 +1442,6 @@ if __name__ == "__main__":
     #     "--id-mapping", "/home/jiangzirou/avp_promptkit/get_data/test.json",
     #     # "--mode", "draw",  # 调试鱼眼/绘图时先只跑 draw，避免走 VLM
     #     # "--model", "gemini-3-pro-preview",
-    #     "--skip-steps", "1","2","6"
+    #     "--skip-steps", "1","6"
     # ]
     main()

@@ -43,7 +43,7 @@ RESULT_DIR = "/mnt/public-data/user/ziroujiang/avp/result_liuyi_benchmark"
 
 def setup_logging():
     now = datetime.now()
-    log_dir = os.path.join(str(config.PROJECT_ROOT), "logs", now.strftime("%m%d"))
+    log_dir = os.path.join(config.LOG_DIR, now.strftime("%m%d"))
     os.makedirs(log_dir, exist_ok=True)
     timestamp = now.strftime("%Y%m%d_%H%M%S")
     log_file = os.path.join(log_dir, f"liuyi_benchmark_{timestamp}.log")

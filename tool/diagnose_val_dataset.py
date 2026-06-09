@@ -503,7 +503,7 @@ def diagnose_one_case(
 
 def setup_logging() -> str:
     now = datetime.now()
-    log_dir = os.path.join(str(config.PROJECT_ROOT), "logs", now.strftime("%m%d"))
+    log_dir = os.path.join(config.LOG_DIR, now.strftime("%m%d"))
     os.makedirs(log_dir, exist_ok=True)
     log_file = os.path.join(
         log_dir, f"val_misdetect_{now.strftime('%Y%m%d_%H%M%S')}.log"
