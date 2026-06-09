@@ -45,9 +45,9 @@ python pipeline.py --openai-diagnose
     │
     ▼
 ┌─ Step 6 ─┐  模型诊断（二选一）
-│  默认     │  EAS 微调模型三分类 → 映射「是否误检」
-│  --openai-│  VLM 大模型（Gemini / OpenAI 兼容）多任务诊断
-│  diagnose │  输出 jsonl + CSV 到 diagnosis_logs/MMDD/
+│  默认     │  EAS 微调模型三分类 → 映射「是否误检」→ diagnosis_logs/MMDD/ + pipeline_data/
+│  --openai-│  VLM 大模型（Gemini / OpenAI 兼容）多任务诊断 → diagnosis_logs/MMDD/ + result_avm/
+│  diagnose │
 └───────────┘
     │
     ▼
@@ -64,11 +64,10 @@ python pipeline.py --openai-diagnose
 |------|------|
 | `-p / --project-key` | 飞书项目 Key（默认 `iffcom`） |
 | `-v / --view-id` | 飞书视图 ID（默认 当天缺陷数据 `U9zPLpFvR`） |
-| `--skip-steps 1 3` | 跳过指定步骤 |
-| `--openai-diagnose` | 改用 VLM 大模型 API 诊断（跳过 Step 7） |
+| `--skip-steps 1 3` | 跳过指定步骤（可用编号：1/3/4/5/6/7） |
+| `--openai-diagnose` | Step6 改用 VLM 大模型 API 诊断（自动跳过 Step 7） |
 | `--model gemini-3-pro-preview` | `--openai-diagnose` 时指定 VLM 模型 |
 | `--feishu-sheet-url` | Step 7 上传目标飞书表格（默认已配置，支持 wiki / sheets 链接） |
-| `--skip-steps 7` | 跳过飞书表格上传 |
 | `--no-yuyan` | 关闭鱼眼解包与鱼眼辅助 |
 | `--chaosheng-pixel-radius 40` | Step 5 超声-相机关联半径（默认 30） |
 | `--unpack-workers 1` | Step 3 并行解包数（默认 min(CPU, 4)） |
@@ -78,17 +77,20 @@ python pipeline.py --openai-diagnose
 所有中间产物默认位于 `AVP_DATA_BASE`（`/mnt/public-data/user/ziroujiang/avp`）：
 
 ```
-avp/
-├── samples/            # Step3: 解包的鱼眼原始帧
-├── read_data/          # Step3: 超声/定位/规划结构化数据
-├── generate/           # Step4: AVM 全景图
-├── draw_image/         # Step5: 标注后的 AVM 图像
-├── result_avm/         # Step6: VLM 诊断结果
-└── diagnosis_logs/     # 运行日志 + EAS 的 jsonl/csv
-    └── MMDD/           #   按日期分目录
-```
+avp/                             # AVP_DATA_BASE
+├── samples/                     # Step3: 解包的鱼眼原始帧
+├── read_data/                   # Step3: 超声/定位/规划结构化数据
+├── generate/                    # Step4: AVM 全景图
+├── draw_image/                  # Step5: 标注后的 AVM 图像
+├── result_avm/                  # Step6 --openai-diagnose: VLM 大模型诊断结果
+└── diagnosis_logs/              # Step6 默认分支 + 运行日志
+    └── MMDD/                    #   按日期：pipeline 日志 + EAS 的 jsonl/csv
 
-EAS 分支另有平铺图片目录（`pipeline_data/`），从 `draw_image/` 按 tag 收集 `images/crop/yuyan` 三图。
+pipeline_data/                   # AVP_PIPELINE_DATA_DIR（独立于 avp/）
+├── images/                      # Step6 默认分支：从 draw_image 收集的 AVM 图
+├── crop/                        #   超声质心局部裁剪图
+└── yuyan/                       #   鱼眼图
+```
 
 ## 项目结构
 
@@ -133,7 +135,7 @@ avp_promptkit/
 │   ├── sync_raw_images_to_feishu_sheet.py  # 原始图片同步到飞书表格
 │   ├── export_feishu_labels_csv.py  # 从飞书表格导出标签 CSV
 │   ├── diagnose_val_dataset.py  #   验证集离线诊断
-│   ├── diagnose_liuyi_benchmark.py  # 六一 benchmark 批量诊断
+│   ├── diagnose_liuyi_benchmark.py  # liuyi benchmark 批量诊断
 │   ├── crop_read_data_chaosheng.py  # 超声质心局部裁剪
 │   └── ...                      #   其他数据处理与可视化工具
 │
