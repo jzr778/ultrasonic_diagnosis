@@ -140,8 +140,8 @@ avp_promptkit/
 │   └── ...                      #   其他数据处理与可视化工具
 │
 └── proj/                        # 模型训练相关
-    ├── run.py                   #   训练启动脚本
-    └── train.sh                 #   训练 shell 脚本
+    ├── run.py                   #   打包代码 + scp 到 PAI 集群
+    └── train.sh                 #   ms-swift LoRA SFT
 ```
 
 ## 环境变量
