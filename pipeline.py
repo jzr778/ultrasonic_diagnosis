@@ -1296,6 +1296,13 @@ def main():
 
     skip = set(args.skip_steps)
 
+    # 每次启动 pipeline 清理中间产物，确保全新运行
+    for d in [args.samples_dir, args.read_data_dir, args.generate_dir,
+              config.DRAW_IMAGE_DIR, config.RESULT_DIR]:
+        if os.path.isdir(d):
+            shutil.rmtree(d)
+            log.info(f"  已清理: {d}")
+
     log.info(f"项目根目录: {PROJECT_ROOT}")
     log.info(f"参数: project={args.project_key}, view={args.view_id}, "
              f"yuyan={args.yuyan}, chaosheng_pixel_radius={args.chaosheng_pixel_radius}, "
@@ -1326,6 +1333,10 @@ def main():
         )
     else:
         log.info(f"[跳过 Step 3]")
+        if 4 not in skip:
+            tag_bag_prefixes, _ = _collect_event_bag_prefixes(tag_ids, args.read_data_dir)
+            if not tag_bag_prefixes:
+                log.info("  未从 read_data 找到 event_heavy_bags 缓存，Step 4 将全量扫描 samples/")
 
     # 与 bag_reader 一致：Light bag CarInfo（CAR_STATE_TOPIC）在超声事件时刻若判后视镜折叠 → 不跑 Step4–6。
     # 仅使用 read_data 内已写入的后视镜折叠缓存；无缓存的 tag 不再远端补读 Light bag。
