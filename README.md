@@ -64,6 +64,7 @@ python pipeline.py --openai-diagnose
 |------|------|
 | `-p / --project-key` | 飞书项目 Key（默认 `iffcom`） |
 | `-v / --view-id` | 飞书视图 ID（默认 当天缺陷数据 `U9zPLpFvR`） |
+| `--no-comment` | 不发送飞书评论 |
 | `--skip-steps 1 3` | 跳过指定步骤（可用编号：1/3/4/5/6/7） |
 | `--openai-diagnose` | Step6 改用 VLM 大模型 API 诊断（自动跳过 Step 7） |
 | `--model gemini-3-pro-preview` | `--openai-diagnose` 时指定 VLM 模型 |

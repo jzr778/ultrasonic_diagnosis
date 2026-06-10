@@ -963,22 +963,31 @@ def _feishu_cell_has_content(cell):
     return True
 
 
-def _feishu_batch_update(spreadsheet_token, headers, value_ranges, timeout=_IMAGE_UPLOAD_TIMEOUT):
+def _feishu_batch_update(spreadsheet_token, headers, value_ranges, timeout=_IMAGE_UPLOAD_TIMEOUT,
+                         max_retries=5, retry_base=2):
     import requests as _rq
     for i in range(0, len(value_ranges), _MAX_RANGES_PER_BATCH):
         chunk = value_ranges[i:i + _MAX_RANGES_PER_BATCH]
-        r = _rq.post(
-            f"{_FEISHU_OPEN_API}/sheets/v2/spreadsheets/{spreadsheet_token}/values_batch_update",
-            headers=headers, json={"valueRanges": chunk}, timeout=timeout,
-        )
-        r.raise_for_status()
-        data = r.json()
-        if data.get("code") != 0:
+        for attempt in range(max_retries):
+            r = _rq.post(
+                f"{_FEISHU_OPEN_API}/sheets/v2/spreadsheets/{spreadsheet_token}/values_batch_update",
+                headers=headers, json={"valueRanges": chunk}, timeout=timeout,
+            )
+            r.raise_for_status()
+            data = r.json()
+            code = data.get("code", 0)
+            if code == 0:
+                break
+            if code == 90217 and attempt < max_retries - 1:
+                wait = retry_base * (attempt + 1)
+                log.warning(f"  飞书限流(90217)，{wait}s 后重试 ({attempt+1}/{max_retries})")
+                time.sleep(wait)
+                continue
             raise RuntimeError(f"values_batch_update 失败: {data}")
 
 
 def _feishu_write_image(spreadsheet_token, headers, sheet_id, cell, image_path,
-                        timeout=_IMAGE_UPLOAD_TIMEOUT):
+                        timeout=_IMAGE_UPLOAD_TIMEOUT, max_retries=5, retry_base=2):
     import requests as _rq
     with open(image_path, "rb") as f:
         raw = f.read()
@@ -989,12 +998,20 @@ def _feishu_write_image(spreadsheet_token, headers, sheet_id, cell, image_path,
         name += ".png"
     rng = f"{sheet_id}!{cell}:{cell}"
     body = {"range": rng, "image": list(raw), "name": name}
-    r = _rq.post(
-        f"{_FEISHU_OPEN_API}/sheets/v2/spreadsheets/{spreadsheet_token}/values_image",
-        headers=headers, json=body, timeout=timeout,
-    )
-    data = r.json() if r.status_code == 200 else {}
-    if r.status_code != 200 or data.get("code") != 0:
+    for attempt in range(max_retries):
+        r = _rq.post(
+            f"{_FEISHU_OPEN_API}/sheets/v2/spreadsheets/{spreadsheet_token}/values_image",
+            headers=headers, json=body, timeout=timeout,
+        )
+        data = r.json() if r.status_code == 200 else {}
+        code = data.get("code", -1)
+        if r.status_code == 200 and code == 0:
+            return
+        if code == 90217 and attempt < max_retries - 1:
+            wait = retry_base * (attempt + 1)
+            log.warning(f"  飞书限流(90217) {cell}，{wait}s 后重试 ({attempt+1}/{max_retries})")
+            time.sleep(wait)
+            continue
         raise RuntimeError(f"values_image 失败 {cell} {image_path}: HTTP {r.status_code} {data}")
 
 
@@ -1229,6 +1246,11 @@ def main():
         ),
     )
     parser.add_argument(
+        "--no-comment",
+        action="store_true",
+        help="Step6 EAS 诊断后不发送飞书工单评论",
+    )
+    parser.add_argument(
         "--eas-data-dir",
         default=config.PIPELINE_DATA_DIR,
         help=f"EAS 分支的图片数据目录（images/crop/yuyan），默认 {config.PIPELINE_DATA_DIR}",
@@ -1296,12 +1318,13 @@ def main():
 
     skip = set(args.skip_steps)
 
-    # 每次启动 pipeline 清理中间产物，确保全新运行
-    for d in [args.samples_dir, args.read_data_dir, args.generate_dir,
-              config.DRAW_IMAGE_DIR, config.RESULT_DIR]:
-        if os.path.isdir(d):
-            shutil.rmtree(d)
-            log.info(f"  已清理: {d}")
+    # 全流程运行时清理中间产物，确保全新运行；跳步时保留已有数据
+    if not skip:
+        for d in [args.samples_dir, args.read_data_dir, args.generate_dir,
+                  config.DRAW_IMAGE_DIR, config.RESULT_DIR]:
+            if os.path.isdir(d):
+                shutil.rmtree(d)
+                log.info(f"  已清理: {d}")
 
     log.info(f"项目根目录: {PROJECT_ROOT}")
     log.info(f"参数: project={args.project_key}, view={args.view_id}, "
@@ -1442,8 +1465,8 @@ def main():
                 draw_image_dir=config.DRAW_IMAGE_DIR,
                 read_data_dir=args.read_data_dir,
                 ignore_fs_types=args.ignore_fs_types,
-                id_mapping=_id_map,
-                project_key=args.project_key,
+                id_mapping=None if args.no_comment else _id_map,
+                project_key="" if args.no_comment else args.project_key,
             )
     else:
         log.info(f"[跳过 Step 6]")

@@ -29,6 +29,13 @@ import config
 
 sys.path.insert(0, config.PROTO_LOCAL_DIR)
 
+# 确保本地 proto 优先于 conda site-packages 中的同名包
+_PROTO_PKGS = ("drivers", "perception", "planning", "canbus",
+               "common", "localization", "calibration")
+for _pkg in _PROTO_PKGS:
+    if _pkg in sys.modules:
+        del sys.modules[_pkg]
+
 # 截断的 deeproute_perception_obstacle_pb2 缺少 PerceptionObstacles，需先注册
 import get_data.perception_obstacles_compat  # noqa: F401
 
