@@ -170,53 +170,103 @@ class FeishuCommentTester:
             print(f"❌ 用户搜索API失败: {str(e)}")
             return None
     
-    def create_comment_with_mention(self, project_key: str, work_item_type_key: str, 
-                                  work_item_id: str, content: str, 
-                                  mention_user_key: str, mention_user_name: str) -> bool:
-        """创建评论 (暂时不使用@提及功能)"""
+    def _auth_headers(self) -> Dict[str, str]:
         if not self.token:
             self.get_token()
-        
-        print(f"💬 创建评论...")
-        
-        url = f"{self.endpoint}/{project_key}/work_item/{work_item_type_key}/{work_item_id}/comment/create"
-        headers = {
+        return {
             "Content-Type": "application/json",
             "X-USER-KEY": self.USER_KEY,
             "X-PLUGIN-TOKEN": self.token,
         }
-        comment_text = content
 
-        # content字段直接是字符串文本
-        request_body = {
-            "content": comment_text
+    @staticmethod
+    def _shrink_image(image_path: str, scale: float = 0.4) -> bytes:
+        """将图片缩放到 scale 倍，返回 JPEG bytes。"""
+        from PIL import Image
+        import io
+        with Image.open(image_path) as img:
+            new_w = max(1, int(img.width * scale))
+            new_h = max(1, int(img.height * scale))
+            img_resized = img.resize((new_w, new_h), Image.LANCZOS)
+            buf = io.BytesIO()
+            img_resized.save(buf, format="JPEG", quality=80)
+            return buf.getvalue()
+
+    def upload_comment_image(
+        self, project_key: str, work_item_type_key: str,
+        work_item_id: str, image_path: str,
+        scale: float = 0.4,
+    ) -> Optional[str]:
+        """上传图片到飞书项目（自动缩放），返回图片 URL 字符串或 None。
+
+        API: POST /open_api/{project_key}/file/upload  (multipart/form-data)
+        scale: 缩放比例，默认 0.4（缩小到 40%）。
+        """
+        if not os.path.isfile(image_path):
+            print(f"  图片不存在: {image_path}")
+            return None
+
+        if not self.token:
+            self.get_token()
+
+        upload_url = f"{self.endpoint}/{project_key}/file/upload"
+        headers = {
+            "X-USER-KEY": self.USER_KEY,
+            "X-PLUGIN-TOKEN": self.token,
         }
-        
+        try:
+            img_bytes = self._shrink_image(image_path, scale)
+            files = {"file": (os.path.basename(image_path), img_bytes, "image/jpeg")}
+            resp = requests.post(upload_url, headers=headers, files=files)
+            resp.raise_for_status()
+            body = resp.json()
+            if body.get("err_code", 0) != 0:
+                print(f"  文件上传失败: {body}")
+                return None
+            data = body.get("data", "")
+            if not data:
+                print(f"  上传返回缺少 data(url): {body}")
+                return None
+            file_url = data[0] if isinstance(data, list) else data
+            return file_url
+        except Exception as e:
+            print(f"  文件上传异常: {e}")
+            return None
+
+    def create_comment_with_mention(self, project_key: str, work_item_type_key: str,
+                                  work_item_id: str, content: str,
+                                  mention_user_key: str, mention_user_name: str,
+                                  rich_text: list = None) -> bool:
+        """创建评论。优先使用 rich_text（支持图片），否则用 content（纯文本）。"""
+        if not self.token:
+            self.get_token()
+
+        print(f"💬 创建评论...")
+
+        url = f"{self.endpoint}/{project_key}/work_item/{work_item_type_key}/{work_item_id}/comment/create"
+        headers = self._auth_headers()
+        if rich_text:
+            request_body = {"rich_text": rich_text}
+        else:
+            request_body = {"content": content}
+
         print(f"🔗 请求URL: {url}")
-        print(f"📝 评论文本: {comment_text}")
-        print(f"📦 请求体: {json.dumps(request_body, ensure_ascii=False)}")
-        
+
         try:
             response = requests.post(url, headers=headers, json=request_body)
-            
-            print(f"📊 响应状态码: {response.status_code}")
-            
+
             if response.status_code == 200:
                 comment_resp = response.json()
-                print(f"📋 完整响应: {json.dumps(comment_resp, indent=2, ensure_ascii=False)}")
-                
                 if comment_resp.get("err_code", 0) == 0:
                     print(f"✅ 成功创建评论!")
                     return True
                 else:
                     print(f"❌ 创建评论失败: {comment_resp.get('err_msg', '未知错误')}")
-                    print(f"错误代码: {comment_resp.get('err_code')}")
                     return False
             else:
-                print(f"❌ HTTP错误: {response.status_code}")
-                print(f"📄 响应内容: {response.text}")
+                print(f"❌ HTTP错误: {response.status_code} {response.text}")
                 return False
-                
+
         except Exception as e:
             print(f"❌ 请求异常: {str(e)}")
             return False

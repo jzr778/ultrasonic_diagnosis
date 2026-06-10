@@ -565,6 +565,9 @@ def run(args: argparse.Namespace) -> int:
             if patch.size == 0:
                 continue
             out_path = os.path.join(crop_root, f"{stem}.jpg")
+            if os.path.isfile(out_path):
+                n_crop += 1
+                continue
             cv2.imwrite(out_path, patch)
             n_crop += 1
 

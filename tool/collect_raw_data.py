@@ -137,14 +137,20 @@ def _copy_drawn_images(
                 src_avm = os.path.join(ts_dir, "avm.jpg")
                 if os.path.isfile(src_avm):
                     dst_avm = os.path.join(images_dir, f"{stem}.jpg")
-                    shutil.copy2(src_avm, dst_avm)
-                    n_avm += 1
+                    if os.path.isfile(dst_avm):
+                        n_avm += 1
+                    else:
+                        shutil.copy2(src_avm, dst_avm)
+                        n_avm += 1
             if copy_yuyan:
                 src_yu = os.path.join(ts_dir, "yuyan_draw.jpg")
                 if os.path.isfile(src_yu):
                     dst_yu = os.path.join(yuyan_dir, f"{stem}.jpg")
-                    shutil.copy2(src_yu, dst_yu)
-                    n_yuyan += 1
+                    if os.path.isfile(dst_yu):
+                        n_yuyan += 1
+                    else:
+                        shutil.copy2(src_yu, dst_yu)
+                        n_yuyan += 1
     print(
         f"[collect_raw_data] 复制完成: images/={n_avm}, yuyan/={n_yuyan}  →  {dst_root}",
         flush=True,

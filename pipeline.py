@@ -748,7 +748,14 @@ def step6_eas_diagnose(
         for r in rows:
             tag = r["case_id"].split("_")[0]
             ts = "_".join(r["case_id"].split("_")[1:])
-            tag_results[tag].append((ts, r["是否误检"]))
+            tag_results[tag].append({
+                "ts": ts,
+                "case_id": r["case_id"],
+                "是否误检": r["是否误检"],
+                "实体是否存在": r.get("实体是否存在", ""),
+                "超声标记命中或偏移": r.get("超声标记命中或偏移", ""),
+                "障碍物类型": r.get("障碍物类型", ""),
+            })
 
         try:
             from comment.add_comment import FeishuCommentTester
@@ -757,22 +764,67 @@ def step6_eas_diagnose(
             log.warning(f"  飞书评论初始化失败，跳过: {e}")
             tester = None
 
+        _WORK_ITEM_TYPE_KEY = "681329d725ac1e8647ae80bd"
+
         if tester:
             for tag_str, items in sorted(tag_results.items()):
                 feishu_id = id_mapping.get(tag_str)
                 if not feishu_id:
                     continue
-                lines = []
-                for ts, verdict in items:
-                    lines.append(f"时间戳{ts}：{verdict}")
-                comment_record = "EAS诊断：\n" + "\n".join(lines)
-                log.info(f"  飞书评论 tag={tag_str}: {comment_record}")
+
+                rich_text = []
+                rich_text.append({
+                    "type": "paragraph",
+                    "content": [{"type": "text", "text": "EAS诊断："}],
+                })
+
+                for it in items:
+                    rich_text.append({
+                        "type": "paragraph",
+                        "content": [{"type": "text", "text": (
+                            f"时间戳{it['ts']}：{it['是否误检']}\n"
+                        )}],
+                    })
+                    for sub, label in [("images", "AVM"), ("yuyan", "鱼眼")]:
+                        img_path = os.path.join(
+                            data_dir, sub, f"{it['case_id']}.jpg"
+                        )
+                        if not os.path.isfile(img_path):
+                            continue
+                        try:
+                            img_scale = 0.2 if sub == "yuyan" else 0.4
+                            file_url = tester.upload_comment_image(
+                                project_key, _WORK_ITEM_TYPE_KEY,
+                                str(feishu_id), img_path,
+                                scale=img_scale,
+                            )
+                            if file_url:
+                                rich_text.append({
+                                    "type": "paragraph",
+                                    "content": [{"type": "img",
+                                                 "attrs": {"src": file_url}}],
+                                })
+                                log.info(f"    图片上传成功: {label} {it['case_id']}")
+                            else:
+                                log.warning(f"    图片上传失败: {img_path}")
+                        except Exception as e:
+                            log.warning(f"    图片上传异常 {img_path}: {e}")
+
+                log.info(f"  飞书评论 tag={tag_str} ({len(items)} 条)")
                 try:
-                    test_url = (
+                    url_info = tester.parse_project_url(
                         f"https://project.feishu.cn/{project_key}"
                         f"/case/detail/{feishu_id}"
                     )
-                    tester.test_comment(test_url, comment_record)
+                    tester.create_comment_with_mention(
+                        url_info["project_key"],
+                        url_info["work_item_type_key"],
+                        url_info["work_item_id"],
+                        content="",
+                        mention_user_key="",
+                        mention_user_name="",
+                        rich_text=rich_text,
+                    )
                 except Exception as e:
                     log.warning(f"  飞书评论发送失败 tag={tag_str}: {e}")
             log.info(f"  飞书评论发送完成")
@@ -1323,7 +1375,7 @@ def main():
         for d in [args.samples_dir, args.read_data_dir, args.generate_dir,
                   config.DRAW_IMAGE_DIR, config.RESULT_DIR]:
             if os.path.isdir(d):
-                shutil.rmtree(d)
+                shutil.rmtree(d, ignore_errors=True)
                 log.info(f"  已清理: {d}")
 
     log.info(f"项目根目录: {PROJECT_ROOT}")
