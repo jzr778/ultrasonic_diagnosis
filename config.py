@@ -97,7 +97,21 @@ PROTO_DEBS_DIR = os.environ.get(
     "PROTO_DEBS_DIR",
     "/mnt/public-data/shared/public/trajcaching_v3/debs",
 )
-PROTO_LOCAL_DIR = str(PROJECT_ROOT / "get_data" / "proto")
+def _pick_proto_dir():
+    """根据 protobuf 运行时版本自动选择兼容的 _pb2.py 目录。
+
+    protobuf >= 5.26 → proto/（新版编译，含 runtime_version 校验）
+    protobuf <  5.26 → proto_old/（旧版编译，兼容 3.x）
+    """
+    _new = str(PROJECT_ROOT / "get_data" / "proto")
+    _old = str(PROJECT_ROOT / "get_data" / "proto_old")
+    try:
+        from google.protobuf import runtime_version  # noqa: F401
+        return _new
+    except ImportError:
+        return _old if os.path.isdir(_old) else _new
+
+PROTO_LOCAL_DIR = _pick_proto_dir()
 
 # ============ Bag Topic ============
 

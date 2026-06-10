@@ -16,7 +16,10 @@ _FULL_NAME = "deeproute.perception.PerceptionObstacles"
 
 def _proto_dir_on_path():
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    proto_dir = os.path.join(root, "get_data", "proto")
+    if root not in sys.path:
+        sys.path.insert(0, root)
+    import config
+    proto_dir = config.PROTO_LOCAL_DIR
     if proto_dir not in sys.path:
         sys.path.insert(0, proto_dir)
 
